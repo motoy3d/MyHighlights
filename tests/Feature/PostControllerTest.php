@@ -1,0 +1,185 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Http\Controllers\Api\PostController;
+use App\User;
+use Illuminate\Support\Debug\Dumper;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+/**
+ * PostControllerのテスト
+ * @package Tests\Feature
+ */
+class PostControllerTest extends TestCase {
+//  use RefreshDatabase;  //データ全部消える
+  public function setUp()
+  {
+    parent::setUp();
+    // Avoid "Session store not set on request." - Exception!
+    Session::setDefaultDriver('array');
+    $this->manager = app('session');
+  }
+  // index ----------------------------------------------------
+  /**
+   * indexのテスト。
+   * @return void
+   */
+  public function testIndexUser1(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->get('http://localhost:8000/api/posts');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * indexのテスト。2ページ目。
+   * @return void
+   */
+  public function testIndexUser1_page2(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->get('http://localhost:8000/api/posts?page=2');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * indexのテスト。別のチームのユーザーで結果が変わる。
+   * @return void
+   */
+  public function testIndexUser2(){
+    $user = User::findOrFail(2);
+    $response = $this->actingAs($user, 'api')
+      ->get('http://localhost:8000/api/posts');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  // show ----------------------------------------------------
+  /**
+   * showのテスト。
+   * @return void
+   */
+  public function testShow1(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->get('http://localhost:8000/api/posts/3');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * showのテスト。他のチームのデータは見れない。404になる。
+   * @return void
+   */
+  public function testShow2_他のチームのデータは見れない(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->get('http://localhost:8000/api/posts/4');
+    $response->assertStatus(404);
+    echo $this->json_enc($response->json());
+  }
+
+  // store ----------------------------------------------------
+  /**
+   * storeのテスト。
+   * @return void
+   */
+  public function testStore1(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->post('http://localhost:8000/api/posts',
+        [
+          'title' => 'タイトル ' . date('Y-m-d H:i:s'),
+          'contents' => "本文です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '1',
+          'notification_flg' => 1
+        ]);
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * storeのテスト。別チームのユーザー
+   * @return void
+   */
+  public function testStore2_other_team(){
+    $user = User::findOrFail(2);
+    $response = $this->actingAs($user, 'api')
+      ->post('http://localhost:8000/api/posts',
+        [
+          'title' => 'チーム2. タイトル ' . date('Y-m-d H:i:s'),
+          'contents' => "チーム2. 本文です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '2',
+          'notification_flg' => null
+        ]);
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  // update ----------------------------------------------------
+  /**
+   * updateのテスト。
+   * @return void
+   */
+  public function testUpdate1(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->put('http://localhost:8000/api/posts/3',
+        [
+          'title' => 'タイトル更新 ' . date('Y-m-d H:i:s'),
+          'contents' => "本文更新............です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '1',
+          'notification_flg' => 1
+        ]);
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+  /**
+   * updateのテスト。別チームの投稿は404
+   * @return void
+   */
+  public function testUpdate2_404(){
+    $user = User::findOrFail(2);
+    $response = $this->actingAs($user, 'api')
+      ->put('http://localhost:8000/api/posts/3',
+        [
+          'title' => 'タイトル更新 ' . date('Y-m-d H:i:s'),
+          'contents' => "本文更新............です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '1',
+          'notification_flg' => 1
+        ]);
+    $response->assertStatus(404);
+    echo $this->json_enc($response->json());
+  }
+
+  // destroy ----------------------------------------------------
+  /**
+   * destroyのテスト。
+   * @return void
+   */
+  public function testDestroy1(){
+    $user = User::findOrFail(1);
+    $response = $this->actingAs($user, 'api')
+      ->delete('http://localhost:8000/api/posts/5');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+  /**
+   * destroyのテスト。別チームの投稿は404
+   * @return void
+   */
+  public function testDestroy2_404(){
+    $user = User::findOrFail(2);
+    $response = $this->actingAs($user, 'api')
+      ->put('http://localhost:8000/api/posts/3');
+    $response->assertStatus(404);
+    echo $this->json_enc($response->json());
+  }
+
+}
