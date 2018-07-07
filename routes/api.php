@@ -13,9 +13,8 @@
   |
   */
 
-  //TODO テスト時は認証を外す
   Route::middleware('auth:api')->group(function () {
     Route::resource('posts', 'Api\PostController');
+    Route::post('post_responses', 'Api\PostResponseController@store');
   });
 
-//  Route::resource('posts', 'Api\PostController');

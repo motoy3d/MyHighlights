@@ -4,7 +4,7 @@
   use Illuminate\Database\Schema\Blueprint;
   use Illuminate\Database\Migrations\Migration;
 
-  class CreatePostResponse extends Migration
+  class CreatePostResponses extends Migration
   {
     /**
      * Run the migrations.
@@ -13,7 +13,8 @@
      */
     public function up()
     {
-      Schema::create('post_response', function (Blueprint $table) {
+      Schema::create('post_responses', function (Blueprint $table) {
+        $table->increments('id')->comment('投稿レスポンスID');
         $table->integer('user_id')->comment('ユーザーID');
         $table->integer('post_id')->comment('投稿ID');
         $table->boolean('read_flg')->default(false)->comment('既読フラグ');
@@ -23,9 +24,9 @@
         $table->dateTime('created_at')->nulable()->default(null)->comment('登録日時');
         $table->integer('updated_id')->nulable()->comment('更新ユーザーID');
         $table->timestamp('updated_at')->comment('更新日時');
-        $table->primary(['user_id', 'post_id']);
+        $table->unique(['user_id', 'post_id']);
       });
-      DB::statement("ALTER TABLE post_response COMMENT '投稿レスポンス'");
+      DB::statement("ALTER TABLE post_responses COMMENT '投稿レスポンス'");
     }
 
     /**
@@ -35,6 +36,6 @@
      */
     public function down()
     {
-      Schema::dropIfExists('post_response');
+      Schema::dropIfExists('post_responses');
     }
   }
