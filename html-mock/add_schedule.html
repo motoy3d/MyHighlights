@@ -1,0 +1,79 @@
+<!-- ■■■■■■■■■■■■■■ 予定登録 ■■■■■■■■■■■■■■ -->
+<ons-page id="post">
+	<ons-toolbar class="navbar">
+    <div class="center navbartitle">
+      <ons-icon icon="fa-calendar" size="20px"></ons-icon> 
+			<span>予定登録</span>
+    </div>
+    <div class="right mr-5">
+      <ons-toolbar-button onclick="homeNavi.popPage();">
+        <ons-icon icon="fa-close" size="28px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+	<div class="bg-white space">
+		<form id="addScheduleForm" action="#" method="POST">
+		<ons-row class="space">
+			<ons-col width="70%">
+<!-- pickadate
+				<input id="dateForAdd" class="text-input text-input--border js__datepicker" 
+				name="dateForAdd" type="text" value="2018/03/31"/>-->
+				<ons-input id="dateForAdd" class="text-input text-input--border" 
+					name="dateForAdd" type="date" value="2018/05/31"></ons-input>
+			</ons-col>
+			<ons-col>
+				<ons-switch id="allday_switch" value="1"></ons-switch>
+				<label for="allday_switch" class="ml-5 mt-10">終日</label>
+			</ons-col>
+		</ons-row>
+		<ons-row class="space">
+<!-- pickadate
+			<input id="startHourForAdd" class="text-input text-input--border js__timepicker" 
+			name="startHourForAdd" type="text" value=""/>
+			<input id="startMinuteForAdd" class="text-input text-input--border js__timepicker" 
+			name="startMinuteForAdd" type="text" value=""/>
+			 〜 
+			<input id="endTimeForAdd" class="text-input text-input--border js__timepicker" name="endTimeForAdd" type="text" value=""/>
+			-->
+			<ons-input class="time_input" modifier="border" type="time" id="startTimeForAdd"></ons-input>
+			<div class="plr-10 pt-10">〜</div>
+			<ons-input class="time_input" modifier="border" type="time" id="endTimeForAdd"></ons-input>
+		</ons-row>
+		<ons-row class="space">
+			<ons-input modifier="border" name="title" type="text" class="w-100p" placeholder="件名"></ons-input>
+		</ons-row>
+		<div class="space">
+      <select id="category" name="category" class="select-input select-input--underbar">
+        <option>練習</option>
+        <option>練習試合</option>
+        <option>公式試合</option>
+        <option>イベント</option>
+        <option>その他</option>
+      </select>
+		</div>
+		<div class="space">
+			<textarea class="textarea w-100p" rows="7" placeholder="詳細"></textarea>
+		</div>
+		<div class="space">
+			<div class="upload-btn-wrapper">
+				<ons-button class="smallBtn button--outline">添付ファイル</ons-button>
+			  <input type="file" name="myfile" />
+			</div>
+		</div>
+		<div class="space">
+			みんなに通知 <ons-switch checked></ons-switch>
+		</div>
+		<div class="space">
+			<ons-button class="mtb-20" modifier="large" onclick="homeNavi.popPage();">登録</ons-button>
+		</div>
+		</form>
+	</div>
+	<script>
+    $(function() {
+		$('#dateForAdd').pickadate();
+    	$('#startHourForAdd').pickatime({format:'H時', interval:60});
+    	$('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
+    	$('#endTimeForAdd').pickatime();
+    });
+	</script>
+</ons-page>

@@ -1,0 +1,104 @@
+<!-- ■■■■■■■■■■■■■■ 投稿 ■■■■■■■■■■■■■■ -->
+<ons-page id="post">
+  <ons-toolbar class="navbar">
+    <div class="center navbartitle">
+      <ons-icon icon="md-comment" size="20px"></ons-icon> <span>投稿</span>
+    </div>
+    <div class="right mr-5">
+      <ons-toolbar-button onclick="homeNavi.popPage();">
+        <ons-icon icon="fa-close" size="28px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+  <div class="row">
+    <div class="col bg-white">
+      <form id="postForm" action="#" method="POST">
+        <div class="space center">
+          <ons-input modifier="border" placeholder="件名" name="title" class="w-100p"></ons-input>
+        </div>
+        <div class="space">
+          <select id="category" name="category" class="select-input select-input--underbar">
+            <option>練習</option>
+            <option>練習試合</option>
+            <option>公式試合</option>
+            <option>イベント</option>
+            <option>その他</option>
+          </select>
+          <!--
+          <ons-radio name="category" modifier="material" input-id="radio-1" checked></ons-radio>
+          <label for="radio-1" class="center">練習</label>
+          <ons-radio name="category" modifier="material" input-id="radio-2" class="ml-10"></ons-radio>
+          <label for="radio-2" class="center">試合</label>
+          <ons-radio name="category" modifier="material" input-id="radio-3" class="ml-10"></ons-radio>
+          <label for="radio-3" class="center">イベント</label>
+          <ons-radio name="category" modifier="material" input-id="radio-4" class="ml-10"></ons-radio>
+          <label for="radio-4" class="center">その他</label>-->
+        </div>
+        <div class="space">
+          <textarea class="textarea w-100p" rows="10" placeholder="内容"></textarea>
+        </div>
+        <div class="space">
+          <div class="upload-btn-wrapper">
+            <ons-button class="smallBtn button--outline">添付ファイル</ons-button>
+            <input type="file" name="myfile" />
+          </div>
+        </div>
+        <div class="space">
+          <ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal()">
+            アンケート作成</ons-button>
+        </div>
+        <div class="space row middle">
+          <ons-switch id="notificate"></ons-switch>
+          <label for="notificate" class="middle">みんなにメール通知</label>
+        </div>
+        <div class="space">
+          <ons-button class="mtb-20" modifier="large">投稿</ons-button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- アンケート作成画面Modal -->
+  <ons-modal var="quetionnaireModal">
+    <form id="createQuetionnaireForm" action="#" method="POST">
+      <div class="quetionnaire_container p-10">
+        <div class="row">
+          <div class="col">
+            <h4>アンケート作成</h4>
+            <div class="mt-10">
+              <ons-input modifier="border" placeholder="アンケートタイトル" name="q_title" class="w-90p"></ons-input>
+            </div>
+            <div class="mt-20">
+              <ons-input modifier="border" placeholder="選択肢1" name="q_answer01" class="w-90p"></ons-input>
+            </div>
+            <div class="mt-10">
+              <ons-input modifier="border" placeholder="選択肢2" name="q_answer02" class="w-90p"></ons-input>
+            </div>
+            <div class="mt-10 mb-10">
+              <ons-input modifier="border" placeholder="選択肢3" name="q_answer03" class="w-90p"></ons-input>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="space">
+            <ons-button class="plr-20" onclick="hideQuestionnaireModal();">作成する</ons-button>
+          </div>
+          <div class="space">
+            <ons-button class="bg-gray" onclick="hideQuestionnaireModal();">閉じる</ons-button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </ons-modal>
+
+  <script>
+    function showQuestionnaireModal() {
+      var modal = document.querySelector('ons-modal');
+      modal.show();
+    }
+
+    function hideQuestionnaireModal() {
+      var modal = document.querySelector('ons-modal');
+      modal.hide();
+    }
+  </script>
+</ons-page>

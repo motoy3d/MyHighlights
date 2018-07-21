@@ -1,0 +1,26 @@
+<!-- ■■■■■■■■■■■■■■ お問い合わせ ■■■■■■■■■■■■■■ -->
+<ons-page id="contact">
+	<ons-toolbar class="navbar">
+    <div class="left">
+      <ons-toolbar-button onclick="fn.openMenu()">
+        <ons-icon icon="fa-bars" size="28px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center navbartitle">
+      <ons-icon icon="fa-envelope" size="20px"></ons-icon> 
+			<span>お問い合わせ</span>
+    </div>
+  </ons-toolbar>
+	<div class="row">
+		<div class="col bg-white">
+			<form id="postForm" action="#" method="POST">
+			<div class="space">
+				<textarea class="textarea w-100p" rows="10" placeholder="内容"></textarea>
+			</div>
+			<div class="space">
+				<ons-button class="mtb-20" modifier="large">送信</ons-button>
+			</div>
+			</form>
+		</div>
+	</div>
+</ons-page>

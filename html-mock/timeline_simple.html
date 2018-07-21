@@ -1,0 +1,150 @@
+<!-- ■■■■■■■■■■■■■■ タイムラインSIMPLE版 ■■■■■■■■■■■■■■ -->
+<ons-page>
+	<!-- ツールバー -->
+  <ons-toolbar class="navbar">
+    <div class="left toolbar__left">
+      <ons-toolbar-button onclick="fn.openMenu()">
+        <ons-icon icon="fa-bars" size="28px"></ons-icon>
+      </ons-toolbar-button>
+      <ons-toolbar-button onclick="fn.openPage('calendar.html')">
+        <ons-icon icon="fa-calendar" size="24px" class="mb-5"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center toolbar__center">
+	    <ons-search-input placeholder="検索" class="timeline_search2">
+	    </ons-search-input>
+    </div>
+    <div class="toolbar__right mr-5">
+      <ons-toolbar-button onclick="fn.openPage('post.html','lift');">
+        <ons-icon icon="fa-plus" size="28px"></ons-icon>
+      </ons-toolbar-button>
+<!-- TODO いずれ動画アップ機能追加
+      <ons-toolbar-button onclick="alert('動画アップロード画面')">
+        <ons-icon icon="fa-cloud-upload" size="28px"></ons-icon>
+      </ons-toolbar-button>
+-->
+    </div>
+  </ons-toolbar>
+	<!-- メインコンテンツ -->
+	<ons-list id="timeline_list">
+<!--		<ons-list-item>
+	    <ons-search-input placeholder="検索" class="timeline_search">
+	    </ons-search-input>
+		</ons-list-item>-->
+		<ons-list-item tappable modifier="chevron"
+		onclick="homeNavi.pushPage('article.html', {data: {fromPage: 'timeline'}})">
+		  <div class="entry_title_row">
+		    <p class="entry_title">
+		    	<ons-icon icon="fa-circle" class="new_icon" size="16px"></ons-icon>
+		    	3/11(日)練習場所変更</p>
+		    <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>3/11(日)の練習場所を変更いたします。<br>
+		  	</span>
+		  	<div class="mt-10">
+		      <ons-icon icon="fa-comment-o" class="small gray">
+		      	<span>4</span>
+		      </ons-icon>
+		      <ons-icon icon="fa-list-alt" class="small gray ml-10">
+		      	<span>アンケート</span>
+		      </ons-icon>
+		  	</div>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron"
+		onclick="homeNavi.pushPage('article.html', {data: {fromPage: 'timeline'}})">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/10（土）TRM@太尾小</p>
+        <p class="updated_at">3.3 10:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・本文・・・。<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron"
+		onclick="homeNavi.pushPage('article.html', {data: {fromPage: 'timeline'}})">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4（日）送り出し会＠綱島東小</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		出欠確認を行います。<br>
+		  	</span>
+		  	<div class="mt-10">
+		      <ons-icon icon="fa-comment-o" class="small gray">
+		      	<span>1</span>
+		      </ons-icon>
+		      <ons-icon icon="fa-list-alt" class="small gray ml-10">
+		      	<span>アンケート</span>
+		      </ons-icon>
+		  	</div>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4(日) xxxx</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・・・・・<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4(日) xxxx</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・・・・・<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4(日) xxxx</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・・・・・<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4(日) xxxx</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・・・・・<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+
+		<ons-list-item tappable modifier="chevron">
+		  <div class="entry_title_row">
+		    <p class="entry_title">3/4(日) xxxx</p>
+        <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
+		  </div>
+		  <div class="entry_content">
+		  	<span>
+		  		・・・・・・・・<br>
+		  	</span>
+		  </div>
+		</ons-list-item>
+	</ons-list>
+</ons-page>

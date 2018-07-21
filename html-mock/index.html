@@ -1,0 +1,151 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="マイハイライト">
+<!--Monaca用？  <script src="components/loader.js"></script>-->
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.0.min.js"></script>
+<!--
+  <script src="js/pickadate/picker.js"></script>
+  <script src="js/pickadate/picker.date.js"></script>
+  <script src="js/pickadate/picker.time.js"></script>
+  <script src="js/pickadate/ja_JP.js"></script>
+-->
+<!--Monaca用？  <link rel="stylesheet" href="components/loader.css">-->
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <link rel="stylesheet" href="css/style.css?u=1111111111">
+  <link rel="stylesheet" href="css/calendar.css">
+<!--
+  <link rel="stylesheet" href="css/pickadate/default.css">
+  <link rel="stylesheet" href="css/pickadate/default.date.css">
+  <link rel="stylesheet" href="css/pickadate/default.time.css">
+-->
+<!--  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
+  
+  <link rel="apple-touch-icon" sizes="192x192" href="appicon.png">
+  <link rel="shortcut icon" href="https://smartj.mobi/appicon.png">
+
+  <script>
+    ons.preload(["timeline_simple.html", "calendar.html", "add_schedule.html", "members.html",
+    "notification.html", "post.html", "settings.html"]);
+    //Enterでサブミットしない。class="allow_submit"の場合はサブミットする。のはずだが動作しない。
+    $(function() {
+      $(document).on("keypress", "input:not(.allow_submit)", function(event) {
+        return event.which !== 13;
+      });
+      $('.menulist').on('click', function(event) {
+        $('.menulist').find(".current_menu_icon").each(function(index, icon) {
+          $(icon).addClass("hidden");
+        });
+        var onsIcon = event.target.firstElementChild;
+        $(onsIcon).removeClass("hidden");
+      });
+    });
+		document.addEventListener('init', function(event) {
+			var page = event.target;
+			if (page.id == "calendar") {
+				new TnCalendar('tnCalendar').create();
+			}
+		});
+    window.fn = {};
+    window.fn.openMenu = function() {
+      menu.open();
+    };
+    window.fn.load = function(page) {
+      content.load(page).then(menu.close.bind(menu));
+    };
+    window.fn.openPage = function(page, animation) {
+			homeNavi.pushPage(page, {animation:animation});
+    };
+  </script>
+</head>
+<body>
+	<ons-splitter>
+    <ons-splitter-side id="menu" var="menu" side="left" width="220px" collapse swipeable>
+      <ons-page>
+				<div class="background splitter"></div>
+        <ons-list class="menulist">
+          <ons-list-item onclick="fn.load('homeNavi.html')" class="menuitem" tappable>
+						<ons-icon icon="fa-chevron-right" class="current_menu_icon"></ons-icon> 
+						<ons-icon icon="fa-rss" class="menu_icon" size="16px"></ons-icon>タイムライン
+          </ons-list-item>
+<!--
+          <ons-list-item onclick="fn.openPage('calendar.html');menu.close();" class="menuitem" tappable>
+						<span class="ml-20">カレンダー</span>
+          </ons-list-item>
+-->
+          <ons-list-item onclick="fn.load('notification.html')" class="menuitem" tappable>
+						<ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></ons-icon>
+						<ons-icon icon="fa-bell" class="menu_icon" size="16px"></ons-icon>通知
+          </ons-list-item>
+<!--          <ons-list-item onclick="fn.load('favorites.html')" class="menuitem" tappable>
+            <ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></ons-icon>
+            <ons-icon icon="fa-heart" class="menu_icon"></ons-icon>お気に入り
+          </ons-list-item>-->
+          <ons-list-item onclick="fn.load('members.html')" class="menuitem" tappable>
+            <ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></ons-icon>
+            <ons-icon icon="fa-user" class="menu_icon" size="16px"></ons-icon>メンバー
+          </ons-list-item>
+          <ons-list-item onclick="fn.load('settings.html')" class="menuitem" tappable>
+            <ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></ons-icon>
+            <ons-icon icon="fa-cog" class="menu_icon" size="16px"></ons-icon>設定
+          </ons-list-item>
+          <ons-list-item onclick="fn.load('contact.html')" class="menuitem" tappable>
+            <ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></ons-icon>
+            <ons-icon icon="fa-envelope" class="menu_icon" size="16px"></ons-icon>お問い合わせ
+          </ons-list-item>
+        </ons-list>
+      </ons-page>
+    </ons-splitter-side>
+    <ons-splitter-content id="content" var="content" page="homeNavi.html"></ons-splitter-content>
+  </ons-splitter>
+  
+  <template id="homeNavi.html">
+    <ons-page>
+			<ons-navigator id="homeNavi" var="homeNavi" page="timeline_simple.html"></ons-navigator>
+<!--			<ons-navigator id="homeNavi" var="homeNavi" page="article.html"></ons-navigator>-->
+    </ons-page>
+  </template>
+
+<!-- ■■■■■■■■■■■■■■ お気に入り ■■■■■■■■■■■■■■ -->
+<!--  <template id="favorites.html">
+    <ons-page>
+      <ons-toolbar class="navbar">
+        <div class="left">
+          <ons-toolbar-button onclick="fn.openMenu()">
+            <ons-icon icon="fa-bars" size="28px"></ons-icon>
+          </ons-toolbar-button>
+        </div>
+        <div class="center navbartitle">
+          <ons-icon icon="fa-star"></ons-icon> お気に入り
+        </div>
+      </ons-toolbar>
+    </ons-page>
+  </template>-->
+  
+<!-- ■■■■■■■■■■■■■■ 使い方 ■■■■■■■■■■■■■■ -->
+<!--
+  <template id="help.html">
+    <ons-page>
+      <ons-toolbar class="navbar">
+        <div class="left">
+          <ons-toolbar-button onclick="fn.openMenu()">
+            <ons-icon icon="fa-bars" size="28px"></ons-icon>
+          </ons-toolbar-button>
+        </div>
+        <div class="center navbartitle">
+          <ons-icon icon="fa-info-circle"></ons-icon> 使い方
+        </div>
+      </ons-toolbar>
+    </ons-page>
+  </template>
+-->
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!-- ■■■■■■■■■■■■■■ メンバー情報・編集 ■■■■■■■■■■■■■■ -->
+<ons-page id="post">
+	<ons-toolbar class="navbar">
+    <div class="left ml-5">
+      <ons-toolbar-button onclick="membersNavi.popPage({animation:'simpleslide'});">
+        <ons-icon icon="fa-chevron-left" size="24px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center navbartitle">
+      <ons-icon icon="fa-user-edit" size="20px"></ons-icon> 
+			<span>メンバー情報</span>
+    </div>
+  </ons-toolbar>
+	<div class="bg-white">
+		<form id="postForm" action="#" method="POST">
+			<div class="segment space" style="width: 91%; margin: 0 auto;">
+			  <button class="segment__item">
+			    <input type="radio" class="segment__input" name="segment-a" checked>
+		  	  <div class="segment__button">選手</div>
+			  </button>
+			  <button class="segment__item">
+			    <input type="radio" class="segment__input" name="segment-a">
+			    <div class="segment__button">監督/コーチ</div>
+			  </button>
+			  <button class="segment__item">
+			    <input type="radio" class="segment__input" name="segment-a">
+			    <div class="segment__button">家族</div>
+			  </button>
+			</div>
+      <div class="ml-15 mt-10"><small class="gray">名前(必須)</small></div>
+			<div class="mlr-15 center">
+        <ons-input modifier="border" placeholder="" id="name" name="name" class="w-100p"></ons-input>
+      </div>
+      <div class="ml-15 mt-10"><small class="gray">誕生日</small></div>
+			<div class="ml-15">
+        <ons-input modifier="border" name="title" type="date" class="w-100p"></ons-input>				
+      </div>
+      <div class="ml-15 mt-10"><small class="gray" class="gray">背番号</small></div>
+			<div class="ml-15">
+        <ons-input modifier="border" name="backno" class="backno_input" type="number"></ons-input>
+      </div>
+      <div class="space mt-10">
+        <div class="upload-btn-wrapper">
+          <ons-button>プロフィール画像</ons-button>
+          <input type="file" name="myfile" />
+        </div>
+      </div>
+      <div class="space">
+        このメンバーを招待する <ons-switch checked></ons-switch>
+      </div>
+      <div class="ml-15"><small class="gray">メールアドレス</small></div>
+			<div class="mlr-15 center">
+        <ons-input modifier="border" placeholder="" name="title" class="w-100p"></ons-input>				
+      </div>
+      <div class="space">
+        <ons-button class="mtb-20" modifier="large">保存</ons-button>
+      </div>
+		</form>
+	</div>
+	<script>
+		ons.getScriptPage().onInit = function() {
+		  this.querySelector('#name').value = this.data.name;
+		};
+	</script>
+</ons-page>

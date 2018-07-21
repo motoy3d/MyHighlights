@@ -1,0 +1,75 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="マイハイライト">
+<!--Monaca用？  <script src="components/loader.js"></script>-->
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.0.min.js"></script>
+
+<!--Monaca用？  <link rel="stylesheet" href="components/loader.css">-->
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/calendar.css">
+<!--  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
+  
+  <link rel="apple-touch-icon" sizes="192x192" href="appicon.png">
+  <link rel="shortcut icon" href="https://smartj.mobi/appicon.png">
+
+  <script>
+  </script>
+</head>
+<body>
+  <ons-page id="login_page">
+    <ons-toolbar class="navbar" class="bg-white">
+      <div class="center">
+        <span class="white">横浜SCつばさ　ログイン</span>
+      </div>
+    </ons-toolbar>
+    <div class="row bg-white">
+      <div class="col bg-white center">
+        <div class="space">
+					<ons-input modifier="border" placeholder="メールアドレス" id="login_id" 
+					class="login_field mt-20"></ons-input>
+        </div>
+        <div class="space">
+					<ons-input modifier="border" placeholder="パスワード" id="password" 
+					class="login_field"></ons-input>
+        </div>
+        <div class="center space">
+          <ons-button id="login_btn" class="login_btn" modifier="large"
+          onclick="location.href='index.html'">ログイン</ons-button>
+        </div>
+        <div class="center mt-20">
+          <a href="#" class="gray small">パスワードを忘れた場合はこちら</a>
+        </div>
+      </div>
+      <hr class="login_hr">
+      <div class="row pb-50">
+        <div class="center space">
+          <ons-button id="google_login_btn" class="login_btn" modifier="large">
+            <ons-icon icon="fa-google" size="20px" class="mr-10"></ons-icon>Googleでログイン</ons-button>
+        </div>
+        <div class="center space">
+          <ons-button id="line_login_btn" class="login_btn" modifier="large">
+            <ons-icon icon="fa-line" size="20px" class="mr-10"></ons-icon>LINEでログイン</ons-button>
+        </div>
+        <div class="center space">
+          <ons-button id="facebook_login_btn" class="login_btn" modifier="large">
+            <ons-icon icon="fa-facebook" size="20px" class="mr-10"></ons-icon>facebookでログイン</ons-button>
+        </div>
+        <div class="center space">
+          <ons-button id="twitter_login_btn" class="login_btn" modifier="large">
+            <ons-icon icon="fa-twitter" size="20px" class="mr-10"></ons-icon>twitterでログイン</ons-button>
+        </div>
+      </div>
+    </div>
+  </ons-page>
+</body>
+</html>

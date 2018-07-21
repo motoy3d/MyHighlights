@@ -1,0 +1,46 @@
+<!-- ■■■■■■■■■■■■■■ カレンダー ■■■■■■■■■■■■■■ -->
+<ons-page id="calendar">
+  <ons-toolbar class="navbar">
+    <div class="left ml-5">
+      <ons-toolbar-button onclick="homeNavi.popPage({animation:'simpleslide'});">
+        <ons-icon icon="fa-chevron-left" size="24px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center navbartitle">
+      <ons-icon icon="fa-calendar" size="20px"></ons-icon>
+      <span id="currentYearMonth" class="ml-10">2017年12月</span>
+    </div>
+    <div class="right mr-5">
+      <ons-toolbar-button onclick="fn.openPage('add_schedule.html','lift');">
+        <ons-icon icon="fa-plus" size="28px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+  <div>
+    <form id="calendarForm" action="#" method="POST">
+      <div class="center">
+        <div id="tnCalendar" class="Calendar"></div>
+      </div>
+    </form>
+  </div>
+  <div>
+    <ons-list>
+      <ons-list-header>2017年12月16日(土)</ons-list-header>
+      <ons-list-item expandable="true">
+        <div class="top list-item__top">
+          10:00-12:30 練習@多摩川グランド
+        </div>
+        <div class="expandable-content list-item__expandable-content">
+          <p>予定詳細内容・・・</p>
+          <ons-button class="button button--outline smallBtn"
+          onclick="fn.openPage('add_schedule.html','lift');">
+            <ons-icon icon="fa-pencil" class="schedule_edit_icon"></ons-icon>
+            編集
+          </ons-button>
+        </div>
+      </ons-list-item>
+      <ons-list-item></ons-list-item>
+      <ons-list-item></ons-list-item>
+    </ons-list>
+  </div>
+</ons-page>

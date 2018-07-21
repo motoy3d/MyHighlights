@@ -1,0 +1,80 @@
+<!-- ■■■■■■■■■■■■■■ メンバー ■■■■■■■■■■■■■■ -->
+<ons-navigator id="membersNavi" var="membersNavi">
+<ons-page id="members">
+	<ons-toolbar class="navbar">
+		<div class="left">
+			<ons-toolbar-button onclick="fn.openMenu()">
+				<ons-icon icon="fa-bars" size="28px"></ons-icon>
+			</ons-toolbar-button>
+		</div>
+		<div class="center navbartitle">
+			<ons-icon icon="fa-user" size="20px"></ons-icon> メンバー
+		</div>
+    <div class="toolbar__right mr-5">
+      <ons-toolbar-button 
+      onclick="membersNavi.pushPage('add_member.html', {animation:'lift'});">
+        <ons-icon icon="fa-plus" size="28px"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+	</ons-toolbar>
+  <ons-row>
+    <ons-col>
+      <div class="segment space" style="width: 91%; margin: 0 auto;">
+        <button class="segment__item">
+          <input type="radio" class="segment__input" name="segment-a" checked>
+          <div class="segment__button">選手</div>
+        </button>
+        <button class="segment__item">
+          <input type="radio" class="segment__input" name="segment-a">
+          <div class="segment__button">監督/コーチ</div>
+        </button>
+        <button class="segment__item">
+          <input type="radio" class="segment__input" name="segment-a">
+          <div class="segment__button">家族</div>
+        </button>
+      </div>
+      <ons-list id="member_list">
+	      <ons-list-item modifier="chevron" tappable="true"
+	       onclick="membersNavi.pushPage('edit_member.html', {data: {name: 'しんたろう'}});">
+          <div class="left">
+            <img src="img/profile02.png" class="prof_img">
+          </div>
+          <div class="w-100p">
+            <p style="text-align: left">5.しんたろう</p>
+            <div class="mr-30">
+              <ons-button class="highlight_btn">
+              <ons-icon icon="fa-play"></ons-icon> ハイライト (12)</ons-button>
+            </div>
+          </div>
+        </ons-list-item>
+	      <ons-list-item modifier="chevron" tappable="true"
+	       onclick="membersNavi.pushPage('edit_member.html', {data: {name: 'しんたろう'}});">
+          <div class="left">
+            <img src="img/profile03.png" class="prof_img">
+          </div>
+          <div class="w-100p">
+            <p style="text-align: left">13.ゆうき</p>
+            <div class="mr-30">
+              <ons-button class="highlight_btn">
+              <ons-icon icon="fa-play"></ons-icon> ハイライト (1)</ons-button>
+            </div>
+          </div>
+        </ons-list-item>
+	      <ons-list-item modifier="chevron" tappable="true"
+	       onclick="membersNavi.pushPage('edit_member.html', {data: {name: 'しんたろう'}});">
+          <div class="left">
+            <img src="img/profile01.png" class="prof_img">
+          </div>
+          <div class="w-100p">
+            <p style="text-align: left">25.えいた</p>
+            <div class="mr-30">
+              <ons-button class="highlight_btn">
+              <ons-icon icon="fa-play"></ons-icon> ハイライト (30)</ons-button>
+            </div>
+          </div>
+        </ons-list-item>
+      </ons-list>
+    </ons-col>
+  </ons-row>
+</ons-page>
+</ons-navigator>
