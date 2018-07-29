@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\Api\PostController;
 use App\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Debug\Dumper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -29,8 +30,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testIndexUser1(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->get('http://localhost:8000/api/posts');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
@@ -41,8 +41,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testIndexUser1_page2(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->get('http://localhost:8000/api/posts?page=2');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
@@ -53,8 +52,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testIndexUser2(){
-    $user = User::findOrFail(2);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(2), 'api')
       ->get('http://localhost:8000/api/posts');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
@@ -66,8 +64,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testShow1(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->get('http://localhost:8000/api/posts/3');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
@@ -78,8 +75,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testShow2_他のチームのデータは見れない(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->get('http://localhost:8000/api/posts/4');
     $response->assertStatus(404);
     echo $this->json_enc($response->json());
@@ -91,8 +87,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testStore1(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->post('http://localhost:8000/api/posts',
         [
           'title' => 'タイトル ' . date('Y-m-d H:i:s'),
@@ -109,8 +104,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testStore2_other_team(){
-    $user = User::findOrFail(2);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(2), 'api')
       ->post('http://localhost:8000/api/posts',
         [
           'title' => 'チーム2. タイトル ' . date('Y-m-d H:i:s'),
@@ -122,14 +116,50 @@ class PostControllerTest extends TestCase {
     echo $this->json_enc($response->json());
   }
 
+  /**
+   * storeのテスト。添付ファイルあり。
+   * @return void
+   */
+  public function testStore3_attachment(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->post('http://localhost:8000/api/posts',
+        [
+          'title' => '添付ありタイトル ' . date('Y-m-d H:i:s'),
+          'contents' => "本文です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '1',
+          'notification_flg' => 1,
+          'file1' => UploadedFile::fake()->image('test1.jpg')
+        ]);
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * storeのテスト。添付ファイル複数あり。
+   * @return void
+   */
+  public function testStore4_attachment(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->post('http://localhost:8000/api/posts',
+        [
+          'title' => '添付複数ありタイトル ' . date('Y-m-d H:i:s'),
+          'contents' => "本文です\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
+          'category_id' => '1',
+          'notification_flg' => 1,
+          'file1' => UploadedFile::fake()->image('test1.pdf'),
+          'file2' => UploadedFile::fake()->image('test1.docx')
+        ]);
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
   // update ----------------------------------------------------
   /**
    * updateのテスト。
    * @return void
    */
   public function testUpdate1(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->put('http://localhost:8000/api/posts/3',
         [
           'title' => 'タイトル更新 ' . date('Y-m-d H:i:s'),
@@ -145,8 +175,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testUpdate2_404(){
-    $user = User::findOrFail(2);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(2), 'api')
       ->put('http://localhost:8000/api/posts/3',
         [
           'title' => 'タイトル更新 ' . date('Y-m-d H:i:s'),
@@ -164,8 +193,7 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testDestroy1(){
-    $user = User::findOrFail(1);
-    $response = $this->actingAs($user, 'api')
+    $response = $this->actingAs(User::findOrFail(1), 'api')
       ->delete('http://localhost:8000/api/posts/5');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
@@ -175,9 +203,8 @@ class PostControllerTest extends TestCase {
    * @return void
    */
   public function testDestroy2_404(){
-    $user = User::findOrFail(2);
-    $response = $this->actingAs($user, 'api')
-      ->put('http://localhost:8000/api/posts/3');
+    $response = $this->actingAs(User::findOrFail(2), 'api')
+      ->delete('http://localhost:8000/api/posts/3');
     $response->assertStatus(404);
     echo $this->json_enc($response->json());
   }

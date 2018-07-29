@@ -5,10 +5,10 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 投稿モデル
+ * 予定テーブルのモデル
  * @package App
  */
-class Post extends Model
+class Schedule extends Model
 {
   protected $guarded = array('id');
 }

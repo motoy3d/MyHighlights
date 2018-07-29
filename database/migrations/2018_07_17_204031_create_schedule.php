@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
+  use Illuminate\Support\Facades\Schema;
+  use Illuminate\Database\Schema\Blueprint;
+  use Illuminate\Database\Migrations\Migration;
 
-class CreateSchedule extends Migration
-{
+  class CreateSchedule extends Migration
+  {
     /**
      * Run the migrations.
      *
@@ -13,7 +13,8 @@ class CreateSchedule extends Migration
      */
     public function up()
     {
-      Schema::create('schedule', function (Blueprint $table) {
+      Schema::create('schedules', function (Blueprint $table) {
+        $table->increments('id')->comment('予定ID');
         $table->integer('team_id')->comment('チームID');
         $table->date('schedule_date')->comment('日付');
         $table->string('title', 50)->comment('タイトル');
@@ -27,9 +28,9 @@ class CreateSchedule extends Migration
         $table->dateTime('created_at')->nulable()->default(null)->comment('登録日時');
         $table->integer('updated_id')->nulable()->comment('更新ユーザーID');
         $table->timestamp('updated_at')->comment('更新日時');
-        $table->primary(["team_id", "schedule_date", "title"]);
+        $table->unique(["team_id", "schedule_date", "title"]);
       });
-      DB::statement("ALTER TABLE schedule COMMENT '予定'");
+      DB::statement("ALTER TABLE schedules COMMENT '予定'");
     }
 
     /**
@@ -39,6 +40,6 @@ class CreateSchedule extends Migration
      */
     public function down()
     {
-      Schema::dropIfExists('schedule');
+      Schema::dropIfExists('schedules');
     }
-}
+  }

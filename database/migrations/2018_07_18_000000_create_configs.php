@@ -15,7 +15,6 @@
     {
       Schema::create('configs', function (Blueprint $table) {
         $table->increments('id')->comment('設定ID');
-        $table->integer('team_id')->comment('チームID');
         $table->string('key', 50)->comment('設定キー');
         $table->string('value', 255)->comment('設定値');
         $table->string('memo', 255)->comment('メモ');
@@ -23,7 +22,7 @@
         $table->dateTime('created_at')->nulable()->default(null)->comment('登録日時');
         $table->integer('updated_id')->nulable()->comment('更新ユーザーID');
         $table->timestamp('updated_at')->comment('更新日時');
-        $table->unique(['team_id', 'key']);
+        $table->unique('key');
       });
       DB::statement("ALTER TABLE configs COMMENT '設定'");
     }

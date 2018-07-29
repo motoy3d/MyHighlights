@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Post;
+use App\PostAttachment;
 use App\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -61,6 +63,23 @@ class PostController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+    if ($request->allFiles()) { //添付がある場合
+      $files = $request->allFiles();
+      foreach ($files as $file) {
+        $originalFilename = $file->getClientOriginalName();
+        $postAttachment = PostAttachment::create([
+          "post_id" => $post->id,
+          "file_name" => $originalFilename,
+          "file_type" => substr($originalFilename, strrpos($originalFilename, '.')),
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
+        // ファイル保存
+        $file->storePubliclyAs('post_attachment',
+          $postAttachment->id . $postAttachment->file_type);
+      }
+    }
+
     return Response::json($post);
   }
 
@@ -79,11 +98,8 @@ class PostController extends Controller
       ->where('posts.id',$id)
       ->where('posts.team_id',Auth::user()->team_id)
       ->first();
-    if (!$post) {
-      // ヒットしない場合は404
-      return response()->json([
-        'message' => 'not found',
-      ], 404);
+    if (!$post) {// ヒットしない場合は404
+      return response()->json(null, 404);
     }
 
     // 投稿へのいいね、スター
@@ -141,10 +157,7 @@ class PostController extends Controller
     //TODO validate
     $post = Post::findOrFail($id);
     if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
-      // ヒットしない場合は404
-      return response()->json([
-        'message' => 'not found',
-      ], 404);
+      return response()->json(null, 404);
     }
 
     $post->title = $request->title;
@@ -167,9 +180,7 @@ class PostController extends Controller
   {
     $post = Post::findOrFail($id);
     if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
-      return response()->json([
-        'message' => 'not found',
-      ], 404);
+      return response()->json(null, 404);
     }
     $count = Post::destroy($id);
     $result = ["deleted_count" => $count];
