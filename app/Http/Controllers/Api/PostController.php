@@ -29,18 +29,27 @@ class PostController extends Controller
    */
   public function index(Request $request)
   {
+    $perPageCount = 2;  //1ページあたりの件数
     Log::info("PostController#index");
     Log::info("team_id=" . Auth::user());
     $posts = DB::table('posts')
-      ->leftJoin('post_response', function (JoinClause $join) {
-        $join->on('posts.id', '=', 'post_response.post_id');
-        $join->where('post_response.user_id', '=', Auth::id());
+      ->leftJoin('post_responses', function (JoinClause $join) {
+        $join->on('posts.id', '=', 'post_responses.post_id');
+        $join->where('post_responses.user_id', '=', Auth::id());
       })
-      ->select(['posts.*', 'post_response.read_flg', 'post_response.like_flg',
-        'post_response.star_flg'])
+      ->select(['posts.*', 'post_responses.read_flg', 'post_responses.like_flg',
+        'post_responses.star_flg'])
       ->where('posts.team_id', Auth::user()->team_id)
-      ->orderByDesc('posts.updated_at')
-      ->simplePaginate(2);
+      ->orderByDesc('posts.updated_at');
+    $keyword = $request->keyword;
+    if ($keyword) {
+      $posts = $posts
+        ->where(function($query) use($keyword) {
+          $query->where('posts.title', 'LIKE', '%' . $keyword . '%')
+            ->orWhere('posts.content', 'LIKE', '%' . $keyword . '%');
+        });
+    }
+    $posts = $posts->simplePaginate($perPageCount);
     return Response::json($posts);
   }
 
@@ -103,7 +112,7 @@ class PostController extends Controller
     }
 
     // 投稿へのいいね、スター
-    $post_response = DB::table('post_response')
+    $post_response = DB::table('post_responses')
       ->select('read_flg', 'like_flg', 'star_flg')
       ->where('user_id', Auth::id())
       ->where('post_id', $post->id)
@@ -138,7 +147,7 @@ class PostController extends Controller
     // １つにまとめる
     return Response::json([
       'post' => $post,
-      'post_response' => $post_response,
+      'post_responses' => $post_response,
       'post_attachements' => $post_attachements,
       'quetionnaire' => $quetionnaire,
       'comments' => $comments

@@ -57,6 +57,16 @@ class PostControllerTest extends TestCase {
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
   }
+  /**
+   * indexのテスト。キーワード検索
+   * @return void
+   */
+  public function testIndexUser1_search(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts?keyword=' . urlencode('キーワード'));
+    echo $this->json_enc($response->json());
+    $response->assertStatus(200);
+  }
 
   // show ----------------------------------------------------
   /**

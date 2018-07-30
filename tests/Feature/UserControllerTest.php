@@ -33,8 +33,8 @@ class UserControllerTest extends TestCase {
       ->put('http://localhost:8000/api/users/updateName', [
         'name' => '氏名　' . date('Y/m/d H:i:s')
       ]);
-    $response->assertStatus(200);
     echo $this->json_enc($response->json());
+    $response->assertStatus(200);
   }
 
   /**
@@ -46,8 +46,8 @@ class UserControllerTest extends TestCase {
       ->put('http://localhost:8000/api/users/updateEmail', [
         'email' => 'm' . date('YmdHis') . '@phpunittest.jp'
       ]);
-    $response->assertStatus(200);
     echo $this->json_enc($response->json());
+    $response->assertStatus(200);
   }
 
   /**
@@ -57,10 +57,19 @@ class UserControllerTest extends TestCase {
   public function testUpdatePassword1() {
     $response = $this->actingAs(User::findOrFail(1), 'api')
       ->put('http://localhost:8000/api/users/updatePassword', [
-        'current_password' => 'motoikataoka',
+        'current_password' => 'test1234',
+        'new_password' => 'changed_password1'
+      ]);
+    echo $this->json_enc($response->json());
+    $response->assertStatus(200);
+
+    // 元に戻しておく
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->put('http://localhost:8000/api/users/updatePassword', [
+        'current_password' => 'changed_password1',
         'new_password' => 'test1234'
       ]);
-    $response->assertStatus(200);
     echo $this->json_enc($response->json());
+    $response->assertStatus(200);
   }
 }

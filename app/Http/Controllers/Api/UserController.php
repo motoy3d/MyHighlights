@@ -7,6 +7,7 @@ use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 /**
@@ -66,10 +67,11 @@ class UserController extends Controller
   {
     //TODO validate
     $user = Auth::user();
+    Log::debug('password = ' . Auth::user()->password);
     // 現在のパスワードのチェック
     if (Hash::check($request->current_password, Auth::user()->password)) {
       $user->fill([
-        'password' => Hash::make($request->newPassword),
+        'password' => Hash::make($request->new_password),
         'updated_id' => Auth::id()
       ]);
       $user = $user->save();
