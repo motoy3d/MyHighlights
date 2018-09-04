@@ -42,7 +42,7 @@ class PostController extends Controller
       ->where('posts.team_id', Auth::user()->team_id)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
-    if ($keyword) {
+    if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する
       $posts = $posts
         ->where(function($query) use($keyword) {
           $query->where('posts.title', 'LIKE', '%' . $keyword . '%')
@@ -119,7 +119,7 @@ class PostController extends Controller
       ->first();
 
     // 投稿添付ファイル
-    $post_attachements = DB::table('post_attachements')
+    $post_attachements = DB::table('post_attachments')
       ->where('post_id', $post->id)
       ->orderBy('id')
       ->get();

@@ -40,8 +40,8 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-          \App\Http\Middleware\EncryptCookies::class,
-          \Illuminate\Session\Middleware\StartSession::class,
+//          \App\Http\Middleware\EncryptCookies::class, //これがあるとTokenGuard.phpでエラー発生し401になる
+//          \Illuminate\Session\Middleware\StartSession::class, //これ必要？どこから持ってきた？
           'throttle:60,1',
           'bindings',
       ],

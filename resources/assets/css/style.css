@@ -1,0 +1,423 @@
+/* ------ 共通class(色系) ------ */
+.black {
+	color: black;
+}
+.white {
+	color: white;
+}
+.gray {
+	color: gray;
+}
+.lightgray {
+	color: lightgray;
+}
+.bg-black{
+  background-color: black;
+}
+.bg-white {
+  background-color: white;
+}
+.bg-gray{
+  background-color: gray;
+}
+.bg-lightgray{
+  background-color: lightgray;
+}
+
+/* ------ 共通class(スペース系) ------ */
+.space {padding: 10px 15px;}
+.pl-5 {padding-left: 5px;}
+.plr-10 {padding-left: 10px; padding-right: 10px;}
+.plr-20 {padding-left: 20px; padding-right: 20px;}
+.plr-30 {padding-left: 30px; padding-right: 30px;}
+.pt-10 {padding-top: 10px;}
+.pt-15 {padding-top: 15px;}
+.p-10 {padding: 10px;}
+.pb-20 {padding-bottom: 20px;}
+.pb-50 {padding-bottom: 50px;}
+
+.mb-5 {margin-bottom: 5px;}
+.mb-10 {margin-bottom: 10px;}
+.ml-5 {margin-left: 5px;}
+.ml-10 {margin-left: 10px;}
+.ml-15 {margin-left: 15px;}
+.ml-20 {margin-left: 20px;}
+.mr-5 {margin-right: 5px;}
+.mr-10 {margin-right: 10px;}
+.mr-20 {margin-right: 20px;}
+.mr-30 {margin-right: 30px;}
+.mlr-10 {margin-left: 10px; margin-right: 10px;}
+.mlr-15 {margin-left: 15px; margin-right: 15px;}
+.mt-5 {margin-top: 5px;}
+.mt-10 {margin-top: 10px;}
+.mt-20 {margin-top: 20px;}
+.mt-30 {margin-top: 30px;}
+.mtb-5 {margin-top: 5px; margin-bottom: 5px;}
+.mtb-10 {margin-top: 10px; margin-bottom: 10px;}
+.mtb-20 {margin-top: 20px; margin-bottom: 20px;}
+
+/* ------ 共通class(フォント系) ------ */
+.small {
+  font-size: small;
+}
+
+/* ------ 共通(要素) ------ */
+input {
+  height: 40px;
+  line-height: 40px;
+}
+input[type="search"] {
+  background-color: rgba(240,240,240,0.8);
+}
+ons-input[type="date"] {
+	width:130px;
+	font-size: 21px;
+}
+ons-input[type="time"] {
+	width:85px;
+	font-size: 21px;
+}
+ons-switch {
+  margin-top: -1px;
+  vertical-align: middle;
+}
+ons-icon {
+  color: white;
+}
+textarea {
+	width: 100%;
+}
+/* ------ 共通class(その他) ------ */
+.bold {
+	font-weight: bold;
+}
+.hidden {
+  visibility: hidden;
+}
+.center {
+	text-align: center;
+}
+.navbar {
+  background-color:#2c74e8;
+}
+.navbartitle {
+  color: white;
+}
+.absolute {
+  position: absolute;
+  bottom: 80px;
+  color: #fff;
+  background: rgba(0,0,0,.6);
+  width: 100%;
+  max-width: 600px;
+  padding: 1em 0;
+}
+.absolute p {
+    margin: 0;
+    padding: 0 0.8em;
+    font-size: 150%;
+    text-align: center;
+}
+.relative {
+    position: relative;
+    width: 100%;
+}
+.w-100p {
+	width: 100%;
+}
+.w-90p {
+	width: 90%;
+}
+.w-80p {
+	width: 80%;
+}
+.h-100p {
+  height: 100%;
+}
+.left {
+  text-align: left;
+}
+.right {
+  text-align: right;
+}
+.middle {
+  vertical-align: middle;
+}
+.text-input {
+	border-width: 1px;
+}
+.inline {
+  display: inline;
+}
+.inline-block {
+  display: inline-block;
+}
+.splitter {
+	background-color: #2c74e8;
+}
+.border {
+	border: 1px solid;
+}
+.radius-4 {border-radius: 4px;}
+.radius-8 {border-radius: 8px;}
+.radius-16 {border-radius: 16px;}
+.text-input--border {
+	border: 1px lightgray solid;
+	border-radius: 4px;
+	height: 40px;
+	padding: 5px;
+}
+
+/* ------ pickadate ------ */
+.js__timepicker {
+  width: 50px;
+}
+
+/* ------ タイムライン画面 ------ */
+.timeline_search {
+  margin: auto;
+  width: 50%;
+}
+.timeline_search2 {
+  margin: 8px 0 8px 0;
+  width: 80%;
+}
+.timeline_item_read {
+  background-color: #f2f2f2;
+}
+.new_icon {
+  color: #ff6633;
+  margin-right: 3px;
+}
+.entry_title_row {
+/*  margin: 4px 0 0 0;*/
+}
+
+/* ------ 投稿詳細画面 ------ */
+.article_container {
+  padding: 15px;
+  background-color: white;
+}
+.comment_textarea {
+  margin: 15px auto auto auto;
+  width: 100%;
+}
+.entry_title {
+  font-size: 18px;
+  font-weight: bold;
+  text-align:left;
+  margin: 0;
+}
+.entry_content {
+  font-size: 16px;
+  text-align:left;
+  margin: 5px 0 0 5px;
+}
+.updated_at {
+  color: grey;
+  font-size: 13px;
+  text-align: left;
+  margin: 0 0 0 5px;
+}
+.highlight_summary {
+  font-size: 12px;
+  line-height: 50%;
+  margin: 0 0 0 10px;
+}
+.video_thumbnail {
+  margin: 6px 0 6px 0;
+}
+.quetionnaire_table {
+  width: 100%;
+}
+.quetionnaire_table td {
+  border-bottom: 1px solid gray;
+}
+.quetionnaire_results {
+  width: 100px;
+}
+.quetionnaire_btn {
+  width: 60px;
+}
+.responsebar {
+  text-align: center;
+  margin: 20px auto 0 auto;
+  width: 100%;
+}
+.heart {
+  color: #ff6060;
+  font-size: 18px;
+/*  margin: 0 0 0 30px;*/
+}
+.heart-count {
+  color: red;
+  font-size: 13px;
+}
+.heart_text {
+  color: black;
+  font-size: 16px;
+}
+.star {
+  color: orange;
+  font-size: 18px;
+  margin: 0 0 0 40px;
+}
+.star_text {
+  color: black;
+  font-size: 16px;
+}
+.like_off {
+  color: #cccccc;
+  font-size: 24px;
+  margin-top: 10px;
+}
+.like_on {
+  color: #ff6060;
+  font-size: 24px;
+  margin-top: 10px;
+}
+.like-count {
+  font-size: 13px;
+  margin: 0 0 0 6px;
+}
+.comment {
+  color: #cccccc;
+  font-size: 24px;
+  margin: 0 0 0 30px;
+}
+.comment-count {
+  color: grey;
+  font-size: 13px;
+  margin: 0 0 0 4px;
+}
+.comment-toggle {
+  color: #cccccc;
+  font-size: 26px;
+  font-weight: bold;
+  margin: 0 0 0 20px;
+}
+
+
+/* ------ メニュー画面 ------ */
+.menulist {
+  background-color: #2c74e8;
+}
+.menuitem {
+  color: white;
+	font-size: 20px;
+  height: 65px;
+	width: 100%;
+}
+.menuitem span,.menuitem a,.menuitem p {
+	text-align: center;
+
+}
+.menu_icon {
+  margin: 0 5px 0 5px;
+}
+.current_menu_icon {
+  margin-right: 5px;
+}
+/* ------ 投稿画面 ------ */
+.smallBtn {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	line-height: normal;
+}
+.postBtn {
+	margin-left: 10px;
+	padding-right: 10px;
+}
+.upload-btn-wrapper {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+}
+.upload-btn-wrapper input[type=file] {
+  font-size: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+}
+.article_comments {
+  margin-left: 35px;
+}
+.quetionnaire_container {
+  color: black;
+  background-color: white;
+  width: 95%;
+  margin: 20px auto 20px auto;
+}
+
+/* ------ 予定画面 ------ */
+.schedule_edit_icon {
+  color: #2266ff;
+}
+/* ------ 予定登録画面 ------ */
+.scheduleTime {
+	padding: 5px;
+	width: 100px;
+}
+.time_input {
+  width: 55px;
+  padding: auto;
+  line-height: 1;
+}
+
+/* ------ 通知画面 ------ */
+.notif-time {
+	color: grey;
+	font-size: 12px;
+}
+/* ------ メンバー一覧画面 ------ */
+#member_list ons-list-item {
+  padding: 0px 15px;
+}
+.prof_img {
+  width: 80px;
+  height: 80px;
+}
+.highlight_btn {
+  font-size: 13px;
+  border-radius: 20px;
+  padding: 1px 20px;
+  width: 150px;
+}
+/* ------ メンバー登録画面 ------ */
+.backno_input {
+  width: 80px;
+}
+/* ------ 設定画面 ------ */
+#settings_list ons-list-item {
+  height: 50px;
+}
+/* ------ ログイン画面 ------ */
+.login_field {
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+}
+.login_btn {
+  font-weight: bold;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+}
+.login_hr {
+  width: 90%;
+  margin-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+#google_login_btn {
+  background-color: #db4a39;
+}
+#facebook_login_btn {
+  background-color: #305097;
+}
+#twitter_login_btn {
+  background-color: #00aced;
+}
+#line_login_btn {
+  background-color: #5ae628;
+}

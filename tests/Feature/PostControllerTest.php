@@ -24,72 +24,6 @@ class PostControllerTest extends TestCase {
     Session::setDefaultDriver('array');
     $this->manager = app('session');
   }
-  // index ----------------------------------------------------
-  /**
-   * indexのテスト。
-   * @return void
-   */
-  public function testIndexUser1(){
-    $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts');
-    $response->assertStatus(200);
-    echo $this->json_enc($response->json());
-  }
-
-  /**
-   * indexのテスト。2ページ目。
-   * @return void
-   */
-  public function testIndexUser1_page2(){
-    $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts?page=2');
-    $response->assertStatus(200);
-    echo $this->json_enc($response->json());
-  }
-
-  /**
-   * indexのテスト。別のチームのユーザーで結果が変わる。
-   * @return void
-   */
-  public function testIndexUser2(){
-    $response = $this->actingAs(User::findOrFail(2), 'api')
-      ->get('http://localhost:8000/api/posts');
-    $response->assertStatus(200);
-    echo $this->json_enc($response->json());
-  }
-  /**
-   * indexのテスト。キーワード検索
-   * @return void
-   */
-  public function testIndexUser1_search(){
-    $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts?keyword=' . urlencode('キーワード'));
-    echo $this->json_enc($response->json());
-    $response->assertStatus(200);
-  }
-
-  // show ----------------------------------------------------
-  /**
-   * showのテスト。
-   * @return void
-   */
-  public function testShow1(){
-    $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts/3');
-    $response->assertStatus(200);
-    echo $this->json_enc($response->json());
-  }
-
-  /**
-   * showのテスト。他のチームのデータは見れない。404になる。
-   * @return void
-   */
-  public function testShow2_他のチームのデータは見れない(){
-    $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts/4');
-    $response->assertStatus(404);
-    echo $this->json_enc($response->json());
-  }
 
   // store ----------------------------------------------------
   /**
@@ -160,6 +94,73 @@ class PostControllerTest extends TestCase {
           'file2' => UploadedFile::fake()->image('test1.docx')
         ]);
     $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  // index ----------------------------------------------------
+  /**
+   * indexのテスト。
+   * @return void
+   */
+  public function testIndexUser1(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * indexのテスト。2ページ目。
+   * @return void
+   */
+  public function testIndexUser1_page2(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts?page=2');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * indexのテスト。別のチームのユーザーで結果が変わる。
+   * @return void
+   */
+  public function testIndexUser2(){
+    $response = $this->actingAs(User::findOrFail(2), 'api')
+      ->get('http://localhost:8000/api/posts');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+  /**
+   * indexのテスト。キーワード検索
+   * @return void
+   */
+  public function testIndexUser1_search(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts?keyword=' . urlencode('キーワード'));
+    echo $this->json_enc($response->json());
+    $response->assertStatus(200);
+  }
+
+  // show ----------------------------------------------------
+  /**
+   * showのテスト。
+   * @return void
+   */
+  public function testShow1(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts/3');
+    $response->assertStatus(200);
+    echo $this->json_enc($response->json());
+  }
+
+  /**
+   * showのテスト。他のチームのデータは見れない。404になる。
+   * @return void
+   */
+  public function testShow2_他のチームのデータは見れない(){
+    $response = $this->actingAs(User::findOrFail(1), 'api')
+      ->get('http://localhost:8000/api/posts/4');
+    $response->assertStatus(404);
     echo $this->json_enc($response->json());
   }
 

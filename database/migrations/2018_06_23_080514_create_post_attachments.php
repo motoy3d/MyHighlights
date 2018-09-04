@@ -13,7 +13,7 @@ class CreatePostAttachments extends Migration
      */
     public function up()
     {
-      Schema::create('post_attachements', function (Blueprint $table) {
+      Schema::create('post_attachments', function (Blueprint $table) {
         $table->increments('id')->comment('投稿添付ID');
         $table->integer('post_id')->comment('投稿ID');
         $table->string('file_name', 200)->comment('ファイル名');
@@ -23,7 +23,7 @@ class CreatePostAttachments extends Migration
         $table->integer('updated_id')->nulable()->comment('更新ユーザーID');
         $table->timestamp('updated_at')->comment('更新日時');
       });
-      DB::statement("ALTER TABLE post_attachements COMMENT '投稿添付'");
+      DB::statement("ALTER TABLE post_attachments COMMENT '投稿添付'");
     }
 
     /**
@@ -33,6 +33,6 @@ class CreatePostAttachments extends Migration
      */
     public function down()
     {
-      Schema::dropIfExists('post_attachements');
+      Schema::dropIfExists('post_attachments');
     }
 }
