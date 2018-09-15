@@ -9,11 +9,7 @@ export default {
       },
       mutations: {
         push(state, page) {
-          // console.log("beforePush. ");
-          // console.log(page);
           state.stack.push(page);
-          // console.log("afterPush. ");
-          // console.log(state.stack);
         },
         pop(state) {
           if (state.stack.length > 1) {
@@ -41,13 +37,11 @@ export default {
       },
       mutations: {
         toggle(state, shouldOpen) {
-          console.log("splitter/toggle");
           if (typeof shouldOpen === 'boolean') {
             state.open = shouldOpen;
           } else {
             state.open = !state.open;
           }
-          console.log("after=" + state.open);
         }
       }
     }

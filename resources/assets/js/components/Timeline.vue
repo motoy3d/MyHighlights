@@ -2,7 +2,7 @@
   <v-ons-page>
     <v-ons-toolbar class="navbar">
       <div class="left toolbar__left">
-        <v-ons-toolbar-button @click="toggleMenu();">
+        <v-ons-toolbar-button @click="$store.commit('splitter/toggle');">
           <v-ons-icon icon="fa-bars" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
         <v-ons-toolbar-button onclick="fn.openPage('html/calendar.html')">
@@ -39,7 +39,7 @@
           v-for="post in posts"
           :key="post.id"
           tappable modifier="chevron"
-          onclick="homeNavi.pushPage('html/article.html', {data: {fromPage: 'timeline'}})">
+          @click="openArticle(post.id);">
           <div class="entry_title_row">
             <p class="entry_title">
               <v-ons-icon icon="fa-circle" class="new_icon" size="16px"></v-ons-icon>
@@ -183,9 +183,10 @@
 </template>
 
 <script>
+  import Article from './Article.vue';
   export default {
-    props: ['toggleMenu'],
     beforeCreate() {
+      console.log("Timeline#beforeCreate");
       this.$http.get('http://localhost:8000/api/posts')
         .then((response)=>{
           this.posts = response.data.data
@@ -196,6 +197,17 @@
           this.errored = true;
         })
         .finally(() => this.loading = false);
+    },
+    methods: {
+      openArticle(post_id) {
+        console.log("post_id=" + post_id);
+        this.$store.commit('navigator/push', {
+          extends: Article,
+          onsNavigatorOptions: {
+            animation: 'slide'
+          }
+        });
+      }
     },
     data() {
       return {

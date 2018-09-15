@@ -29,7 +29,7 @@ class PostController extends Controller
    */
   public function index(Request $request)
   {
-    $perPageCount = 2;  //1ページあたりの件数
+    $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
     Log::info("PostController#index");
     Log::info("team_id=" . Auth::user());
     $posts = DB::table('posts')

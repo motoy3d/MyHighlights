@@ -14,7 +14,7 @@ let mix = require('laravel-mix');
 // extractにより自前のjsとライブラリ系を分離して出力できる
 mix.js('resources/assets/js/app.js', 'public/js')
   .sass('resources/assets/sass/app.scss', 'public/css')
-  .extract(['jquery', 'vue', 'onsenui', 'vue-onsenui', 'lodash']);
+  .extract(['jquery', 'vue', 'vuex', 'onsenui', 'vue-onsenui', 'lodash']);
 
 // コンパイルしたファイルのバージョン付け
 // https://readouble.com/laravel/5.5/ja/mix.html

@@ -2,7 +2,7 @@
   <v-ons-page id="notification">
     <v-ons-toolbar class="navbar">
       <div class="left">
-        <v-ons-toolbar-button @click="toggleMenu();">
+        <v-ons-toolbar-button @click="$store.commit('splitter/toggle');">
           <v-ons-icon icon="fa-bars" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
@@ -72,7 +72,6 @@
 
 <script>
   export default {
-    props: ['toggleMenu']
   };
 </script>
 

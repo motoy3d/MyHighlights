@@ -32,13 +32,17 @@ if (token) {
 require('./calendar');
 
 import Vue from 'vue';
+import Vuex from 'vuex';
+import storeLike from './store.js';
 import VueOnsen from 'vue-onsenui';
+Vue.use(Vuex);
 Vue.use(VueOnsen);
 
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
   el: '#app',
   render: h => h(AppNavigator),
+  store: new Vuex.Store(storeLike),
   beforeCreate() {
     // Shortcut for Material Design
     Vue.prototype.md = this.$ons.platform.isAndroid();
@@ -82,3 +86,11 @@ window.fn.load = function(page) {
 window.fn.openPage = function(page, animation) {
   window.homeNavi.pushPage(page, {animation:animation});
 };
+
+$('.menulist').on('click', function(event) {
+  $('.menulist').find(".current_menu_icon").each(function(index, icon) {
+    $(icon).addClass("hidden");
+  });
+  var onsIcon = event.target.firstElementChild;
+  $(onsIcon).removeClass("hidden");
+});
