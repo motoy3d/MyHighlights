@@ -14,7 +14,7 @@
         </v-ons-search-input>
       </div>
       <div class="toolbar__right mr-5">
-        <v-ons-toolbar-button onclick="fn.openPage('html/post.html','lift');">
+        <v-ons-toolbar-button @click="openPost();">
           <v-ons-icon icon="fa-plus" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
@@ -59,124 +59,6 @@
             </div>
           </div>
         </v-ons-list-item>
-
-<!--
-        <v-ons-list-item tappable modifier="chevron"
-                       onclick="homeNavi.pushPage('html/article.html', {data: {fromPage: 'timeline'}})">
-          <div class="entry_title_row">
-            <p class="entry_title">
-              <v-ons-icon icon="fa-circle" class="new_icon" size="16px"></v-ons-icon>
-              3/11(日)練習場所変更</p>
-            <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>3/11(日)の練習場所を変更いたします。<br>
-          </span>
-            <div class="mt-10">
-              <v-ons-icon icon="fa-comment-o" class="small gray">
-                <span>4</span>
-              </v-ons-icon>
-              <v-ons-icon icon="fa-list-alt" class="small gray ml-10">
-                <span>アンケート</span>
-              </v-ons-icon>
-            </div>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron"
-                       onclick="homeNavi.pushPage('html/article.html', {data: {fromPage: 'timeline'}})">
-          <div class="entry_title_row">
-            <p class="entry_title">3/10（土）TRM@太尾小</p>
-            <p class="updated_at">3.3 10:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・本文・・・。<br>
-          </span>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron"
-                       onclick="homeNavi.pushPage('html/article.html', {data: {fromPage: 'timeline'}})">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4（日）送り出し会＠綱島東小</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            出欠確認を行います。<br>
-          </span>
-            <div class="mt-10">
-              <v-ons-icon icon="fa-comment-o" class="small gray">
-                <span>1</span>
-              </v-ons-icon>
-              <v-ons-icon icon="fa-list-alt" class="small gray ml-10">
-                <span>アンケート</span>
-              </v-ons-icon>
-            </div>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4(日) xxxx</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・・・・・<br>
-          </span>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4(日) xxxx</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・・・・・<br>
-          </span>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4(日) xxxx</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・・・・・<br>
-          </span>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4(日) xxxx</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・・・・・<br>
-          </span>
-          </div>
-        </v-ons-list-item>
-
-        <v-ons-list-item tappable modifier="chevron">
-          <div class="entry_title_row">
-            <p class="entry_title">3/4(日) xxxx</p>
-            <p class="updated_at">3.2 20:54　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>
-            ・・・・・・・・<br>
-          </span>
-          </div>
-        </v-ons-list-item>
--->
       </v-ons-list>
     </section>
   </v-ons-page>
@@ -184,6 +66,7 @@
 
 <script>
   import Article from './Article.vue';
+  import Post from './Post.vue';
   import Calendar from './Calendar.vue';
   export default {
     beforeCreate() {
@@ -204,17 +87,19 @@
         console.log("post_id=" + post_id);
         this.$store.commit('navigator/push', {
           extends: Article,
-          onsNavigatorOptions: {
-            animation: 'slide'
-          }
+          onsNavigatorOptions: {animation: 'slide'}
+        });
+      },
+      openPost() {
+        this.$store.commit('navigator/push', {
+          extends: Post,
+          onsNavigatorOptions: {animation: 'lift'}
         });
       },
       openCalendar() {
         this.$store.commit('navigator/push', {
           extends: Calendar,
-          onsNavigatorOptions: {
-            animation: 'slide'
-          }
+          onsNavigatorOptions: {animation: 'slide'}
         });
       }
     },

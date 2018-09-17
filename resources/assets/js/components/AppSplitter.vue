@@ -35,7 +35,6 @@
         </v-ons-page>
       </v-ons-splitter-side>
       <v-ons-splitter-content>
-        <!--<app-tabbar></app-tabbar>-->
         <component
           :is="currentPage"
         ></component>

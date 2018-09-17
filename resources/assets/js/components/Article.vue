@@ -4,7 +4,7 @@
     <!-- ツールバー -->
     <v-ons-toolbar class="navbar">
       <div class="left ml-5">
-        <v-ons-toolbar-button @click="popPage();">
+        <v-ons-toolbar-button @click="$store.commit('navigator/pop');">
           <v-ons-icon icon="fa-chevron-left" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
@@ -188,18 +188,6 @@
       //   fromPage = page.data.fromPage;
       //   console.log("init. fromPage=" + fromPage);
       // });
-      popPage() {
-        // var navi = null;
-        // if(fromPage == "timeline") {
-        //   navi = homeNavi;
-        // }
-        // else if(fromPage == "notification") {
-        //   navi = notificationNavi;
-        // }
-        // navi.popPage({animation:'simpleslide'});
-        console.log("popPage");
-        this.$store.commit('navigator/pop');
-      },
       toggleHeart(heartIcon) {
         if($(heartIcon).attr("icon") == "fa-heart-o") {
           $(heartIcon).attr("icon", "fa-heart");
