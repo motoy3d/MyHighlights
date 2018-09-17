@@ -24,7 +24,7 @@ var yobi_ja = ['日', '月', '火', '水', '木', '金', '土'];
 
 function TnCalendar(parent){
   if (typeof parent === 'string') {
-    parent = document.getElementById(parent);
+    parent = $('#' + parent);
   }
   this.parent = parent;
 }
@@ -52,7 +52,7 @@ function onclick_month(id, year, month){
 }
     
 function remove(){
-  this.parent.removeChild(this.table);
+  this.parent.remove(this.table);
 }
     
 function update(year, month){
@@ -71,33 +71,32 @@ function set_caption(year, month){
   var this_month = today.getMonth()+1;
   var this_year = today.getFullYear();
   
-  var caption = document.createElement('caption');
-  var div = document.createElement('div');
-  var next = document.createElement('a');
-  next.href = '#month-' + ((month == 12) ? year+1 : year)+ '-' + (month==12?1:month+1);
-  next.className = 'next';
-  next.innerHTML = (month==12?1:month+1) + '月 <i class="fa fa-caret-right"></i>'; 
-  
-  var current = document.getElementById('currentYearMonth');
-  var text = document.createTextNode(year + '年' + month + '月');
-  current.replaceChild(text, current.firstChild);
-  
+  var caption = $('caption');
+  var div = $('div');
+  var next = $('a', {
+    href: '#month-' + ((month == 12) ? year+1 : year)+ '-' + (month==12?1:month+1),
+    class: 'next',
+    html: (month==12?1:month+1) + '月 <i class="fa fa-caret-right"></i>'
+  });
+
+  $('#currentYearMonth').text(year + '年' + month + '月');
+
 //   if(year != this_year || month != this_month){
-  var prev = document.createElement('a');
-  prev.href = '#month-' + ((month == 1) ? year-1 : year) + '-' + (month==1?12:month-1);
-  prev.className = 'prev';
-  prev.innerHTML = '<i class="fa fa-caret-left"></i> ' + (month==1?12:month-1) + '月';
-  div.appendChild(prev);
+  var prev = $('a', {
+    href: '#month-' + ((month == 1) ? year-1 : year) + '-' + (month==1?12:month-1),
+    class: 'prev',
+    html: '<i class="fa fa-caret-left"></i> ' + (month==1?12:month-1) + '月'
+  });
+  div.append(prev);
 //   }
   
-//  div.appendChild(current);
-  div.appendChild(next);
-  caption.appendChild(div);
-  this.table.appendChild(caption);
+  div.append(next);
+  caption.append(div);
+  this.table.append(caption);
 }
-    
+
 function set_body(year, month){
-  var tbody = document.createElement('tbody');
+  var tbody = $('tbody');
   var first = new Date(year, month - 1, 1);
   var last = new Date(year, month, 0);
   var first_day = first.getDay();
@@ -105,14 +104,18 @@ function set_body(year, month){
   var date = 1;
   var skip = true;
   for (var row = 0; row < 7; row++) {
-    var tr = document.createElement('tr');
+    var tr = $('tr');
     for (var col = 0; col < 7; col++){
       if (row === 0){
-        var th = document.createElement('th');
         var day = yobi_ja[col];
-        th.appendChild(document.createTextNode(day));
-        th.className = 'calendar day-head day' + col;
-        tr.appendChild(th);
+        // th.appendChild(document.createTextNode(day));
+        // th.className = 'calendar day-head day' + col;
+        // tr.appendChild(th);
+        var th = $('th', {
+          text: day,
+          class: 'calendar day-head day' + col
+        });
+        tr.append(th);
       } else {
         if (row === 1 && first_day === col){
           skip = false;
@@ -120,44 +123,44 @@ function set_body(year, month){
         if (date > last_date) {
           skip = true;
         }
-        var td = document.createElement('td');
 				var selectedClass = "";
 				if (date == selectedDate) {
 					selectedClass = " selectedDate";
 				}
-        td.className = 'calendar day' + col + selectedClass;
+        var td = $('td', {
+          class: 'calendar day' + col + selectedClass
+        });
 				if (!skip) {
-          td.appendChild(document.createTextNode(date));
+          td.text(date);
 //TODO サンプル
 					if(col==6) {
-						td.appendChild(document.createElement('br'));
-						var scheduleP = document.createElement('span');
-						scheduleP.appendChild(document.createTextNode("10:00練習@多摩川グラ…"));
-						td.appendChild(scheduleP);
+						td.append($('br'));
+						var scheduleP = $('span', {text: '10:00練習@多摩川グラ…'});
+						td.append(scheduleP);
 					}
-					
     		  for(var i =0; i < holiday[year][month].length; i++){
 		    	  if(holiday[year][month][i] == date){
-			        td.className = td.className + ' holiday';  
+			        td.addClass('holiday');
 			      }
 		      }
           date++;
         } else {
-          td.innerHTML='<span class="blank">&nbsp;</span>';
+          td.html('<span class="blank">&nbsp;</span>');
         }
-        tr.appendChild(td);
+        tr.append(td);
       }
     }
-    tbody.appendChild(tr);
+    tbody.append(tr);
   }
-  this.table.appendChild(tbody);
+  this.table.append(tbody);
 }
     
 function create(year, month){
   var that = this;
-  var table = document.createElement('table');
-  table.className = 'calendar-table';
+  var table = $('table');
+  table.attr('class', 'calendar-table');
   this.table = table;
+  //TODO jquery用に書き換え
   table.onclick = function(e){
     var evt = e || window.event; 
     var target = evt.target || evt.srcElement;
@@ -166,6 +169,6 @@ function create(year, month){
   this.set_date(year, month);
   this.set_caption(this.year, this.month);
   this.set_body(this.year, this.month);
-  this.parent.appendChild(table);
+  this.parent.append(table);
 }
 })();

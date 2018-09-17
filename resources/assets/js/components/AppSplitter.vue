@@ -16,17 +16,17 @@
               <v-ons-icon icon="fa-bell" class="menu_icon" size="16px"></v-ons-icon>
               通知
             </v-ons-list-item>
-            <v-ons-list-item onclick="loadView('Members')" class="menuitem" tappable>
+            <v-ons-list-item @click="loadView('Members')" class="menuitem" tappable>
               <v-ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></v-ons-icon>
               <v-ons-icon icon="fa-user" class="menu_icon" size="16px"></v-ons-icon>
               メンバー
             </v-ons-list-item>
-            <v-ons-list-item onclick="loadView('Settings')" class="menuitem" tappable>
+            <v-ons-list-item @click="loadView('Settings')" class="menuitem" tappable>
               <v-ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></v-ons-icon>
               <v-ons-icon icon="fa-cog" class="menu_icon" size="16px"></v-ons-icon>
               設定
             </v-ons-list-item>
-            <v-ons-list-item onclick="loadView('Contact')" class="menuitem" tappable>
+            <v-ons-list-item @click="loadView('Contact')" class="menuitem" tappable>
               <v-ons-icon icon="fa-chevron-right" class="current_menu_icon hidden"></v-ons-icon>
               <v-ons-icon icon="fa-envelope" class="menu_icon" size="16px"></v-ons-icon>
               お問い合わせ
@@ -47,7 +47,8 @@
 <script>
   import Timeline from './Timeline.vue';
   import Notifications from './Notifications.vue';
-  import Article from './Article.vue';
+  import Members from './Members.vue';
+  import Settings from './Settings.vue';
   export default {
     data() {
       return {
@@ -72,6 +73,12 @@
           this.currentPage = Timeline;
         } else if (pageName == 'Notifications') {
           this.currentPage = Notifications;
+        } else if (pageName == 'Members') {
+          this.currentPage = Members;
+        } else if (pageName == 'Settings') {
+          this.currentPage = Settings;
+        } else if (pageName == 'Contact') {
+          this.currentPage = Contact;
         }
         this.$store.commit('splitter/toggle');
       },

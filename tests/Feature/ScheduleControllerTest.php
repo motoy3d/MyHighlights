@@ -29,7 +29,7 @@ class ScheduleControllerTest extends TestCase {
    */
   public function testIndex1(){
     $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/schedules?month=201807');
+      ->get('http://localhost:8000/api/schedules?month=201809');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
   }
@@ -43,7 +43,7 @@ class ScheduleControllerTest extends TestCase {
     $response = $this->actingAs(User::findOrFail(1), 'api')
       ->post('http://localhost:8000/api/schedules',
         [
-          'schedule_date' => '2018-07-31',
+          'schedule_date' => '2018-09-15',
           'title' => '予定タイトル ' . date('Y-m-d H:i:s'),
           'allday_flg' => true,
           'category_id' => '1',
@@ -62,11 +62,11 @@ class ScheduleControllerTest extends TestCase {
     $response = $this->actingAs(User::findOrFail(1), 'api')
       ->post('http://localhost:8000/api/schedules',
         [
-          'schedule_date' => '2018-06-20',
-          'title' => '予定タイトル ' . date('Y-m-d H:i:s'),
+          'schedule_date' => '2018-09-16',
+          'title' => '試合 ' . date('Y-m-d H:i:s'),
           'allday_flg' => false,
-          'time_from' => '13:10',
-          'time_to' => '16:40',
+          'time_from' => '10:00',
+          'time_to' => '17:00',
           'category_id' => '2',
           'contents' => "予定本文です3\nよろしくお願いします。\n " . date('Y-m-d H:i:s'),
           'notification_flg' => false

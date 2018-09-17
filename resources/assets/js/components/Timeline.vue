@@ -5,7 +5,7 @@
         <v-ons-toolbar-button @click="$store.commit('splitter/toggle');">
           <v-ons-icon icon="fa-bars" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
-        <v-ons-toolbar-button onclick="fn.openPage('html/calendar.html')">
+        <v-ons-toolbar-button @click="openCalendar()">
           <v-ons-icon icon="fa-calendar" size="24px" class="mb-5"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
@@ -184,6 +184,7 @@
 
 <script>
   import Article from './Article.vue';
+  import Calendar from './Calendar.vue';
   export default {
     beforeCreate() {
       console.log("Timeline#beforeCreate");
@@ -203,6 +204,14 @@
         console.log("post_id=" + post_id);
         this.$store.commit('navigator/push', {
           extends: Article,
+          onsNavigatorOptions: {
+            animation: 'slide'
+          }
+        });
+      },
+      openCalendar() {
+        this.$store.commit('navigator/push', {
+          extends: Calendar,
           onsNavigatorOptions: {
             animation: 'slide'
           }

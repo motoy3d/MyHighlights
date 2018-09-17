@@ -29,7 +29,7 @@ if (token) {
   console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
 }
 
-require('./calendar');
+// require('./calendar');
 
 import Vue from 'vue';
 import Vuex from 'vuex';
@@ -87,6 +87,7 @@ window.fn.openPage = function(page, animation) {
   window.homeNavi.pushPage(page, {animation:animation});
 };
 
+// スライドメニューのカレントアイコン設定
 $('.menulist').on('click', function(event) {
   $('.menulist').find(".current_menu_icon").each(function(index, icon) {
     $(icon).addClass("hidden");
@@ -94,3 +95,22 @@ $('.menulist').on('click', function(event) {
   var onsIcon = event.target.firstElementChild;
   $(onsIcon).removeClass("hidden");
 });
+
+window.fn.dateFormat =
+  {
+    _fmt : {
+      h: function(date) { return date.getHours(); },
+      mm: function(date) { return ('0' + date.getMinutes()).slice(-2); },
+      dd: function(date) { return ('0' + date.getDate()).slice(-2); },
+      d: function(date) { return date.getDate(); },
+      yyyy: function(date) { return date.getFullYear() + ''; },
+      w: function(date) {return ["日", "月", "火", "水", "木", "金", "土"][date.getDay()]; },
+      MM: function(date) { return ('0' + (date.getMonth() + 1)).slice(-2); },
+      M: function(date) { return date.getMonth() + 1; }
+    },
+    _priority : ["h", "mm", "dd", "d",　"yyyy", "w", "MM", "M"],
+    format: function(date, format){
+      return this._priority.reduce(
+        (res, fmt) => res.replace(fmt, this._fmt[fmt](date)), format)
+    }
+  };
