@@ -5,13 +5,13 @@
     <v-ons-toolbar class="navbar">
       <div class="left ml-5">
         <v-ons-toolbar-button @click="$store.commit('navigator/pop');">
-          <v-ons-icon icon="fa-chevron-left" size="24px"></v-ons-icon>
+          <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
       <div class="right mr-5">
         <!-- 削除や編集は画面内に直接表示したほうが使いやすい? -->
         <v-ons-toolbar-button onclick="alert('投稿編集画面')">
-          <v-ons-icon icon="fa-pencil" size="24px"></v-ons-icon>
+          <v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
     </v-ons-toolbar>

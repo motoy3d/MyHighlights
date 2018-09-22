@@ -1,21 +1,13 @@
 <template>
   <v-ons-page>
     <v-ons-toolbar class="navbar">
-      <div class="left toolbar__left">
-        <v-ons-toolbar-button @click="$store.commit('splitter/toggle');">
-          <v-ons-icon icon="fa-bars" size="28px"></v-ons-icon>
-        </v-ons-toolbar-button>
-        <v-ons-toolbar-button @click="openCalendar()">
-          <v-ons-icon icon="fa-calendar" size="24px" class="mb-5"></v-ons-icon>
-        </v-ons-toolbar-button>
-      </div>
       <div class="center toolbar__center">
         <v-ons-search-input placeholder="検索" class="timeline_search2">
         </v-ons-search-input>
       </div>
       <div class="toolbar__right mr-5">
         <v-ons-toolbar-button @click="openPost();">
-          <v-ons-icon icon="fa-plus" size="28px"></v-ons-icon>
+          <v-ons-icon icon="fa-plus" class="white" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
@@ -71,7 +63,7 @@
   export default {
     beforeCreate() {
       console.log("Timeline#beforeCreate");
-      this.$http.get('http://localhost:8000/api/posts')
+      this.$http.get('/api/posts')
         .then((response)=>{
           this.posts = response.data.data
           console.log(this.posts);
@@ -79,6 +71,9 @@
         .catch(error => {
           console.log(error);
           this.errored = true;
+          if (error.response.status == 401) {
+            window.location.href = "/login";
+          }
         })
         .finally(() => this.loading = false);
     },

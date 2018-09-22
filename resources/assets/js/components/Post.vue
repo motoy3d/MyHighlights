@@ -2,11 +2,12 @@
   <v-ons-page id="post">
     <v-ons-toolbar class="navbar">
       <div class="center navbartitle">
-        <v-ons-icon icon="md-comment" size="20px"></v-ons-icon> <span>投稿</span>
+        <v-ons-icon icon="md-comment" class="white" size="20px"></v-ons-icon>
+        <span>投稿</span>
       </div>
       <div class="right mr-5">
         <v-ons-toolbar-button @click="$store.commit('navigator/pop');">
-          <v-ons-icon icon="fa-close" size="28px"></v-ons-icon>
+          <v-ons-icon icon="fa-close" class="white" size="28px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
     </v-ons-toolbar>
@@ -52,7 +53,8 @@
             <label for="notificate" class="middle">みんなにメール通知</label>
           </div>
           <div class="space">
-            <v-ons-button class="mtb-20" modifier="large">投稿</v-ons-button>
+            <v-ons-button class="mtb-20" modifier="large"
+                          @click="$store.commit('navigator/pop');">投稿</v-ons-button>
           </div>
         </form>
       </div>

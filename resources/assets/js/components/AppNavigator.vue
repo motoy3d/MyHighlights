@@ -10,11 +10,11 @@
 
 <script>
   import AppSplitter from './AppSplitter.vue';
-  import Timeline from './Timeline.vue';
+  import AppTabbar from './AppTabbar.vue';
   export default {
     beforeCreate() {
       console.log("AppNavigator#beforeCreate");
-      this.$store.commit('navigator/push', AppSplitter);
+      this.$store.commit('navigator/push', AppTabbar);
     },
     data() {
       return {
