@@ -1,8 +1,7 @@
 <template>
   <v-ons-page>
     <v-ons-tabbar
-      position="auto"
-      swipeable
+      position="bottom"
       :tabs="tabs"
       :index.sync="index"
     ></v-ons-tabbar>
@@ -83,9 +82,6 @@ export default {
         this.$store.commit('tabbar/set', newValue)
       }
     },
-    title() {
-      return this.md ? 'Onsen UI' : this.tabs[this.index].title || this.tabs[this.index].label;
-    },
     // swipeTheme() {
     //   return this.md && {
     //     backgroundColor: `rgb(${this.colors.join(',')})`,
@@ -103,20 +99,4 @@ export default {
 </script>
 
 <style>
-/*!* Custom 'white-content' modifier *!*/
-
-/*.page--material .toolbar--white-content__center,*/
-/*.page--material .toolbar-button--white-content,*/
-/*.page--material :checked + .tabbar--white-content__button {*/
-  /*color: red;*/
-/*}*/
-
-/*.page--material .tabbar--white-content__button {*/
-  /*!*color: rgba(255, 255, 255, 0.7);*!*/
-  /*color: blue;*/
-/*}*/
-
-/*.page--material .tabbar--white-content__border {*/
-  /*background-color: white;*/
-/*}*/
 </style>

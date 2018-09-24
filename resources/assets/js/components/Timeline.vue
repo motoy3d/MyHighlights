@@ -6,9 +6,6 @@
         </v-ons-search-input>
       </div>
       <div class="toolbar__right mr-5">
-        <v-ons-toolbar-button @click="openPost();">
-          <v-ons-icon icon="fa-plus" class="white" size="28px"></v-ons-icon>
-        </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
                 <v-ons-icon icon="fa-cloud-upload" size="28px"></v-ons-icon>
@@ -17,41 +14,53 @@
       </div>
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
+    <v-ons-fab position="bottom right" v-if="!errored" ripple>
+      <v-ons-icon icon="fa-plus" @click="openPost();" ripple/>
+    </v-ons-fab>
     <section v-if="errored">
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
-      <div v-if="loading">読み込み中...</div>
-      <v-ons-list v-else id="timeline_list">
-        <!--		<v-ons-list-item>
-              <v-ons-search-input placeholder="検索" class="timeline_search">
-              </v-ons-search-input>
-            </v-ons-list-item>-->
-        <v-ons-list-item
-          v-for="post in posts"
-          :key="post.id"
-          tappable modifier="chevron"
-          @click="openArticle(post.id);">
-          <div class="entry_title_row">
-            <p class="entry_title">
-              <v-ons-icon icon="fa-circle" class="new_icon" size="16px"></v-ons-icon>
-              {{ post.title }}</p>
-            <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
-          </div>
-          <div class="entry_content">
-          <span>{{ post.content }}
-          </span>
-            <div class="mt-10">
-              <v-ons-icon icon="fa-comment-o" class="small gray">
-                <span>4</span>
-              </v-ons-icon>
-              <v-ons-icon icon="fa-list-alt" class="small gray ml-10">
-                <span>アンケート</span>
-              </v-ons-icon>
+      <div v-if="loading" class="center">
+        <svg class="progress-circular progress-circular--indeterminate">
+          <circle class="progress-circular__background"/>
+          <circle class="progress-circular__primary progress-circular--indeterminate__primary"/>
+          <circle class="progress-circular__secondary progress-circular--indeterminate__secondary"/>
+        </svg>
+        読み込み中...
+      </div>
+      <template v-else>
+        <v-ons-list id="timeline_list">
+          <!--		<v-ons-list-item>
+                <v-ons-search-input placeholder="検索" class="timeline_search">
+                </v-ons-search-input>
+              </v-ons-list-item>-->
+          <v-ons-list-item
+            v-for="post in posts"
+            :key="post.id"
+            tappable modifier="chevron"
+            @click="openArticle(post.id);">
+            <div class="entry_title_row">
+              <p class="entry_title">
+                <v-ons-icon icon="fa-circle" class="new_icon" size="16px"></v-ons-icon>
+                {{ post.title }}</p>
+              <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
             </div>
-          </div>
-        </v-ons-list-item>
-      </v-ons-list>
+            <div class="entry_content">
+            <span>{{ post.content }}
+            </span>
+              <div class="mt-10">
+                <v-ons-icon icon="fa-comment-o" class="small gray">
+                  <span>4</span>
+                </v-ons-icon>
+                <v-ons-icon icon="fa-list-alt" class="small gray ml-10">
+                  <span>アンケート</span>
+                </v-ons-icon>
+              </div>
+            </div>
+          </v-ons-list-item>
+        </v-ons-list>
+      </template>
     </section>
   </v-ons-page>
 </template>

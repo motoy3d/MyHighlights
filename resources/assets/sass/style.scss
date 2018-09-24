@@ -36,12 +36,14 @@
 .pb-20 {padding-bottom: 20px;}
 .pb-50 {padding-bottom: 50px;}
 
+.mb-0 {margin-bottom: 0;}
 .mb-5 {margin-bottom: 5px;}
 .mb-10 {margin-bottom: 10px;}
 .ml-5 {margin-left: 5px;}
 .ml-10 {margin-left: 10px;}
 .ml-15 {margin-left: 15px;}
 .ml-20 {margin-left: 20px;}
+.ml-30 {margin-left: 30px;}
 .mr-5 {margin-right: 5px;}
 .mr-10 {margin-right: 10px;}
 .mr-20 {margin-right: 20px;}
@@ -259,6 +261,10 @@ textarea {
   font-size: 18px;
   margin: 0 0 0 40px;
 }
+.star-count {
+  color: orange;
+  font-size: 13px;
+}
 .star_text {
   color: black;
   font-size: 16px;
@@ -281,6 +287,10 @@ textarea {
   color: #cccccc;
   font-size: 24px;
   margin: 0 0 0 30px;
+}
+.comment_card {
+  background-color: #81ff4f;
+  margin-bottom: 0;
 }
 .comment-count {
   color: grey;
@@ -350,6 +360,13 @@ textarea {
 /* ------ 予定画面 ------ */
 .schedule_edit_icon {
   color: #2266ff;
+}
+.current_year_month {
+  vertical-align: top;
+}
+.month_text {
+  font-size: 12px;
+  vertical-align: top;
 }
 /* ------ 予定登録画面 ------ */
 .scheduleTime {

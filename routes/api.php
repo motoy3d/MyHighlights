@@ -21,6 +21,7 @@
     Route::put('users/updateName', 'Api\UserController@updateName');
     Route::put('users/updateEmail', 'Api\UserController@updateEmail');
     Route::put('users/updatePassword', 'Api\UserController@updatePassword');
+    Route::resource('members', 'Api\MemberController');
 
   });
 

@@ -68,12 +68,15 @@
       <v-ons-col>
         <!-- ハート -->
         <div class="center">
-          <v-ons-icon icon="fa-heart-o" class="heart" onclick="toggleHeart(this);">
+          <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
+                      @click="toggleHeart();">
             <span class="heart_text">いいね</span>
-            <span class="heart-count">1</span>
+            <span class="heart-count" v-if="heartCount">{{ heartCount }}</span>
           </v-ons-icon>
-          <v-ons-icon icon="fa-star-o" class="star" onclick="toggleStar(this);">
-            <span class="star_text">お気に入り</span>
+          <v-ons-icon :icon="isStarOn? 'fa-star' : 'fa-star-o'" class="star"
+                      @click="toggleStar();">
+            <span class="star_text">お気に入り保存</span>
+            <!--<span class="star-count" v-if="starCount">{{ starCount }}</span>-->
           </v-ons-icon>
         </div>
         <!-- コメント -->
@@ -87,7 +90,7 @@
             <input type="file" name="myfile" />
           </div>
           <div class="mt-20">
-            <v-ons-button class="mt-10">コメントする</v-ons-button>
+            <v-ons-button class="mt-10" ripple>コメントする</v-ons-button>
           </div>
         </div>
       </v-ons-col>
@@ -97,9 +100,17 @@
         <div class="mt-20 ml-15">
           <hr class="mt-15">
           <div><span class="bold">3.11(日) 22:39　田中大志(父)</span></div>
-          <span>了解しました！<br>よろしくお願いします。</span>
           <div>
-            <v-ons-icon icon="fa-thumbs-up" class="like_off" onclick="toggleLike(this)"></v-ons-icon>
+            <div class="card comment_card">
+              <div class="card__content">
+                了解しました！<br>よろしくお願いします。
+              </div>
+            </div>
+          </div>
+          <div class="right mr-10">
+            <v-ons-icon icon="fa-thumbs-up"
+                        :class="isLike? 'like_on' : 'like_off'"
+                        onclick="toggleLike(this)"></v-ons-icon>
             <span class="like-count">2</span>
           </div>
         </div>
@@ -107,10 +118,17 @@
         <div class="mt-20 ml-15">
           <hr class="mt-15">
           <div><span class="bold">3.11(日) 22:39　矢野明子(母)</span></div>
-          <span>了解です〜👌</span>
           <div>
-            <v-ons-icon icon="fa-thumbs-up" class="like_off" onclick="toggleLike(this)"></v-ons-icon>
-            <span class="like-count"></span>
+            <div class="card comment_card">
+              <div class="card__content">
+                了解です〜👍
+              </div>
+            </div>
+          </div>
+          <div class="right mr-10">
+            <v-ons-icon icon="fa-thumbs-up"
+                        :class="isLike? 'like_on' : 'like_off'"
+                        onclick="toggleLike(this)"></v-ons-icon>
           </div>
           <hr class="mt-20">
         </div>
@@ -181,6 +199,15 @@
 
 <script>
   export default {
+    data() {
+      return {
+        isHeartOn: 1,
+        heartCount: 2,
+        isStarOn: 0,
+        starCount: 0,
+        isLike: 1
+      }
+    },
     methods: {
       // var fromPage = null;
       // document.addEventListener('init', function(event) {
@@ -188,34 +215,30 @@
       //   fromPage = page.data.fromPage;
       //   console.log("init. fromPage=" + fromPage);
       // });
-      toggleHeart(heartIcon) {
-        if($(heartIcon).attr("icon") == "fa-heart-o") {
-          $(heartIcon).attr("icon", "fa-heart");
+      toggleHeart() {
+        if(this.isHeartOn) {
+          this.isHeartOn = 0;
+          this.heartCount--;
         } else {
-          $(heartIcon).attr("icon", "fa-heart-o");
+          this.isHeartOn = 1;
+          this.heartCount++;
         }
       },
       toggleStar(starIcon) {
-        if($(starIcon).attr("icon") == "fa-star-o") {
-          $(starIcon).attr("icon", "fa-star");
+        if(this.isStarOn) {
+          this.isStarOn = 0;
+          this.starCount--;
         } else {
-          $(starIcon).attr("icon", "fa-star-o");
+          this.isStarOn = 1;
+          this.starCount++;
         }
       },
       toggleLike(likeIcon) {
-        if($(likeIcon).hasClass("like_off")) {
-          $(likeIcon).removeClass("like_off");
-          $(likeIcon).addClass("like_on");
-        } else {
-          $(likeIcon).removeClass("like_on");
-          $(likeIcon).addClass("like_off");
-        }
       },
       showQuestionnaireModal() {
         var modal = document.querySelector('ons-modal');
         modal.show();
       },
-    
       hideQuestionnaireModal() {
         var modal = document.querySelector('ons-modal');
         modal.hide();
@@ -226,7 +249,6 @@
           cancelable: true,
           buttons: ['◯', '△', '✕', 'キャンセル']
         });
-    
       }
     }
   };
