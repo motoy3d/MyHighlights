@@ -22,7 +22,7 @@ class CreateQuetionnaires extends Migration
         $table->integer('updated_id')->nulable()->comment('更新ユーザーID');
         $table->timestamp('updated_at')->comment('更新日時');
       });
-      DB::statement("ALTER TABLE members COMMENT 'メンバー'");
+      DB::statement("ALTER TABLE quetionnaires COMMENT 'アンケート'");
     }
 
     /**
