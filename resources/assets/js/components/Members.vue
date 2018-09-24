@@ -33,7 +33,7 @@
             <v-ons-list-item v-for="member in members" :key="member.id"
                              tappable modifier="chevron" @click="openMember();">
               <div class="left">
-                <img src="img/prof/{{ member.id }}  " class="prof_img">
+                <img src="img/prof/" class="prof_img">
               </div>
               <div class="w-100p">
                 <p style="text-align: left">5.しんたろう</p>
@@ -54,6 +54,20 @@
   import AddMember from './AddMember.vue';
   import Member from './Member.vue';
   export default {
+    beforeCreate() {
+      this.$http.get('/api/members')
+        .then((response)=>{
+          this.members = response.data
+        })
+        .catch(error => {
+          console.log(error);
+          this.errored = true;
+          if (error.response.status == 401) {
+            window.location.href = "/login";
+          }
+        })
+        .finally(() => this.loading = false);
+    },
     data() {
       return {
         members: [],

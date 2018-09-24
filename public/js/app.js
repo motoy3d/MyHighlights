@@ -2444,6 +2444,21 @@ if (false) {(function () {
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
+  beforeCreate: function beforeCreate() {
+    var _this = this;
+
+    this.$http.get('/api/members').then(function (response) {
+      _this.members = response.data;
+    }).catch(function (error) {
+      console.log(error);
+      _this.errored = true;
+      if (error.response.status == 401) {
+        window.location.href = "/login";
+      }
+    }).finally(function () {
+      return _this.loading = false;
+    });
+  },
   data: function data() {
     return {
       members: [],
@@ -6394,7 +6409,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -6406,8 +6421,173 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 "use strict";
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return render; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return staticRenderFns; });
-var render = function () {}
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "v-ons-page",
+    { attrs: { id: "members" } },
+    [
+      _c("v-ons-toolbar", { staticClass: "navbar" }, [
+        _c(
+          "div",
+          { staticClass: "center navbartitle" },
+          [
+            _c("v-ons-icon", { attrs: { icon: "fa-users", size: "20px" } }),
+            _vm._v(" メンバー\n    ")
+          ],
+          1
+        ),
+        _vm._v(" "),
+        _c(
+          "div",
+          { staticClass: "toolbar__right mr-5" },
+          [
+            _c(
+              "v-ons-toolbar-button",
+              { on: { click: function($event) {} } },
+              [
+                _c("v-ons-icon", {
+                  staticClass: "white",
+                  attrs: { icon: "fa-search", size: "28px" }
+                })
+              ],
+              1
+            )
+          ],
+          1
+        )
+      ]),
+      _vm._v(" "),
+      _c(
+        "v-ons-fab",
+        { attrs: { position: "bottom right" } },
+        [
+          _c("v-ons-icon", {
+            attrs: { icon: "fa-plus" },
+            on: {
+              click: function($event) {
+                _vm.openAddMember()
+              }
+            }
+          })
+        ],
+        1
+      ),
+      _vm._v(" "),
+      _c(
+        "v-ons-row",
+        [
+          _c(
+            "v-ons-col",
+            [
+              _c(
+                "div",
+                {
+                  staticClass: "segment space",
+                  staticStyle: { width: "91%", margin: "0 auto" }
+                },
+                [
+                  _c("button", { staticClass: "segment__item" }, [
+                    _c("input", {
+                      staticClass: "segment__input",
+                      attrs: { type: "radio", name: "segment-a", checked: "" }
+                    }),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "segment__button" }, [
+                      _vm._v("選手")
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("button", { staticClass: "segment__item" }, [
+                    _c("input", {
+                      staticClass: "segment__input",
+                      attrs: { type: "radio", name: "segment-a" }
+                    }),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "segment__button" }, [
+                      _vm._v("監督/コーチ")
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("button", { staticClass: "segment__item" }, [
+                    _c("input", {
+                      staticClass: "segment__input",
+                      attrs: { type: "radio", name: "segment-a" }
+                    }),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "segment__button" }, [
+                      _vm._v("家族")
+                    ])
+                  ])
+                ]
+              ),
+              _vm._v(" "),
+              _c(
+                "v-ons-list",
+                { attrs: { id: "member_list" } },
+                _vm._l(_vm.members, function(member) {
+                  return _c(
+                    "v-ons-list-item",
+                    {
+                      key: member.id,
+                      attrs: { tappable: "", modifier: "chevron" },
+                      on: {
+                        click: function($event) {
+                          _vm.openMember()
+                        }
+                      }
+                    },
+                    [
+                      _c("div", { staticClass: "left" }, [
+                        _c("img", {
+                          staticClass: "prof_img",
+                          attrs: { src: "img/prof/" }
+                        })
+                      ]),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "w-100p" }, [
+                        _c("p", { staticStyle: { "text-align": "left" } }, [
+                          _vm._v("5.しんたろう")
+                        ]),
+                        _vm._v(" "),
+                        _c(
+                          "div",
+                          { staticClass: "mr-30" },
+                          [
+                            _c(
+                              "v-ons-button",
+                              { staticClass: "highlight_btn" },
+                              [
+                                _c("v-ons-icon", {
+                                  attrs: { icon: "fa-play" }
+                                }),
+                                _vm._v("\n                ハイライト (12)")
+                              ],
+                              1
+                            )
+                          ],
+                          1
+                        )
+                      ])
+                    ]
+                  )
+                })
+              )
+            ],
+            1
+          )
+        ],
+        1
+      )
+    ],
+    1
+  )
+}
 var staticRenderFns = []
+render._withStripped = true
+
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
