@@ -73,7 +73,7 @@ class MemberControllerTest extends TestCase {
     echo $this->json_enc($response->json());
   }
 
-  // update ----------------------------------------------------
+  //TODO update ----------------------------------------------------
   /**
    * updateのテスト。
    * @return void
