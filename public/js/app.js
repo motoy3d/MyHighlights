@@ -2440,6 +2440,9 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
 
 
 
@@ -2448,7 +2451,7 @@ if (false) {(function () {
     var _this = this;
 
     this.$http.get('/api/members').then(function (response) {
-      _this.members = response.data;
+      _this.allMembers = response.data;
     }).catch(function (error) {
       console.log(error);
       _this.errored = true;
@@ -2461,12 +2464,29 @@ if (false) {(function () {
   },
   data: function data() {
     return {
-      members: [],
-      current_member_type: 1 //1:選手、2:監督/コーチ、3:家族/友人
+      allMembers: [],
+      viewMemberType: 1 //1:選手、2:監督/コーチ、3:家族/友人
     };
   },
 
+  computed: {
+    viewMembers: {
+      get: function get() {
+        var members = [];
+        for (var i = 0; i < this.allMembers.length; i++) {
+          var mem = this.allMembers[i];
+          if (mem.type == this.viewMemberType) {
+            members.push(mem);
+          }
+        }
+        return members;
+      }
+    }
+  },
   methods: {
+    changeType: function changeType(type) {
+      this.viewMemberType = type;
+    },
     openAddMember: function openAddMember() {
       this.$store.commit('navigator/push', {
         extends: __WEBPACK_IMPORTED_MODULE_0__AddMember_vue__["a" /* default */],
@@ -6409,7 +6429,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -6489,45 +6509,78 @@ var render = function() {
                   staticStyle: { width: "91%", margin: "0 auto" }
                 },
                 [
-                  _c("button", { staticClass: "segment__item" }, [
-                    _c("input", {
-                      staticClass: "segment__input",
-                      attrs: { type: "radio", name: "segment-a", checked: "" }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "segment__button" }, [
-                      _vm._v("選手")
-                    ])
-                  ]),
+                  _c(
+                    "button",
+                    {
+                      staticClass: "segment__item",
+                      on: {
+                        click: function($event) {
+                          _vm.changeType(1)
+                        }
+                      }
+                    },
+                    [
+                      _c("input", {
+                        staticClass: "segment__input",
+                        attrs: { type: "radio", name: "segment-a", checked: "" }
+                      }),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "segment__button" }, [
+                        _vm._v("選手")
+                      ])
+                    ]
+                  ),
                   _vm._v(" "),
-                  _c("button", { staticClass: "segment__item" }, [
-                    _c("input", {
-                      staticClass: "segment__input",
-                      attrs: { type: "radio", name: "segment-a" }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "segment__button" }, [
-                      _vm._v("監督/コーチ")
-                    ])
-                  ]),
+                  _c(
+                    "button",
+                    {
+                      staticClass: "segment__item",
+                      on: {
+                        click: function($event) {
+                          _vm.changeType(2)
+                        }
+                      }
+                    },
+                    [
+                      _c("input", {
+                        staticClass: "segment__input",
+                        attrs: { type: "radio", name: "segment-a" }
+                      }),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "segment__button" }, [
+                        _vm._v("監督/コーチ")
+                      ])
+                    ]
+                  ),
                   _vm._v(" "),
-                  _c("button", { staticClass: "segment__item" }, [
-                    _c("input", {
-                      staticClass: "segment__input",
-                      attrs: { type: "radio", name: "segment-a" }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "segment__button" }, [
-                      _vm._v("家族")
-                    ])
-                  ])
+                  _c(
+                    "button",
+                    {
+                      staticClass: "segment__item",
+                      on: {
+                        click: function($event) {
+                          _vm.changeType(3)
+                        }
+                      }
+                    },
+                    [
+                      _c("input", {
+                        staticClass: "segment__input",
+                        attrs: { type: "radio", name: "segment-a" }
+                      }),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "segment__button" }, [
+                        _vm._v("家族")
+                      ])
+                    ]
+                  )
                 ]
               ),
               _vm._v(" "),
               _c(
                 "v-ons-list",
                 { attrs: { id: "member_list" } },
-                _vm._l(_vm.members, function(member) {
+                _vm._l(_vm.viewMembers, function(member) {
                   return _c(
                     "v-ons-list-item",
                     {
@@ -6549,7 +6602,14 @@ var render = function() {
                       _vm._v(" "),
                       _c("div", { staticClass: "w-100p" }, [
                         _c("p", { staticStyle: { "text-align": "left" } }, [
-                          _vm._v("5.しんたろう")
+                          member.type == 1
+                            ? _c("span", [_vm._v(_vm._s(member.backno) + ".")])
+                            : _vm._e(),
+                          _vm._v(
+                            "\n              " +
+                              _vm._s(member.name) +
+                              "\n            "
+                          )
                         ]),
                         _vm._v(" "),
                         _c(

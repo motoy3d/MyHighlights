@@ -16,27 +16,30 @@
       <v-ons-row>
         <v-ons-col>
           <div class="segment space" style="width: 91%; margin: 0 auto;">
-            <button class="segment__item">
+            <button class="segment__item" @click="changeType(1)">
               <input type="radio" class="segment__input" name="segment-a" checked>
               <div class="segment__button">選手</div>
             </button>
-            <button class="segment__item">
+            <button class="segment__item" @click="changeType(2)">
               <input type="radio" class="segment__input" name="segment-a">
               <div class="segment__button">監督/コーチ</div>
             </button>
-            <button class="segment__item">
+            <button class="segment__item" @click="changeType(3)">
               <input type="radio" class="segment__input" name="segment-a">
               <div class="segment__button">家族</div>
             </button>
           </div>
           <v-ons-list id="member_list">
-            <v-ons-list-item v-for="member in members" :key="member.id"
+            <v-ons-list-item v-for="member in viewMembers" :key="member.id"
                              tappable modifier="chevron" @click="openMember();">
               <div class="left">
                 <img src="img/prof/" class="prof_img">
               </div>
               <div class="w-100p">
-                <p style="text-align: left">5.しんたろう</p>
+                <p style="text-align: left">
+                  <span v-if="member.type == 1">{{ member.backno }}.</span>
+                  {{ member.name }}
+                </p>
                 <div class="mr-30">
                   <v-ons-button class="highlight_btn">
                     <v-ons-icon icon="fa-play"></v-ons-icon>
@@ -57,7 +60,7 @@
     beforeCreate() {
       this.$http.get('/api/members')
         .then((response)=>{
-          this.members = response.data
+          this.allMembers = response.data
         })
         .catch(error => {
           console.log(error);
@@ -70,11 +73,28 @@
     },
     data() {
       return {
-        members: [],
-        current_member_type: 1  //1:選手、2:監督/コーチ、3:家族/友人
+        allMembers: [],
+        viewMemberType: 1  //1:選手、2:監督/コーチ、3:家族/友人
+      }
+    },
+    computed: {
+      viewMembers: {
+        get() {
+          var members = [];
+          for (var i=0; i<this.allMembers.length; i++) {
+            var mem = this.allMembers[i];
+            if (mem.type == this.viewMemberType) {
+              members.push(mem);
+            }
+          }
+          return members;
+        }
       }
     },
     methods: {
+      changeType(type) {
+        this.viewMemberType = type;
+      },
       openAddMember() {
         this.$store.commit('navigator/push', {
           extends: AddMember,
