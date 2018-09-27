@@ -20,7 +20,7 @@ class CreateMembers extends Migration
         $table->date('birthday')->nullable()->comment('誕生日');
         $table->integer('team_id')->comment('チームID');
         $table->string('backno', 4)->comment('背番号');
-        $table->boolean('has_profile_img_flg')->comment('プロフィール画像ありフラグ');
+        $table->string('prof_img_filename', 100)->comment('プロフィール画像ファイル名');
         $table->date('withdrawal_date')->nullable()->comment('退会日');
         $table->integer('created_id')->nulable()->comment('登録ユーザーID');
         $table->dateTime('created_at')->nulable()->default(null)->comment('登録日時');

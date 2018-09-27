@@ -48,19 +48,36 @@ class MemberController extends Controller
    */
   public function store(Request $request)
   {
-    //TODO 画像アップ
+    Log::info('MemberController#store 1');
+//    $profImgFilename = null;
+//    if ($request->profImg) {
+//      $this->validate($request, [
+//        'profImg' => [
+//          'file', // アップロードされたファイルであること
+//          'image', // 画像ファイルであること
+//          'mimes:jpeg,png', // MIMEタイプを指定
+//          'dimensions:min_width=120,min_height=120,max_width=400,max_height=400', // 最小縦横120px 最大縦横400px
+//        ]
+//      ]);
+//      Log::info('MemberController#store 2');
+//      if ($request->file('profImg')->isValid()) {
+//        $profImgFilename = $request->profImg->storeAs('public/prof');
+//      }
+//    }
+//    Log::info('MemberController#store 3');
+
     //TODO validate
     $member = Member::create([
       "team_id" => Auth::user()->team_id,
       "name" => $request->name,
-      "type" => $request->type,
+      "type" => $request->type + 1,
       "birthday" => $request->birthday,
       "backno" => $request->backno,
-      "has_profile_img_flg" => $request->has_profile_img_flg,
+      "prof_img_filename" => 'boy.png',
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
-    if ($request->invite_flg == "1") {
+    if ($request->invitationFlg == "1") {
       //TODO user登録
       $password = str_random(10);
       $user = User::create([

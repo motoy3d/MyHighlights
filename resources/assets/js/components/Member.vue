@@ -12,7 +12,7 @@
       </div>
     </v-ons-toolbar>
     <div class="bg-white">
-      <form id="postForm" action="#" method="POST">
+      <form id="postForm" action="#" method="POST" v-on:submit.prevent="save">
         <div class="segment space" style="width: 91%; margin: 0 auto;">
           <button class="segment__item">
             <input type="radio" class="segment__input" name="segment-a" checked>
