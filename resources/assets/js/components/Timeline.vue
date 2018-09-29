@@ -2,7 +2,7 @@
   <v-ons-page id="timeline_page">
     <v-ons-toolbar class="navbar">
       <div class="left">
-        <img src="/appicon.png" class="logo">
+        <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
         <v-ons-search-input placeholder="検索" class="timeline_search2">
@@ -129,8 +129,22 @@
 </script>
 
 <style>
-  .logo {
-    width: 42px;
-    margin: 1px 0 1px 1px
+  .timeline_search {
+    margin: auto;
+    width: 50%;
+  }
+  .timeline_search2 {
+    margin: 8px 0 8px 0;
+    width: 90%;
+  }
+  .timeline_item_read {
+    background-color: #f2f2f2;
+  }
+  .new_icon {
+    color: #ff6633;
+    margin-right: 3px;
+  }
+  .entry_title_row {
+    /*  margin: 4px 0 0 0;*/
   }
 </style>

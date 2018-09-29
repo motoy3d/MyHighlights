@@ -166,6 +166,10 @@ textarea {
 	height: 40px;
 	padding: 5px;
 }
+.logo {
+  width: 42px;
+  margin: 1px 0 1px 1px
+}
 
 /* ------ pickadate ------ */
 .js__timepicker {
@@ -173,24 +177,6 @@ textarea {
 }
 
 /* ------ タイムライン画面 ------ */
-.timeline_search {
-  margin: auto;
-  width: 50%;
-}
-.timeline_search2 {
-  margin: 8px 0 8px 0;
-  width: 80%;
-}
-.timeline_item_read {
-  background-color: #f2f2f2;
-}
-.new_icon {
-  color: #ff6633;
-  margin-right: 3px;
-}
-.entry_title_row {
-/*  margin: 4px 0 0 0;*/
-}
 
 /* ------ 投稿詳細画面 ------ */
 .article_container {

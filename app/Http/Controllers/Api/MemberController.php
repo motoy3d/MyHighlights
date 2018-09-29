@@ -78,7 +78,6 @@ class MemberController extends Controller
       "updated_id" => Auth::id()
     ]);
     if ($request->invitationFlg == "1") {
-      //TODO user登録
       $password = str_random(10);
       $user = User::create([
         "name" => $request->name,

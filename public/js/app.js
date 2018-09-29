@@ -2075,6 +2075,9 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -2455,6 +2458,9 @@ if (false) {(function () {
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__AddMember_vue__ = __webpack_require__(31);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Member_vue__ = __webpack_require__(91);
+//
+//
+//
 //
 //
 //
@@ -2919,8 +2925,22 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
 
-/* harmony default export */ __webpack_exports__["a"] = ({});
+/* harmony default export */ __webpack_exports__["a"] = ({
+  methods: {
+    openChangePass: function openChangePass() {
+      var self = this;
+      this.$ons.notification.prompt("新しいパスワードを入れてください", { title: '' }).then(function (newpass) {
+        self.$ons.notification.confirm(newpass, { title: 'このパスワードでいいですか？' }).then(function (answer) {
+          alert(answer);
+        });
+      });
+    }
+  }
+});
 
 /***/ }),
 /* 36 */
@@ -5488,7 +5508,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -5848,6 +5868,13 @@ var render = function() {
     "v-ons-page",
     [
       _c("v-ons-toolbar", { staticClass: "navbar" }, [
+        _c("div", { staticClass: "left" }, [
+          _c("img", {
+            staticClass: "logo",
+            attrs: { src: "/img/appicon2.png" }
+          })
+        ]),
+        _vm._v(" "),
         _c("div", { staticClass: "center navbartitle" }, [
           _c(
             "span",
@@ -6256,7 +6283,10 @@ var render = function() {
     [
       _c("v-ons-toolbar", { staticClass: "navbar" }, [
         _c("div", { staticClass: "left" }, [
-          _c("img", { staticClass: "logo", attrs: { src: "/appicon.png" } })
+          _c("img", {
+            staticClass: "logo",
+            attrs: { src: "/img/appicon2.png" }
+          })
         ]),
         _vm._v(" "),
         _c(
@@ -6828,7 +6858,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -7460,6 +7490,13 @@ var render = function() {
     { attrs: { id: "members" } },
     [
       _c("v-ons-toolbar", { staticClass: "navbar" }, [
+        _c("div", { staticClass: "left" }, [
+          _c("img", {
+            staticClass: "logo",
+            attrs: { src: "/img/appicon2.png" }
+          })
+        ]),
+        _vm._v(" "),
         _c(
           "div",
           { staticClass: "center navbartitle" },
@@ -7703,7 +7740,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -7724,6 +7761,13 @@ var render = function() {
     { attrs: { id: "settings" } },
     [
       _c("v-ons-toolbar", { staticClass: "navbar" }, [
+        _c("div", { staticClass: "left" }, [
+          _c("img", {
+            staticClass: "logo",
+            attrs: { src: "/img/appicon2.png" }
+          })
+        ]),
+        _vm._v(" "),
         _c(
           "div",
           { staticClass: "center navbartitle" },
@@ -7758,9 +7802,18 @@ var render = function() {
                     ])
                   ]),
                   _vm._v(" "),
-                  _c("v-ons-list-item", { attrs: { modifier: "chevron" } }, [
-                    _vm._v("\n          パスワード変更\n        ")
-                  ]),
+                  _c(
+                    "v-ons-list-item",
+                    {
+                      attrs: { modifier: "chevron" },
+                      on: {
+                        click: function($event) {
+                          _vm.openChangePass()
+                        }
+                      }
+                    },
+                    [_vm._v("\n          パスワード変更\n        ")]
+                  ),
                   _vm._v(" "),
                   _c("v-ons-list-item", { attrs: { modifier: "chevron" } }, [
                     _vm._v("\n          チーム名 "),
@@ -8292,7 +8345,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n.logo {\n  width: 42px;\n  margin: 1px 0 1px 1px\n}\n", ""]);
+exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  /*  margin: 4px 0 0 0;*/\n}\n", ""]);
 
 // exports
 

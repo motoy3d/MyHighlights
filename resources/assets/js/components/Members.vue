@@ -1,6 +1,9 @@
 <template>
   <v-ons-page id="members">
     <v-ons-toolbar class="navbar">
+      <div class="left">
+        <img src="/img/appicon2.png" class="logo">
+      </div>
       <div class="center navbartitle">
         <v-ons-icon icon="fa-users" size="20px"></v-ons-icon> メンバー
       </div>

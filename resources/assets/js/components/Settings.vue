@@ -1,6 +1,9 @@
 <template>
   <v-ons-page id="settings">
     <v-ons-toolbar class="navbar">
+      <div class="left">
+        <img src="/img/appicon2.png" class="logo">
+      </div>
       <div class="center navbartitle">
         <v-ons-icon icon="fa-cog" size="20px"></v-ons-icon> 設定
       </div>
@@ -14,7 +17,7 @@
           <v-ons-list-item modifier="chevron">
             メールアドレス <div class="right">motoy3d@gmail.com</div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
+          <v-ons-list-item modifier="chevron" @click="openChangePass()">
             パスワード変更
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron">
@@ -52,6 +55,19 @@
 
 <script>
   export default {
+    methods: {
+      openChangePass() {
+        let self = this;
+        this.$ons.notification.prompt("新しいパスワードを入れてください", {title: ''})
+          .then(function(newpass) {
+            self.$ons.notification.confirm(
+              newpass, {title: 'このパスワードでいいですか？'})
+              .then(function(answer){
+                alert(answer);
+              });
+          });
+      }
+    }
   };
 </script>
 

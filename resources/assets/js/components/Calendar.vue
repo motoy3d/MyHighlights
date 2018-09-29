@@ -1,6 +1,9 @@
 <template>
   <v-ons-page>
     <v-ons-toolbar class="navbar">
+      <div class="left">
+        <img src="/img/appicon2.png" class="logo">
+      </div>
       <div class="center navbartitle">
         <span class="month_text mr-20" @click="goPrevMonth()">
           <v-ons-icon icon="fa-caret-left" size="24px"/>
