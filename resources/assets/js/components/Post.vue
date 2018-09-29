@@ -146,19 +146,6 @@
           })
           .finally(() => this.loading = false);
       },
-      // reloadTimeline() {
-      //   this.$http.get('/api/posts')
-      //     .then((response)=>{
-      //       this.$store.commit('timeline/set', response.data.data);
-      //     })
-      //     .catch(error => {
-      //       console.log(error);
-      //       if (error.response.status == 401) {
-      //         window.location.href = "/login"; return;
-      //       }
-      //     })
-      //     .finally(() => this.$store.commit('timeline/setLoading', false));
-      // },
       afterPost() {
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/loadTimeline', this.$http);

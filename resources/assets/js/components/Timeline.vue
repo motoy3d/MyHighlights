@@ -1,11 +1,14 @@
 <template>
   <v-ons-page id="timeline_page">
     <v-ons-toolbar class="navbar">
-      <div class="center toolbar__center">
+      <div class="left">
+        <img src="/appicon.png" class="logo">
+      </div>
+      <div class="center">
         <v-ons-search-input placeholder="検索" class="timeline_search2">
         </v-ons-search-input>
       </div>
-      <div class="toolbar__right mr-5">
+      <div class="right mr-5">
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
                 <v-ons-icon icon="fa-cloud-upload" size="28px"></v-ons-icon>
@@ -124,3 +127,10 @@
     }
   };
 </script>
+
+<style>
+  .logo {
+    width: 42px;
+    margin: 1px 0 1px 1px
+  }
+</style>
