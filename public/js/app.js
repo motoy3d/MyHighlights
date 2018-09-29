@@ -1389,9 +1389,11 @@ if (false) {(function () {
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
-  created: function created() {
-    console.log("Timeline#created");
-    this.load();
+  mounted: function mounted() {
+    console.log("Timeline#mounted");
+    // this.load();
+    // store.jsでsetしても画面に反映されない
+    this.$store.dispatch('timeline/loadTimeline', this.$http);
   },
 
   methods: {
@@ -1837,18 +1839,20 @@ if (false) {(function () {
 
       //TODO validate
       if (!this.title) {
-        $ons.notification.alert('タイトルは必須です');
+        this.$ons.notification.alert('タイトルは必須です', { title: '' });
         return;
       }
       if (!this.contents) {
-        $ons.notification.alert('内容は必須です');
+        this.$ons.notification.alert('内容は必須です', { title: '' });
         return;
       }
       this.category_id = this.selected_category ? this.selected_category.id : null;
+      var self = this;
       this.$http.post('/api/posts', this.$data).then(function (response) {
         console.log(response.data);
-        // $ons.notification.alert('投稿しました');
-        _this2.$store.commit('navigator/pop');
+        _this2.$ons.notification.alert('投稿しました', { title: '' }).then(function () {
+          self.afterPost();
+        });
       }).catch(function (error) {
         console.log(error.response);
         if (error.response.status == 401) {
@@ -1857,6 +1861,24 @@ if (false) {(function () {
       }).finally(function () {
         return _this2.loading = false;
       });
+    },
+
+    // reloadTimeline() {
+    //   this.$http.get('/api/posts')
+    //     .then((response)=>{
+    //       this.$store.commit('timeline/set', response.data.data);
+    //     })
+    //     .catch(error => {
+    //       console.log(error);
+    //       if (error.response.status == 401) {
+    //         window.location.href = "/login"; return;
+    //       }
+    //     })
+    //     .finally(() => this.$store.commit('timeline/setLoading', false));
+    // },
+    afterPost: function afterPost() {
+      this.$store.commit('navigator/pop');
+      this.$store.dispatch('timeline/loadTimeline', this.$http);
     },
     showQuestionnaireModal: function showQuestionnaireModal() {
       var modal = document.querySelector('ons-modal');
@@ -4131,11 +4153,32 @@ module.exports = function spread(callback) {
       strict: true,
       namespaced: true,
       state: {
-        posts: []
+        posts: [],
+        loading: false
       },
       mutations: {
         set: function set(state, posts) {
+          console.log('store.js#timeline/set ' + posts);
           state.posts = posts;
+        },
+        setLoading: function setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      },
+      actions: {
+        loadTimeline: function loadTimeline(context, $http) {
+          context.commit('setLoading', true);
+          console.log('store.js#timeline/loadTimeline');
+          $http.get('/api/posts').then(function (response) {
+            context.commit('set', response.data.data);
+          }).catch(function (error) {
+            console.log(error);
+            if (error.response.status == 401) {
+              window.location.href = "/login";return;
+            }
+          }).finally(function () {
+            return context.commit('setLoading', false);
+          });
         }
       }
     }
@@ -5045,7 +5088,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -6263,7 +6306,7 @@ var render = function() {
         : _c(
             "section",
             [
-              _vm.loading
+              _vm.$store.state.timeline.loading
                 ? _c("div", { staticClass: "center" }, [
                     _c(
                       "svg",

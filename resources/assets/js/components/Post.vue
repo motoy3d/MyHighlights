@@ -121,19 +121,22 @@
       post() {
         //TODO validate
         if (!this.title) {
-          $ons.notification.alert('タイトルは必須です');
+          this.$ons.notification.alert('タイトルは必須です', {title: ''});
           return;
         }
         if (!this.contents) {
-          $ons.notification.alert('内容は必須です');
+          this.$ons.notification.alert('内容は必須です', {title: ''});
           return;
         }
         this.category_id = this.selected_category? this.selected_category.id : null;
+        let self = this;
         this.$http.post('/api/posts', this.$data)
           .then(response => {
             console.log(response.data);
-            // $ons.notification.alert('投稿しました');
-            this.$store.commit('navigator/pop');
+            this.$ons.notification.alert('投稿しました', {title: ''})
+              .then(function(){
+                self.afterPost();
+              });
           })
           .catch(error => {
             console.log(error.response);
@@ -142,6 +145,23 @@
             }
           })
           .finally(() => this.loading = false);
+      },
+      // reloadTimeline() {
+      //   this.$http.get('/api/posts')
+      //     .then((response)=>{
+      //       this.$store.commit('timeline/set', response.data.data);
+      //     })
+      //     .catch(error => {
+      //       console.log(error);
+      //       if (error.response.status == 401) {
+      //         window.location.href = "/login"; return;
+      //       }
+      //     })
+      //     .finally(() => this.$store.commit('timeline/setLoading', false));
+      // },
+      afterPost() {
+        this.$store.commit('navigator/pop');
+        this.$store.dispatch('timeline/loadTimeline', this.$http);
       },
       showQuestionnaireModal() {
         var modal = document.querySelector('ons-modal');

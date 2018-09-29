@@ -21,7 +21,7 @@
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
-      <div v-if="loading" class="center">
+      <div v-if="$store.state.timeline.loading" class="center">
         <svg class="progress-circular progress-circular--indeterminate">
           <circle class="progress-circular__background"/>
           <circle class="progress-circular__primary progress-circular--indeterminate__primary"/>
@@ -70,9 +70,11 @@
   import Post from './Post.vue';
   import Calendar from './Calendar.vue';
   export default {
-    created() {
-      console.log("Timeline#created");
-      this.load();
+    mounted() {
+      console.log("Timeline#mounted");
+      // this.load();
+      // store.jsでsetしても画面に反映されない
+      this.$store.dispatch('timeline/loadTimeline', this.$http);
     },
     methods: {
       load() {

@@ -63,11 +63,34 @@ export default {
       strict: true,
       namespaced: true,
       state: {
-        posts: []
+        posts: [],
+        loading: false
       },
       mutations: {
         set(state, posts) {
+          console.log('store.js#timeline/set '  + posts);
           state.posts = posts;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      },
+      actions: {
+        loadTimeline(context, $http) {
+          context.commit('setLoading', true);
+          console.log('store.js#timeline/loadTimeline');
+          $http.get('/api/posts')
+            .then((response)=>{
+              context.commit('set', response.data.data);
+            })
+            .catch(error => {
+              console.log(error);
+              if (error.response.status == 401) {
+                window.location.href = "/login"; return;
+              }
+            })
+          .finally(() => context.commit('setLoading', false))
+          ;
         }
       }
     }
