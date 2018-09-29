@@ -13,32 +13,12 @@
     </v-ons-toolbar>
     <div class="bg-white">
       <form id="postForm" action="#" method="POST" v-on:submit.prevent>
-        <div class="segment space" style="width: 91%; margin: 0 auto;">
+        <div class="segment space center" style="width: 100%; margin: 0 auto;">
           <v-ons-segment :index.sync="memberType" style="width: 91%">
             <button>選手</button>
             <button>監督/コーチ</button>
             <button>家族/友人</button>
           </v-ons-segment>
-          <!--<button class="segment__item">-->
-            <!--<v-ons-radio-->
-              <!--:input-id="'radio-player'"-->
-              <!--:value="1"-->
-              <!--v-model="isPlayer"-->
-              <!--class="segment__input"-->
-            <!--&gt;-->
-            <!--</v-ons-radio>-->
-            <!--<div class="segment__button">選手</div>-->
-          <!--</button>-->
-          <!--<button class="segment__item">-->
-            <!--<input type="radio" class="segment__input" name="segment-a"-->
-                   <!--:checked="isStaff" v-model="isStaff"/>-->
-            <!--<div class="segment__button">監督/コーチ</div>-->
-          <!--</button>-->
-          <!--<button class="segment__item">-->
-            <!--<input type="radio" class="segment__input" name="segment-a"-->
-                   <!--:checked="isFamily" v-model="isFamily"/>-->
-            <!--<div class="segment__button">家族</div>-->
-          <!--</button>-->
         </div>
         <div class="ml-15 mt-10"><small class="gray">名前(必須)</small></div>
         <div class="mlr-15 center">
@@ -102,7 +82,7 @@
           .catch(error => {
             console.log(error.response);
             if (error.response.status == 401) {
-              window.location.href = "/login";
+              window.location.href = "/login"; return;
             }
           })
           .finally(() => this.loading = false);

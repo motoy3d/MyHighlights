@@ -1,5 +1,5 @@
 <template>
-  <v-ons-page>
+  <v-ons-page id="timeline_page">
     <v-ons-toolbar class="navbar">
       <div class="center toolbar__center">
         <v-ons-search-input placeholder="検索" class="timeline_search2">
@@ -70,23 +70,25 @@
   import Post from './Post.vue';
   import Calendar from './Calendar.vue';
   export default {
-    beforeCreate() {
-      console.log("Timeline#beforeCreate");
-      this.$http.get('/api/posts')
-        .then((response)=>{
-          this.posts = response.data.data
-          console.log(this.posts);
-        })
-        .catch(error => {
-          console.log(error);
-          this.errored = true;
-          if (error.response.status == 401) {
-            window.location.href = "/login";
-          }
-        })
-        .finally(() => this.loading = false);
+    created() {
+      console.log("Timeline#created");
+      this.load();
     },
     methods: {
+      load() {
+        this.$http.get('/api/posts')
+          .then((response)=>{
+            this.$store.commit('timeline/set', response.data.data);
+          })
+          .catch(error => {
+            console.log(error);
+            this.errored = true;
+            if (error.response.status == 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          .finally(() => this.loading = false);
+      },
       openArticle(post_id) {
         console.log("post_id=" + post_id);
         this.$store.commit('navigator/push', {
@@ -107,9 +109,13 @@
         });
       }
     },
+    computed: {
+      posts : {
+        get() {return this.$store.state.timeline.posts;}
+      }
+    },
     data() {
       return {
-        posts: {},
         loading: true,
         errored: false
       }

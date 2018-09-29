@@ -66,7 +66,7 @@
           console.log(error);
           this.errored = true;
           if (error.response.status == 401) {
-            window.location.href = "/login";
+            window.location.href = "/login"; return;
           }
         })
         .finally(() => this.loading = false);

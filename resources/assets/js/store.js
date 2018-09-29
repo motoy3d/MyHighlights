@@ -57,6 +57,19 @@ export default {
           state.index = index;
         }
       }
+    },
+
+    timeline: {
+      strict: true,
+      namespaced: true,
+      state: {
+        posts: []
+      },
+      mutations: {
+        set(state, posts) {
+          state.posts = posts;
+        }
+      }
     }
   }
 };

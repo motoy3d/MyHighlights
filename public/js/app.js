@@ -1389,25 +1389,27 @@ if (false) {(function () {
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
-  beforeCreate: function beforeCreate() {
-    var _this = this;
-
-    console.log("Timeline#beforeCreate");
-    this.$http.get('/api/posts').then(function (response) {
-      _this.posts = response.data.data;
-      console.log(_this.posts);
-    }).catch(function (error) {
-      console.log(error);
-      _this.errored = true;
-      if (error.response.status == 401) {
-        window.location.href = "/login";
-      }
-    }).finally(function () {
-      return _this.loading = false;
-    });
+  created: function created() {
+    console.log("Timeline#created");
+    this.load();
   },
 
   methods: {
+    load: function load() {
+      var _this = this;
+
+      this.$http.get('/api/posts').then(function (response) {
+        _this.$store.commit('timeline/set', response.data.data);
+      }).catch(function (error) {
+        console.log(error);
+        _this.errored = true;
+        if (error.response.status == 401) {
+          window.location.href = "/login";return;
+        }
+      }).finally(function () {
+        return _this.loading = false;
+      });
+    },
     openArticle: function openArticle(post_id) {
       console.log("post_id=" + post_id);
       this.$store.commit('navigator/push', {
@@ -1428,9 +1430,15 @@ if (false) {(function () {
       });
     }
   },
+  computed: {
+    posts: {
+      get: function get() {
+        return this.$store.state.timeline.posts;
+      }
+    }
+  },
   data: function data() {
     return {
-      posts: {},
       loading: true,
       errored: false
     };
@@ -1794,18 +1802,62 @@ if (false) {(function () {
 //
 //
 //
-//
-//
-//
-//
-//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
+  beforeCreate: function beforeCreate() {
+    var _this = this;
+
+    this.$http.get('/api/posts/create').then(function (response) {
+      _this.categories = response.data.categories;
+    }).catch(function (error) {
+      console.log(error);
+      _this.errored = true;
+      if (error.response.status == 401) {
+        window.location.href = "/login";return;
+      }
+    }).finally(function () {
+      return _this.loading = false;
+    });
+  },
   data: function data() {
-    return {};
+    return {
+      loading: false,
+      categories: null,
+      title: "",
+      selected_category: null,
+      category_id: null,
+      contents: "",
+      notification_flg: false
+    };
   },
 
   methods: {
+    post: function post() {
+      var _this2 = this;
+
+      //TODO validate
+      if (!this.title) {
+        $ons.notification.alert('タイトルは必須です');
+        return;
+      }
+      if (!this.contents) {
+        $ons.notification.alert('内容は必須です');
+        return;
+      }
+      this.category_id = this.selected_category ? this.selected_category.id : null;
+      this.$http.post('/api/posts', this.$data).then(function (response) {
+        console.log(response.data);
+        // $ons.notification.alert('投稿しました');
+        _this2.$store.commit('navigator/pop');
+      }).catch(function (error) {
+        console.log(error.response);
+        if (error.response.status == 401) {
+          window.location.href = "/login";return;
+        }
+      }).finally(function () {
+        return _this2.loading = false;
+      });
+    },
     showQuestionnaireModal: function showQuestionnaireModal() {
       var modal = document.querySelector('ons-modal');
       modal.show();
@@ -2091,7 +2143,7 @@ if (false) {(function () {
         console.log(error);
         _this.errored = true;
         if (error.response.status == 401) {
-          window.location.href = "/login";
+          window.location.href = "/login";return;
         }
       }).finally(function () {
         return _this.loading = false;
@@ -2456,7 +2508,7 @@ if (false) {(function () {
       console.log(error);
       _this.errored = true;
       if (error.response.status == 401) {
-        window.location.href = "/login";
+        window.location.href = "/login";return;
       }
     }).finally(function () {
       return _this.loading = false;
@@ -2619,26 +2671,6 @@ if (false) {(function () {
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   data: function data() {
@@ -2671,7 +2703,7 @@ if (false) {(function () {
       }).catch(function (error) {
         console.log(error.response);
         if (error.response.status == 401) {
-          window.location.href = "/login";
+          window.location.href = "/login";return;
         }
       }).finally(function () {
         return _this.loading = false;
@@ -4093,6 +4125,19 @@ module.exports = function spread(callback) {
           state.index = index;
         }
       }
+    },
+
+    timeline: {
+      strict: true,
+      namespaced: true,
+      state: {
+        posts: []
+      },
+      mutations: {
+        set: function set(state, posts) {
+          state.posts = posts;
+        }
+      }
     }
   }
 });
@@ -5000,7 +5045,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -5027,7 +5072,7 @@ var render = function() {
           [
             _c("v-ons-icon", {
               staticClass: "white",
-              attrs: { icon: "md-comment", size: "20px" }
+              attrs: { icon: "fa-comment-alt", size: "20px" }
             }),
             _vm._v(" "),
             _c("span", [_vm._v("投稿")])
@@ -5073,59 +5118,70 @@ var render = function() {
                 [
                   _c("v-ons-input", {
                     staticClass: "w-100p",
-                    attrs: {
-                      modifier: "border",
-                      placeholder: "件名",
-                      name: "title"
+                    attrs: { modifier: "border", placeholder: "件名" },
+                    model: {
+                      value: _vm.title,
+                      callback: function($$v) {
+                        _vm.title = $$v
+                      },
+                      expression: "title"
                     }
                   })
                 ],
                 1
               ),
               _vm._v(" "),
-              _c("div", { staticClass: "space" }, [
-                _c(
-                  "select",
-                  {
-                    staticClass: "select-input select-input--underbar",
-                    attrs: { id: "category", name: "category" }
-                  },
-                  [
-                    _c("option", [_vm._v("練習")]),
-                    _vm._v(" "),
-                    _c("option", [_vm._v("練習試合")]),
-                    _vm._v(" "),
-                    _c("option", [_vm._v("公式試合")]),
-                    _vm._v(" "),
-                    _c("option", [_vm._v("イベント")]),
-                    _vm._v(" "),
-                    _c("option", [_vm._v("その他")])
-                  ]
-                )
-              ]),
+              _c(
+                "div",
+                { staticClass: "space" },
+                [
+                  _c(
+                    "v-ons-select",
+                    {
+                      model: {
+                        value: _vm.selected_category,
+                        callback: function($$v) {
+                          _vm.selected_category = $$v
+                        },
+                        expression: "selected_category"
+                      }
+                    },
+                    _vm._l(_vm.categories, function(cate) {
+                      return _c("option", { domProps: { value: cate.id } }, [
+                        _vm._v(
+                          "\n              " +
+                            _vm._s(cate.name) +
+                            "\n            "
+                        )
+                      ])
+                    })
+                  )
+                ],
+                1
+              ),
               _vm._v(" "),
               _c("div", { staticClass: "space" }, [
                 _c("textarea", {
-                  staticClass: "textarea w-100p",
-                  attrs: { rows: "10", placeholder: "内容" }
-                })
-              ]),
-              _vm._v(" "),
-              _c("div", { staticClass: "space" }, [
-                _c(
-                  "div",
-                  { staticClass: "upload-btn-wrapper" },
-                  [
-                    _c(
-                      "v-ons-button",
-                      { staticClass: "smallBtn button--outline" },
-                      [_vm._v("添付ファイル")]
-                    ),
-                    _vm._v(" "),
-                    _c("input", { attrs: { type: "file", name: "myfile" } })
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.contents,
+                      expression: "contents"
+                    }
                   ],
-                  1
-                )
+                  staticClass: "textarea w-100p",
+                  attrs: { rows: "10", placeholder: "内容" },
+                  domProps: { value: _vm.contents },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.contents = $event.target.value
+                    }
+                  }
+                })
               ]),
               _vm._v(" "),
               _c(
@@ -5133,22 +5189,61 @@ var render = function() {
                 { staticClass: "space" },
                 [
                   _c(
+                    "div",
+                    { staticClass: "upload-btn-wrapper" },
+                    [
+                      _c(
+                        "v-ons-button",
+                        { staticClass: "smallBtn button--outline" },
+                        [
+                          _c("v-ons-icon", { attrs: { icon: "fa-file" } }),
+                          _vm._v(" 添付ファイル")
+                        ],
+                        1
+                      ),
+                      _vm._v(" "),
+                      _c("input", { attrs: { type: "file", name: "myfile" } })
+                    ],
+                    1
+                  ),
+                  _vm._v(" "),
+                  _c(
                     "v-ons-button",
                     {
                       staticClass: "smallBtn button--outline",
-                      attrs: { onclick: "showQuestionnaireModal()" }
+                      staticStyle: { float: "right" },
+                      on: {
+                        click: function($event) {
+                          _vm.showQuestionnaireModal()
+                        }
+                      }
                     },
-                    [_vm._v("\n            アンケート作成")]
+                    [
+                      _c("v-ons-icon", { attrs: { icon: "fa-list-alt" } }),
+                      _vm._v("アンケート作成")
+                    ],
+                    1
                   )
                 ],
                 1
               ),
               _vm._v(" "),
+              _c("div", { staticClass: "space" }),
+              _vm._v(" "),
               _c(
                 "div",
                 { staticClass: "space row middle" },
                 [
-                  _c("v-ons-switch", { attrs: { id: "notificate" } }),
+                  _c("v-ons-switch", {
+                    attrs: { id: "notificate" },
+                    model: {
+                      value: _vm.notification_flg,
+                      callback: function($$v) {
+                        _vm.notification_flg = $$v
+                      },
+                      expression: "notification_flg"
+                    }
+                  }),
                   _vm._v(" "),
                   _c(
                     "label",
@@ -5170,7 +5265,7 @@ var render = function() {
                       attrs: { modifier: "large" },
                       on: {
                         click: function($event) {
-                          _vm.$store.commit("navigator/pop")
+                          _vm.post()
                         }
                       }
                     },
@@ -5271,7 +5366,11 @@ var render = function() {
                       "v-ons-button",
                       {
                         staticClass: "plr-20",
-                        attrs: { onclick: "hideQuestionnaireModal();" }
+                        on: {
+                          click: function($event) {
+                            _vm.hideQuestionnaireModal()
+                          }
+                        }
                       },
                       [_vm._v("作成する")]
                     )
@@ -5287,7 +5386,11 @@ var render = function() {
                       "v-ons-button",
                       {
                         staticClass: "bg-gray",
-                        attrs: { onclick: "hideQuestionnaireModal();" }
+                        on: {
+                          click: function($event) {
+                            _vm.hideQuestionnaireModal()
+                          }
+                        }
                       },
                       [_vm._v("閉じる")]
                     )
@@ -6113,6 +6216,7 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c(
     "v-ons-page",
+    { attrs: { id: "timeline_page" } },
     [
       _c("v-ons-toolbar", { staticClass: "navbar" }, [
         _c(
@@ -6725,7 +6829,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -6798,8 +6902,8 @@ var render = function() {
             _c(
               "div",
               {
-                staticClass: "segment space",
-                staticStyle: { width: "91%", margin: "0 auto" }
+                staticClass: "segment space center",
+                staticStyle: { width: "100%", margin: "0 auto" }
               },
               [
                 _c(

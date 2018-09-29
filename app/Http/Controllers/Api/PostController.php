@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Category;
 use App\Post;
 use App\PostAttachment;
 use App\User;
@@ -51,6 +52,17 @@ class PostController extends Controller
     }
     $posts = $posts->simplePaginate($perPageCount);
     return Response::json($posts);
+  }
+
+  /**
+   * 新規登録画面を表示する時に必要なデータを返す
+   *
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function create()
+  {
+    $categories = Category::all()->sortBy('order_no');
+    return Response::json(["categories" => $categories]);
   }
 
   /**
