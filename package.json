@@ -38,5 +38,9 @@
     "axios": "^0.18.0",
     "onsenui": "^2.10.4",
     "vue-onsenui": "^2.6.1"
+  },
+  "dependencies": {
+    "moment": "^2.22.2",
+    "vue-moment": "^4.0.0"
   }
 }

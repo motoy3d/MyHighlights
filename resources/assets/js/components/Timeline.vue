@@ -45,13 +45,17 @@
             @click="openArticle(post.id);">
             <div class="entry_title_row">
               <p class="entry_title">
-                <v-ons-icon icon="fa-circle" class="new_icon" size="16px"></v-ons-icon>
+                <v-ons-icon icon="fa-circle" class="new_icon" size="16px"
+                v-if="!post.read_flg"></v-ons-icon>
                 {{ post.title }}</p>
-              <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
+              <p class="updated_at">
+                {{ post.updated_at | moment("from") }}　
+                {{ post.updated_name }}</p>
             </div>
             <div class="entry_content">
-            <span>{{ post.content }}
-            </span>
+              <span>
+                {{ post.content }}
+              </span>
               <div class="mt-10">
                 <v-ons-icon icon="fa-comment-o" class="small gray">
                   <span>4</span>
@@ -96,6 +100,7 @@
       },
       openArticle(post_id) {
         console.log("post_id=" + post_id);
+        this.$store.commit('article/setPostId', post_id);
         this.$store.commit('navigator/push', {
           extends: Article,
           onsNavigatorOptions: {animation: 'slide'}
@@ -145,6 +150,11 @@
     margin-right: 3px;
   }
   .entry_title_row {
-    /*  margin: 4px 0 0 0;*/
+    width: 97%;
+  }
+  .entry_content {
+    width: 95%;
+    text-align:left;
+    margin: 5px 0 0 5px;
   }
 </style>

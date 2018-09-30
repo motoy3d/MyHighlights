@@ -93,6 +93,24 @@ export default {
           ;
         }
       }
+    },
+
+    // 記事画面
+    article: {
+      strict: true,
+      namespaced: true,
+      state: {
+        post_id: null,
+        loading: false
+      },
+      mutations: {
+        setPostId(state, post_id) {
+          state.post_id = post_id;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      }
     }
   }
 };

@@ -66,6 +66,13 @@ import VueOnsen from 'vue-onsenui';
 Vue.use(Vuex);
 Vue.use(VueOnsen);
 
+const moment = require('moment');
+require('moment/locale/ja');
+
+Vue.use(require('vue-moment'), {
+  moment
+});
+
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
   el: '#app',

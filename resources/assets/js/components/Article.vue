@@ -20,12 +20,14 @@
     <v-ons-row class="space">
       <v-ons-col>
         <div class="entry_title_row">
-          <p class="entry_title">3/11(日)練習場所変更</p>
-          <p class="updated_at">3.10 15:39　片岡瑛太(父)</p>
+          <p class="entry_title">{{ post.title }}</p>
+          <p class="updated_at">
+            {{ post.updated_at | moment('YYYY.M.D H:mm') }}
+            　{{ post.updated_name }}</p>
         </div>
         <div class="entry_content">
-	      <span>3/11(日)の練習場所を変更いたします。<br>
-	      土手AM　→　日吉南PM<br><br>よろしくお願いします。<br>
+	      <span>
+          {{ post.content }}
 	      </span>
         </div>
       </v-ons-col>
@@ -80,19 +82,20 @@
           </v-ons-icon>
         </div>
         <!-- コメント -->
-        <div>
-          <p>
-	        <textarea class="textarea comment_textarea"
-                    rows="3" placeholder="コメント"></textarea>
-          </p>
-          <div class="upload-btn-wrapper">
-            <v-ons-button class="smallBtn button--outline">添付ファイル</v-ons-button>
-            <input type="file" name="myfile" />
-          </div>
-          <div class="mt-20">
-            <v-ons-button class="mt-10" ripple>コメントする</v-ons-button>
-          </div>
-        </div>
+        <v-ons-row>
+          <v-ons-col>
+            <textarea class="textarea comment_textarea"
+                      rows="3" placeholder="コメント"></textarea>
+          </v-ons-col>
+          <v-ons-col width="50px" vertical-align="bottom">
+            <v-ons-button class="ml-10 mt-10 right" ripple>
+              <v-ons-icon icon="fa-paper-plane"></v-ons-icon></v-ons-button>
+          </v-ons-col>
+        </v-ons-row>
+        <!--<div class="upload-btn-wrapper">-->
+          <!--<v-ons-button class="smallBtn button&#45;&#45;outline">添付ファイル</v-ons-button>-->
+          <!--<input type="file" name="myfile" />-->
+        <!--</div>-->
       </v-ons-col>
     </v-ons-row>
     <v-ons-row class="space">
@@ -199,8 +202,26 @@
 
 <script>
   export default {
+    mounted() {
+      this.$http.get('/api/posts/' + this.$store.state.article.post_id)
+        .then((response)=>{
+          this.post = response.data.post;
+          // this.isHeartOn = this.data.post_responses.like_flg;
+          console.log(this.post);
+        })
+        .catch(error => {
+          console.log(error);
+          this.errored = true;
+          if (error.response.status == 401) {
+            window.location.href = "/login"; return;
+          }
+        })
+        .finally(() => this.loading = false);
+
+    },
     data() {
       return {
+        post: {},
         isHeartOn: 1,
         heartCount: 2,
         isStarOn: 0,
