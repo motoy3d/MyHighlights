@@ -110,13 +110,8 @@
             </span>
           </div>
           <div>
-            <!--<div class="card comment_card">-->
-              <!--<div class="card__content">-->
-                <!--{{ comment.comment_text }}-->
-              <!--</div>-->
-            <!--</div>-->
             <div class="speech-bubble">
-              <span>{{ comment.comment_text }}</span>
+              <span class="comment">{{ comment.comment_text }}</span>
             </div>
           </div>
           <!--<div class="right mr-10">-->
@@ -244,6 +239,7 @@
           .then((response)=>{
             console.log(response.data);
             self.comment_text = '';
+            self.load();
           })
           .catch(error => {
             this.errored = true;
@@ -383,9 +379,8 @@
     margin: 0 0 0 6px;
   }
   .comment {
-    color: #cccccc;
-    font-size: 24px;
-    margin: 0 0 0 30px;
+    font-size: 14px;
+    margin: 0;
   }
   .comment_card {
     background-color: #81ff4f;

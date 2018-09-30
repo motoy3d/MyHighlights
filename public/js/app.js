@@ -1652,11 +1652,6 @@ if (false) {(function () {
 //
 //
 //
-//
-//
-//
-//
-//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   mounted: function mounted() {
@@ -1713,6 +1708,7 @@ if (false) {(function () {
       this.$http.post('/api/post_comments/' + post_id, this.$data).then(function (response) {
         console.log(response.data);
         self.comment_text = '';
+        self.load();
       }).catch(function (error) {
         _this2.errored = true;
         if (error.response.status == 401) {
@@ -4550,7 +4546,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  color: #cccccc;\n  font-size: 24px;\n  margin: 0 0 0 30px;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 100px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n", ""]);
+exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 100px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n", ""]);
 
 // exports
 
@@ -4895,7 +4891,9 @@ var render = function() {
                       _vm._v(" "),
                       _c("div", [
                         _c("div", { staticClass: "speech-bubble" }, [
-                          _c("span", [_vm._v(_vm._s(comment.comment_text))])
+                          _c("span", { staticClass: "comment" }, [
+                            _vm._v(_vm._s(comment.comment_text))
+                          ])
                         ])
                       ])
                     ]
