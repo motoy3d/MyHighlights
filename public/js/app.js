@@ -1657,52 +1657,71 @@ if (false) {(function () {
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   mounted: function mounted() {
-    var _this = this;
-
-    this.$http.get('/api/posts/' + this.$store.state.article.post_id).then(function (response) {
-      _this.post = response.data.post;
-      // this.isHeartOn = this.data.post_responses.like_flg;
-      console.log(_this.post);
-    }).catch(function (error) {
-      console.log(error);
-      _this.errored = true;
-      if (error.response.status == 401) {
-        window.location.href = "/login";return;
-      }
-    }).finally(function () {
-      return _this.loading = false;
-    });
+    this.load();
   },
   data: function data() {
     return {
       post: {},
+      post_responses: {},
+      post_attachements: {},
+      quetionnaire: {},
+      comments: {},
+      comment_text: "",
       isHeartOn: 1,
       heartCount: 2,
       isStarOn: 0,
       starCount: 0,
-      isLike: 1
+      isLike: 1,
+      loading: false,
+      errored: false
     };
   },
 
   methods: {
-    // var fromPage = null;
-    // document.addEventListener('init', function(event) {
-    //   var page = event.target;
-    //   fromPage = page.data.fromPage;
-    //   console.log("init. fromPage=" + fromPage);
-    // });
+    load: function load() {
+      var _this = this;
+
+      var post_id = this.$store.state.article.post_id;
+      this.$http.get('/api/posts/' + post_id).then(function (response) {
+        _this.post = response.data.post;
+        _this.post_responses = response.data.post_responses;
+        _this.post_attachements = response.data.post_attachements;
+        _this.quetionnaire = response.data.quetionnaire;
+        _this.comments = response.data.comments;
+      }).catch(function (error) {
+        console.log(error);
+        _this.errored = true;
+        if (error.response.status == 401) {
+          window.location.href = "/login";return;
+        }
+      }).finally(function () {
+        return _this.loading = false;
+      });
+    },
+    postComment: function postComment() {
+      var _this2 = this;
+
+      if (!this.comment_text) {
+        this.$ons.notification.alert('コメントを入れてください', { title: '' });
+        return;
+      }
+      var post_id = this.$store.state.article.post_id;
+      var self = this;
+      this.$http.post('/api/post_comments/' + post_id, this.$data).then(function (response) {
+        console.log(response.data);
+        self.comment_text = '';
+      }).catch(function (error) {
+        _this2.errored = true;
+        if (error.response.status == 401) {
+          window.location.href = "/login";return;
+        }
+      }).finally(function () {
+        return _this2.loading = false;
+      });
+    },
     toggleHeart: function toggleHeart() {
       if (this.isHeartOn) {
         this.isHeartOn = 0;
@@ -4531,7 +4550,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  color: #cccccc;\n  font-size: 24px;\n  margin: 0 0 0 30px;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 100px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n", ""]);
 
 // exports
 
@@ -4575,27 +4594,26 @@ var render = function() {
             )
           ],
           1
-        ),
-        _vm._v(" "),
-        _c(
-          "div",
-          { staticClass: "right mr-5" },
-          [
-            _c(
-              "v-ons-toolbar-button",
-              { attrs: { onclick: "alert('投稿編集画面')" } },
-              [
-                _c("v-ons-icon", {
-                  staticClass: "white",
-                  attrs: { icon: "fa-pencil", size: "24px" }
-                })
-              ],
-              1
-            )
-          ],
-          1
         )
       ]),
+      _vm._v(" "),
+      !_vm.errored
+        ? _c(
+            "v-ons-fab",
+            { attrs: { position: "bottom right", ripple: "" } },
+            [
+              _c("v-ons-icon", {
+                attrs: { icon: "fa-pencil", ripple: "" },
+                on: {
+                  click: function($event) {
+                    _vm.alert("編集画面")
+                  }
+                }
+              })
+            ],
+            1
+          )
+        : _vm._e(),
       _vm._v(" "),
       _c("div", {
         staticClass: "page__background",
@@ -4634,77 +4652,91 @@ var render = function() {
         1
       ),
       _vm._v(" "),
-      _c(
-        "v-ons-row",
-        { staticClass: "space" },
-        [
-          _c("v-ons-col", [
-            _c(
-              "p",
-              { staticClass: "bold" },
-              [
-                _c("v-ons-icon", {
-                  staticClass: "black",
-                  attrs: { icon: "fa-bookmark" }
-                }),
-                _vm._v("\n          6/9(土)ルーキーリーグ出欠確認")
-              ],
-              1
-            ),
-            _vm._v(" "),
-            _c("div", { staticClass: "mt-5" }, [
-              _c("table", { staticClass: "quetionnaire_table" }, [
-                _c("tr", [
-                  _c("td", [_vm._v("回答候補１")]),
-                  _vm._v(" "),
-                  _c("td", { staticClass: "quetionnaire_results" }, [
-                    _vm._v("○10 △0 ✕1")
-                  ]),
-                  _vm._v(" "),
-                  _c(
-                    "td",
-                    { staticClass: "quetionnaire_btn" },
-                    [
-                      _c(
-                        "v-ons-button",
-                        {
-                          staticClass: "smallBtn button--quiet",
-                          attrs: { onclick: "showQuestionnaireActionSheet();" }
-                        },
-                        [_vm._v("\n                  回答\n                ")]
-                      )
-                    ],
-                    1
-                  )
-                ]),
+      _vm.quetionnaire
+        ? _c(
+            "v-ons-row",
+            { staticClass: "space" },
+            [
+              _c("v-ons-col", [
+                _c(
+                  "p",
+                  { staticClass: "bold" },
+                  [
+                    _c("v-ons-icon", {
+                      staticClass: "black",
+                      attrs: { icon: "fa-bookmark" }
+                    }),
+                    _vm._v("\n          6/9(土)ルーキーリーグ出欠確認")
+                  ],
+                  1
+                ),
                 _vm._v(" "),
-                _c("tr", [
-                  _c("td", [_vm._v("回答候補２")]),
-                  _vm._v(" "),
-                  _c("td", [_vm._v("○10 △0 ✕1")]),
-                  _vm._v(" "),
-                  _c(
-                    "td",
-                    { staticClass: "quetionnaire_btn" },
-                    [
+                _c("div", { staticClass: "mt-5" }, [
+                  _c("table", { staticClass: "quetionnaire_table" }, [
+                    _c("tr", [
+                      _c("td", [_vm._v("回答候補１")]),
+                      _vm._v(" "),
+                      _c("td", { staticClass: "quetionnaire_results" }, [
+                        _vm._v("○10 △0 ✕1")
+                      ]),
+                      _vm._v(" "),
                       _c(
-                        "v-ons-button",
-                        {
-                          staticClass: "smallBtn button--quiet",
-                          attrs: { onclick: "showQuestionnaireActionSheet();" }
-                        },
-                        [_vm._v("\n                  回答\n                ")]
+                        "td",
+                        { staticClass: "quetionnaire_btn" },
+                        [
+                          _c(
+                            "v-ons-button",
+                            {
+                              staticClass: "smallBtn button--quiet",
+                              attrs: {
+                                onclick: "showQuestionnaireActionSheet();"
+                              }
+                            },
+                            [
+                              _vm._v(
+                                "\n                  回答\n                "
+                              )
+                            ]
+                          )
+                        ],
+                        1
                       )
-                    ],
-                    1
-                  )
+                    ]),
+                    _vm._v(" "),
+                    _c("tr", [
+                      _c("td", [_vm._v("回答候補２")]),
+                      _vm._v(" "),
+                      _c("td", [_vm._v("○10 △0 ✕1")]),
+                      _vm._v(" "),
+                      _c(
+                        "td",
+                        { staticClass: "quetionnaire_btn" },
+                        [
+                          _c(
+                            "v-ons-button",
+                            {
+                              staticClass: "smallBtn button--quiet",
+                              attrs: {
+                                onclick: "showQuestionnaireActionSheet();"
+                              }
+                            },
+                            [
+                              _vm._v(
+                                "\n                  回答\n                "
+                              )
+                            ]
+                          )
+                        ],
+                        1
+                      )
+                    ])
+                  ])
                 ])
               ])
-            ])
-          ])
-        ],
-        1
-      ),
+            ],
+            1
+          )
+        : _vm._e(),
       _vm._v(" "),
       _c(
         "v-ons-row",
@@ -4713,9 +4745,11 @@ var render = function() {
           _c(
             "v-ons-col",
             [
+              _c("hr", { staticStyle: { "background-color": "#e2e2e2" } }),
+              _vm._v(" "),
               _c(
                 "div",
-                { staticClass: "center" },
+                { staticClass: "center mt-15" },
                 [
                   _c(
                     "v-ons-icon",
@@ -4766,11 +4800,29 @@ var render = function() {
               _vm._v(" "),
               _c(
                 "v-ons-row",
+                { staticClass: "mt-30" },
                 [
                   _c("v-ons-col", [
                     _c("textarea", {
+                      directives: [
+                        {
+                          name: "model",
+                          rawName: "v-model",
+                          value: _vm.comment_text,
+                          expression: "comment_text"
+                        }
+                      ],
                       staticClass: "textarea comment_textarea",
-                      attrs: { rows: "3", placeholder: "コメント" }
+                      attrs: { rows: "4", placeholder: "コメント" },
+                      domProps: { value: _vm.comment_text },
+                      on: {
+                        input: function($event) {
+                          if ($event.target.composing) {
+                            return
+                          }
+                          _vm.comment_text = $event.target.value
+                        }
+                      }
                     })
                   ]),
                   _vm._v(" "),
@@ -4782,7 +4834,12 @@ var render = function() {
                         "v-ons-button",
                         {
                           staticClass: "ml-10 mt-10 right",
-                          attrs: { ripple: "" }
+                          attrs: { ripple: "" },
+                          on: {
+                            click: function($event) {
+                              _vm.postComment()
+                            }
+                          }
                         },
                         [
                           _c("v-ons-icon", {
@@ -4804,80 +4861,51 @@ var render = function() {
         1
       ),
       _vm._v(" "),
-      _c(
-        "v-ons-row",
-        { staticClass: "space" },
-        [
-          _c("v-ons-col", [
-            _c("div", { staticClass: "mt-20 ml-15" }, [
-              _c("hr", { staticClass: "mt-15" }),
-              _vm._v(" "),
-              _c("div", [
-                _c("span", { staticClass: "bold" }, [
-                  _vm._v("3.11(日) 22:39　田中大志(父)")
-                ])
-              ]),
-              _vm._v(" "),
-              _c("div", [
-                _c("div", { staticClass: "card comment_card" }, [
-                  _c("div", { staticClass: "card__content" }, [
-                    _vm._v("\n                了解しました！"),
-                    _c("br"),
-                    _vm._v("よろしくお願いします。\n              ")
-                  ])
-                ])
-              ]),
-              _vm._v(" "),
+      _vm.comments
+        ? _c(
+            "v-ons-row",
+            { staticClass: "space lastspace" },
+            [
               _c(
-                "div",
-                { staticClass: "right mr-10" },
-                [
-                  _c("v-ons-icon", {
-                    class: _vm.isLike ? "like_on" : "like_off",
-                    attrs: { icon: "fa-thumbs-up", onclick: "toggleLike(this)" }
-                  }),
-                  _vm._v(" "),
-                  _c("span", { staticClass: "like-count" }, [_vm._v("2")])
-                ],
-                1
+                "v-ons-col",
+                _vm._l(_vm.comments, function(comment) {
+                  return _c(
+                    "div",
+                    { key: comment.id, staticClass: "mt-10 ml-15" },
+                    [
+                      _c("div", [
+                        _c("span", { staticClass: "bold" }, [
+                          _vm._v(
+                            "\n              " +
+                              _vm._s(comment.name) +
+                              "\n            "
+                          )
+                        ]),
+                        _vm._v(" "),
+                        _c("span", { staticClass: "updated_at" }, [
+                          _vm._v(
+                            "\n              " +
+                              _vm._s(
+                                _vm._f("moment")(comment.created_at, "from")
+                              ) +
+                              "　\n            "
+                          )
+                        ])
+                      ]),
+                      _vm._v(" "),
+                      _c("div", [
+                        _c("div", { staticClass: "speech-bubble" }, [
+                          _c("span", [_vm._v(_vm._s(comment.comment_text))])
+                        ])
+                      ])
+                    ]
+                  )
+                })
               )
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "mt-20 ml-15" }, [
-              _c("hr", { staticClass: "mt-15" }),
-              _vm._v(" "),
-              _c("div", [
-                _c("span", { staticClass: "bold" }, [
-                  _vm._v("3.11(日) 22:39　矢野明子(母)")
-                ])
-              ]),
-              _vm._v(" "),
-              _c("div", [
-                _c("div", { staticClass: "card comment_card" }, [
-                  _c("div", { staticClass: "card__content" }, [
-                    _vm._v("\n                了解です〜👍\n              ")
-                  ])
-                ])
-              ]),
-              _vm._v(" "),
-              _c(
-                "div",
-                { staticClass: "right mr-10" },
-                [
-                  _c("v-ons-icon", {
-                    class: _vm.isLike ? "like_on" : "like_off",
-                    attrs: { icon: "fa-thumbs-up", onclick: "toggleLike(this)" }
-                  })
-                ],
-                1
-              ),
-              _vm._v(" "),
-              _c("hr", { staticClass: "mt-20" })
-            ])
-          ])
-        ],
-        1
-      ),
+            ],
+            1
+          )
+        : _vm._e(),
       _vm._v(" "),
       _c("v-ons-modal", { attrs: { var: "quetionnaireAnswerModal" } }, [
         _c(
@@ -8416,7 +8444,7 @@ exports = module.exports = __webpack_require__(2)(false);
 
 
 // module
-exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n", ""]);
+exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n", ""]);
 
 // exports
 

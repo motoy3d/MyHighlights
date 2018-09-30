@@ -15,7 +15,8 @@
 
   Route::middleware('auth:api')->group(function () {
     Route::resource('posts', 'Api\PostController');
-    Route::post('post_responses', 'Api\PostResponseController@store');
+    Route::post('post_responses/{post_id}', 'Api\PostResponseController@store');
+    Route::post('post_comments/{post_id}', 'Api\PostCommentController@store');
     Route::resource('schedules', 'Api\ScheduleController');
     Route::get('teams', 'Api\TeamController@show');
     Route::put('users/updateName', 'Api\UserController@updateName');

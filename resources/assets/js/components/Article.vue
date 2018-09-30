@@ -8,14 +8,11 @@
           <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
-      <div class="right mr-5">
-        <!-- 削除や編集は画面内に直接表示したほうが使いやすい? -->
-        <v-ons-toolbar-button onclick="alert('投稿編集画面')">
-          <v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>
-        </v-ons-toolbar-button>
-      </div>
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
+    <v-ons-fab position="bottom right" v-if="!errored" ripple>
+      <v-ons-icon icon="fa-pencil" @click="alert('編集画面');" ripple/>
+    </v-ons-fab>
     <div class="page__background" style="background-color: white;"></div>
     <v-ons-row class="space">
       <v-ons-col>
@@ -33,7 +30,7 @@
       </v-ons-col>
     </v-ons-row>
     <!-- アンケート -->
-    <v-ons-row class="space">
+    <v-ons-row class="space" v-if="quetionnaire">
       <v-ons-col>
         <p class="bold"><v-ons-icon icon="fa-bookmark" class="black"></v-ons-icon>
           6/9(土)ルーキーリーグ出欠確認</p>
@@ -68,8 +65,9 @@
     </v-ons-row>
     <v-ons-row class="space">
       <v-ons-col>
+        <hr style="background-color: #e2e2e2">
         <!-- ハート -->
-        <div class="center">
+        <div class="center mt-15">
           <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
                       @click="toggleHeart();">
             <span class="heart_text">いいね</span>
@@ -82,13 +80,14 @@
           </v-ons-icon>
         </div>
         <!-- コメント -->
-        <v-ons-row>
+        <v-ons-row class="mt-30">
           <v-ons-col>
             <textarea class="textarea comment_textarea"
-                      rows="3" placeholder="コメント"></textarea>
+                      rows="4" placeholder="コメント" v-model="comment_text"></textarea>
           </v-ons-col>
           <v-ons-col width="50px" vertical-align="bottom">
-            <v-ons-button class="ml-10 mt-10 right" ripple>
+            <v-ons-button class="ml-10 mt-10 right" ripple
+              @click="postComment()">
               <v-ons-icon icon="fa-paper-plane"></v-ons-icon></v-ons-button>
           </v-ons-col>
         </v-ons-row>
@@ -98,42 +97,34 @@
         <!--</div>-->
       </v-ons-col>
     </v-ons-row>
-    <v-ons-row class="space">
+    <v-ons-row class="space lastspace" v-if="comments">
       <v-ons-col>
-        <div class="mt-20 ml-15">
-          <hr class="mt-15">
-          <div><span class="bold">3.11(日) 22:39　田中大志(父)</span></div>
+        <div class="mt-10 ml-15" v-for="comment in comments" :key="comment.id">
+          <!--<hr class="mt-15">-->
           <div>
-            <div class="card comment_card">
-              <div class="card__content">
-                了解しました！<br>よろしくお願いします。
-              </div>
+            <span class="bold">
+              {{ comment.name }}
+            </span>
+            <span class="updated_at">
+              {{ comment.created_at | moment("from")}}　
+            </span>
+          </div>
+          <div>
+            <!--<div class="card comment_card">-->
+              <!--<div class="card__content">-->
+                <!--{{ comment.comment_text }}-->
+              <!--</div>-->
+            <!--</div>-->
+            <div class="speech-bubble">
+              <span>{{ comment.comment_text }}</span>
             </div>
           </div>
-          <div class="right mr-10">
-            <v-ons-icon icon="fa-thumbs-up"
-                        :class="isLike? 'like_on' : 'like_off'"
-                        onclick="toggleLike(this)"></v-ons-icon>
-            <span class="like-count">2</span>
-          </div>
-        </div>
-
-        <div class="mt-20 ml-15">
-          <hr class="mt-15">
-          <div><span class="bold">3.11(日) 22:39　矢野明子(母)</span></div>
-          <div>
-            <div class="card comment_card">
-              <div class="card__content">
-                了解です〜👍
-              </div>
-            </div>
-          </div>
-          <div class="right mr-10">
-            <v-ons-icon icon="fa-thumbs-up"
-                        :class="isLike? 'like_on' : 'like_off'"
-                        onclick="toggleLike(this)"></v-ons-icon>
-          </div>
-          <hr class="mt-20">
+          <!--<div class="right mr-10">-->
+            <!--<v-ons-icon icon="fa-thumbs-up"-->
+                        <!--:class="isLike? 'like_on' : 'like_off'"-->
+                        <!--onclick="toggleLike(this)"></v-ons-icon>-->
+            <!--<span class="like-count">{{ comment.like_user_ids.length }}</span>-->
+          <!--</div>-->
         </div>
       </v-ons-col>
     </v-ons-row>
@@ -203,39 +194,65 @@
 <script>
   export default {
     mounted() {
-      this.$http.get('/api/posts/' + this.$store.state.article.post_id)
-        .then((response)=>{
-          this.post = response.data.post;
-          // this.isHeartOn = this.data.post_responses.like_flg;
-          console.log(this.post);
-        })
-        .catch(error => {
-          console.log(error);
-          this.errored = true;
-          if (error.response.status == 401) {
-            window.location.href = "/login"; return;
-          }
-        })
-        .finally(() => this.loading = false);
-
+      this.load();
     },
     data() {
       return {
         post: {},
+        post_responses: {},
+        post_attachements: {},
+        quetionnaire: {},
+        comments: {},
+        comment_text: "",
         isHeartOn: 1,
         heartCount: 2,
         isStarOn: 0,
         starCount: 0,
-        isLike: 1
+        isLike: 1,
+        loading: false,
+        errored: false
       }
     },
     methods: {
-      // var fromPage = null;
-      // document.addEventListener('init', function(event) {
-      //   var page = event.target;
-      //   fromPage = page.data.fromPage;
-      //   console.log("init. fromPage=" + fromPage);
-      // });
+      load() {
+        let post_id = this.$store.state.article.post_id;
+        this.$http.get('/api/posts/' + post_id)
+          .then((response)=>{
+            this.post = response.data.post;
+            this.post_responses = response.data.post_responses;
+            this.post_attachements = response.data.post_attachements;
+            this.quetionnaire = response.data.quetionnaire;
+            this.comments = response.data.comments;
+          })
+          .catch(error => {
+            console.log(error);
+            this.errored = true;
+            if (error.response.status == 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          .finally(() => this.loading = false);
+      },
+      postComment() {
+        if (!this.comment_text) {
+          this.$ons.notification.alert('コメントを入れてください', {title: ''});
+          return;
+        }
+        let post_id = this.$store.state.article.post_id;
+        let self = this;
+        this.$http.post('/api/post_comments/' + post_id, this.$data)
+          .then((response)=>{
+            console.log(response.data);
+            self.comment_text = '';
+          })
+          .catch(error => {
+            this.errored = true;
+            if (error.response.status == 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          .finally(() => this.loading = false);
+      },
       toggleHeart() {
         if(this.isHeartOn) {
           this.isHeartOn = 0;
@@ -275,4 +292,138 @@
   };
 </script>
 
-<style></style>
+<style>
+  .article_container {
+    padding: 15px;
+    background-color: white;
+  }
+  .comment_textarea {
+    width: 100%;
+  }
+  .entry_title {
+    font-size: 18px;
+    font-weight: bold;
+    text-align:left;
+    margin: 0;
+  }
+  .entry_content {
+    font-size: 16px;
+    text-align:left;
+    margin: 5px 0 0 5px;
+  }
+  .updated_at {
+    color: grey;
+    font-size: 13px;
+    text-align: left;
+    margin: 0 0 0 5px;
+  }
+  .highlight_summary {
+    font-size: 12px;
+    line-height: 50%;
+    margin: 0 0 0 10px;
+  }
+  .video_thumbnail {
+    margin: 6px 0 6px 0;
+  }
+  .quetionnaire_table {
+    width: 100%;
+  }
+  .quetionnaire_table td {
+    border-bottom: 1px solid gray;
+  }
+  .quetionnaire_results {
+    width: 100px;
+  }
+  .quetionnaire_btn {
+    width: 60px;
+  }
+  .responsebar {
+    text-align: center;
+    margin: 20px auto 0 auto;
+    width: 100%;
+  }
+  .heart {
+    color: #ff6060;
+    font-size: 18px;
+    /*  margin: 0 0 0 30px;*/
+  }
+  .heart-count {
+    color: red;
+    font-size: 13px;
+  }
+  .heart_text {
+    color: black;
+    font-size: 16px;
+  }
+  .star {
+    color: orange;
+    font-size: 18px;
+    margin: 0 0 0 40px;
+  }
+  .star-count {
+    color: orange;
+    font-size: 13px;
+  }
+  .star_text {
+    color: black;
+    font-size: 16px;
+  }
+  .like_off {
+    color: #cccccc;
+    font-size: 24px;
+    margin-top: 5px;
+  }
+  .like_on {
+    color: #ff6060;
+    font-size: 24px;
+    margin-top: 5px;
+  }
+  .like-count {
+    font-size: 13px;
+    margin: 0 0 0 6px;
+  }
+  .comment {
+    color: #cccccc;
+    font-size: 24px;
+    margin: 0 0 0 30px;
+  }
+  .comment_card {
+    background-color: #81ff4f;
+    margin-bottom: 0;
+  }
+  .comment-count {
+    color: grey;
+    font-size: 13px;
+    margin: 0 0 0 4px;
+  }
+  .comment-toggle {
+    color: #cccccc;
+    font-size: 26px;
+    font-weight: bold;
+    margin: 0 0 0 20px;
+  }
+  .lastspace {
+    margin-bottom: 100px;
+  }
+  .speech-bubble {
+    position: relative;
+    background: #81ff4f;
+    border-radius: .3em;
+    padding: 15px;
+    margin-top: 6px;
+  }
+
+  .speech-bubble:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5%;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-bottom-color: #81ff4f;
+    border-top: 0;
+    margin-left: -6px;
+    margin-top: -6px;
+  }
+</style>

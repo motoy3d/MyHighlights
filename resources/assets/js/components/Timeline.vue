@@ -152,6 +152,18 @@
   .entry_title_row {
     width: 97%;
   }
+  .entry_title {
+    font-size: 18px;
+    font-weight: bold;
+    text-align:left;
+    margin: 0;
+  }
+  .updated_at {
+    color: grey;
+    font-size: 13px;
+    text-align: left;
+    margin: 0 0 0 5px;
+  }
   .entry_content {
     width: 95%;
     text-align:left;
