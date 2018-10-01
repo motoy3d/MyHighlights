@@ -17,6 +17,7 @@
     Route::resource('posts', 'Api\PostController');
     Route::post('post_responses/{post_id}', 'Api\PostResponseController@store');
     Route::post('post_comments/{post_id}', 'Api\PostCommentController@store');
+    Route::delete('post_comments/{post_id}/{comment_id}', 'Api\PostCommentController@destroy');
     Route::resource('schedules', 'Api\ScheduleController');
     Route::get('teams', 'Api\TeamController@show');
     Route::put('users/updateName', 'Api\UserController@updateName');

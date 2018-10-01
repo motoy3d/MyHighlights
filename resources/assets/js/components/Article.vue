@@ -99,7 +99,7 @@
     </v-ons-row>
     <v-ons-row class="space lastspace" v-if="comments">
       <v-ons-col>
-        <div class="mt-10 ml-15" v-for="comment in comments" :key="comment.id">
+        <div class="mt-10 ml-15" v-for="(comment, index) in comments" :key="comment.id">
           <!--<hr class="mt-15">-->
           <div>
             <span class="bold">
@@ -112,6 +112,10 @@
           <div>
             <div class="speech-bubble">
               <span class="comment">{{ comment.comment_text }}</span>
+              <span v-if="comment.user_id == user.id">
+                <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
+                  @click="confirmDeleteComment(comment.id)"></v-ons-icon>
+              </span>
             </div>
           </div>
           <!--<div class="right mr-10">-->
@@ -199,6 +203,7 @@
         quetionnaire: {},
         comments: {},
         comment_text: "",
+        user: {},
         isHeartOn: 1,
         heartCount: 2,
         isStarOn: 0,
@@ -218,6 +223,7 @@
             this.post_attachements = response.data.post_attachements;
             this.quetionnaire = response.data.quetionnaire;
             this.comments = response.data.comments;
+            this.user = response.data.user;
           })
           .catch(error => {
             console.log(error);
@@ -248,6 +254,32 @@
             }
           })
           .finally(() => this.loading = false);
+      },
+      confirmDeleteComment(comment_id) {
+        let self = this;
+        this.$ons.notification.confirm("削除しますか？", {title: ''})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.deleteComment(comment_id);
+          });
+      },
+      deleteComment(comment_id) {
+        console.log("コメントID=" + comment_id);
+        let post_id = this.$store.state.article.post_id;
+        let self = this;
+        self.$http.delete('/api/post_comments/' + post_id + '/' + comment_id)
+          .then((response)=>{
+            console.log(response.data);
+            self.load();
+          })
+          .catch(error => {
+            console.log(error);
+            errored = true;
+            if (error.response.status == 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          .finally(() => self.loading = false);
       },
       toggleHeart() {
         if(this.isHeartOn) {
@@ -420,5 +452,10 @@
     border-top: 0;
     margin-left: -6px;
     margin-top: -6px;
+  }
+  .delete_comment_icon
+  {
+    color: gray;
+    float: right;
   }
 </style>

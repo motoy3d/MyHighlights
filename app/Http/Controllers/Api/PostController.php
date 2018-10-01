@@ -155,7 +155,9 @@ class PostController extends Controller
     $comments = DB::table('post_comments')
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
 //TODO 添付      ->leftJoin('post_comment_attachements', 'post_comments.id', '=', 'post_comment_attachements.post_comment_id')
-      ->select('comment_text', 'post_comments.created_at',
+      ->select(
+        'post_comments.id', 'comment_text',
+        'post_comments.created_at',
         'like_user_ids', 'user_id', 'users.name')
       ->where('post_id', $post->id)
       ->orderByDesc('post_comments.id')
@@ -169,7 +171,8 @@ class PostController extends Controller
       'post_responses' => $post_response? $post_response : [],
       'post_attachements' => $post_attachements,
       'quetionnaire' => $quetionnaire,
-      'comments' => $comments
+      'comments' => $comments,
+      'user' => Auth::user()
     ]);
   }
 
