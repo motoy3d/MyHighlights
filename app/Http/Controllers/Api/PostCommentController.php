@@ -36,6 +36,8 @@ class PostCommentController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+    $post->comment_count = $post->comment_count + 1;
+    $post->save();
     return Response::json($postCommentResult);
   }
 
@@ -62,6 +64,8 @@ class PostCommentController extends Controller
       ], 404);
     }
     $count = PostComment::destroy($request->comment_id);
+    $post->comment_count = $post->comment_count - 1;
+    $post->save();
     return Response::json($count);
   }
 

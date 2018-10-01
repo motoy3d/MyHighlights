@@ -57,10 +57,12 @@
                 {{ post.content }}
               </span>
               <div class="mt-10">
-                <v-ons-icon icon="fa-comment-o" class="small gray">
-                  <span>4</span>
+                <v-ons-icon icon="fa-comment-o" class="small gray"
+                  v-if="post.comment_count">
+                  <span class="ml-5">{{ post.comment_count }}</span>
                 </v-ons-icon>
-                <v-ons-icon icon="fa-list-alt" class="small gray ml-10">
+                <v-ons-icon icon="fa-list-alt" class="small gray ml-10"
+                  v-if="post.quetionnaire_id">
                   <span>アンケート</span>
                 </v-ons-icon>
               </div>
@@ -168,5 +170,6 @@
     width: 95%;
     text-align:left;
     margin: 5px 0 0 5px;
+    white-space: pre-wrap;
   }
 </style>

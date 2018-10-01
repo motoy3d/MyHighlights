@@ -236,7 +236,6 @@
       },
       postComment() {
         if (!this.comment_text) {
-          this.$ons.notification.alert('コメントを入れてください', {title: ''});
           return;
         }
         let post_id = this.$store.state.article.post_id;
@@ -338,6 +337,7 @@
     font-size: 16px;
     text-align:left;
     margin: 5px 0 0 5px;
+    white-space: pre-wrap;
   }
   .updated_at {
     color: grey;
