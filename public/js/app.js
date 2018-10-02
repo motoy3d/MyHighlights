@@ -1523,6 +1523,7 @@ if (false) {(function () {
 //
 //
 //
+//
 
 
 
@@ -1539,6 +1540,7 @@ if (false) {(function () {
     load: function load() {
       var _this = this;
 
+      this.loading = true;
       this.$http.get('/api/posts').then(function (response) {
         _this.$store.commit('timeline/set', response.data.data);
       }).catch(function (error) {
@@ -4647,7 +4649,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n", ""]);
+exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.post_content {\n  white-space: pre-wrap;\n}\n", ""]);
 
 // exports
 
@@ -4790,26 +4792,26 @@ var render = function() {
             )
           ],
           1
+        ),
+        _vm._v(" "),
+        _c(
+          "div",
+          { staticClass: "right mr-5" },
+          [
+            _c(
+              "v-ons-toolbar-button",
+              [
+                _c("v-ons-icon", {
+                  staticClass: "white",
+                  attrs: { icon: "fa-pencil", size: "24px" }
+                })
+              ],
+              1
+            )
+          ],
+          1
         )
       ]),
-      _vm._v(" "),
-      !_vm.errored
-        ? _c(
-            "v-ons-fab",
-            { attrs: { position: "bottom right", ripple: "" } },
-            [
-              _c("v-ons-icon", {
-                attrs: { icon: "fa-pencil", ripple: "" },
-                on: {
-                  click: function($event) {
-                    _vm.alert("編集画面")
-                  }
-                }
-              })
-            ],
-            1
-          )
-        : _vm._e(),
       _vm._v(" "),
       _c("div", {
         staticClass: "page__background",
@@ -4839,9 +4841,7 @@ var render = function() {
             ]),
             _vm._v(" "),
             _c("div", { staticClass: "entry_content" }, [
-              _c("span", [
-                _vm._v("\n          " + _vm._s(_vm.post.content) + "\n\t      ")
-              ])
+              _c("span", [_vm._v(_vm._s(_vm.post.content) + "\n\t      ")])
             ])
           ])
         ],
@@ -6600,7 +6600,30 @@ var render = function() {
           1
         ),
         _vm._v(" "),
-        _c("div", { staticClass: "right mr-5" })
+        _c(
+          "div",
+          { staticClass: "right mr-5" },
+          [
+            _c(
+              "v-ons-toolbar-button",
+              {
+                on: {
+                  click: function($event) {
+                    _vm.load()
+                  }
+                }
+              },
+              [
+                _c("v-ons-icon", {
+                  staticClass: "white",
+                  attrs: { icon: "fa-refresh", size: "28px" }
+                })
+              ],
+              1
+            )
+          ],
+          1
+        )
       ]),
       _vm._v(" "),
       !_vm.errored
@@ -6633,7 +6656,7 @@ var render = function() {
             "section",
             [
               _vm.$store.state.timeline.loading
-                ? _c("div", { staticClass: "center" }, [
+                ? _c("div", { staticClass: "center mt-30" }, [
                     _c(
                       "svg",
                       {
@@ -6709,12 +6732,8 @@ var render = function() {
                             ]),
                             _vm._v(" "),
                             _c("div", { staticClass: "entry_content" }, [
-                              _c("span", [
-                                _vm._v(
-                                  "\n              " +
-                                    _vm._s(post.content) +
-                                    "\n            "
-                                )
+                              _c("span", { staticClass: "post_content" }, [
+                                _vm._v(_vm._s(post.content))
                               ]),
                               _vm._v(" "),
                               _c(

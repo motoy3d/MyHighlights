@@ -9,6 +9,9 @@
         </v-ons-search-input>
       </div>
       <div class="right mr-5">
+        <v-ons-toolbar-button @click="load()">
+          <v-ons-icon icon="fa-refresh" size="28px" class="white"></v-ons-icon>
+        </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
                 <v-ons-icon icon="fa-cloud-upload" size="28px"></v-ons-icon>
@@ -24,7 +27,7 @@
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
-      <div v-if="$store.state.timeline.loading" class="center">
+      <div v-if="$store.state.timeline.loading" class="center mt-30">
         <svg class="progress-circular progress-circular--indeterminate">
           <circle class="progress-circular__background"/>
           <circle class="progress-circular__primary progress-circular--indeterminate__primary"/>
@@ -53,9 +56,7 @@
                 {{ post.updated_name }}</p>
             </div>
             <div class="entry_content">
-              <span>
-                {{ post.content }}
-              </span>
+              <span class="post_content">{{ post.content }}</span>
               <div class="mt-10">
                 <v-ons-icon icon="fa-comment-o" class="small gray"
                   v-if="post.comment_count">
@@ -87,6 +88,7 @@
     },
     methods: {
       load() {
+        this.loading = true;
         this.$http.get('/api/posts')
           .then((response)=>{
             this.$store.commit('timeline/set', response.data.data);
@@ -170,6 +172,8 @@
     width: 95%;
     text-align:left;
     margin: 5px 0 0 5px;
+  }
+  .post_content {
     white-space: pre-wrap;
   }
 </style>

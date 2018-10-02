@@ -8,11 +8,13 @@
           <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
+      <div class="right mr-5">
+        <v-ons-toolbar-button>
+          <v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>
+        </v-ons-toolbar-button>
+      </div>
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
-    <v-ons-fab position="bottom right" v-if="!errored" ripple>
-      <v-ons-icon icon="fa-pencil" @click="alert('編集画面');" ripple/>
-    </v-ons-fab>
     <div class="page__background" style="background-color: white;"></div>
     <v-ons-row class="space">
       <v-ons-col>
@@ -22,9 +24,7 @@
             {{ post.updated_at | moment('YYYY.M.D H:mm') }}
             　{{ post.updated_name }}</p>
         </div>
-        <div class="entry_content">
-	      <span>
-          {{ post.content }}
+        <div class="entry_content"><span>{{ post.content }}
 	      </span>
         </div>
       </v-ons-col>
