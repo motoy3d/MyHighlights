@@ -451,7 +451,7 @@
     margin: 0 0 0 20px;
   }
   .lastspace {
-    margin-bottom: 20px;
+    margin-bottom: 80px;
   }
   .speech-bubble {
     position: relative;

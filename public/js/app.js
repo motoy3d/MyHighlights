@@ -1529,22 +1529,6 @@ if (false) {(function () {
   },
 
   methods: {
-    // store.jsで実行
-    // load() {
-    //   this.loading = true;
-    //   this.$http.get('/api/posts')
-    //     .then((response)=>{
-    //       this.$store.commit('timeline/set', response.data.data);
-    //     })
-    //     .catch(error => {
-    //       console.log(error);
-    //       this.errored = true;
-    //       if (error.response.status == 401) {
-    //         window.location.href = "/login"; return;
-    //       }
-    //     })
-    //     .finally(() => this.loading = false);
-    // },
     openArticle: function openArticle(post_id) {
       // console.log("post_id=" + post_id);
       this.$store.commit('article/setPostId', post_id);
@@ -4788,7 +4772,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 20px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n", ""]);
+exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 80px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n", ""]);
 
 // exports
 
@@ -6737,7 +6721,7 @@ var render = function() {
               {
                 on: {
                   click: function($event) {
-                    _vm.load()
+                    _vm.$store.dispatch("timeline/loadTimeline", _vm.$http)
                   }
                 }
               },

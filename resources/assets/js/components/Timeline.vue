@@ -9,7 +9,7 @@
         </v-ons-search-input>
       </div>
       <div class="right mr-5">
-        <v-ons-toolbar-button @click="load()">
+        <v-ons-toolbar-button @click="$store.dispatch('timeline/loadTimeline', $http)">
           <v-ons-icon icon="fa-refresh" size="24px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
@@ -79,22 +79,6 @@
       this.$store.dispatch('timeline/loadTimeline', this.$http);
     },
     methods: {
-      // store.jsで実行
-      // load() {
-      //   this.loading = true;
-      //   this.$http.get('/api/posts')
-      //     .then((response)=>{
-      //       this.$store.commit('timeline/set', response.data.data);
-      //     })
-      //     .catch(error => {
-      //       console.log(error);
-      //       this.errored = true;
-      //       if (error.response.status == 401) {
-      //         window.location.href = "/login"; return;
-      //       }
-      //     })
-      //     .finally(() => this.loading = false);
-      // },
       openArticle(post_id) {
         // console.log("post_id=" + post_id);
         this.$store.commit('article/setPostId', post_id);
