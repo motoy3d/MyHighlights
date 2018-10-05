@@ -430,7 +430,7 @@
     margin: 0 0 0 20px;
   }
   .lastspace {
-    margin-bottom: 100px;
+    margin-bottom: 20px;
   }
   .speech-bubble {
     position: relative;
@@ -453,8 +453,7 @@
     margin-left: -6px;
     margin-top: -6px;
   }
-  .delete_comment_icon
-  {
+  .delete_comment_icon {
     color: gray;
     float: right;
   }

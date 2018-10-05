@@ -10,7 +10,7 @@
       </div>
       <div class="right mr-5">
         <v-ons-toolbar-button @click="load()">
-          <v-ons-icon icon="fa-refresh" size="28px" class="white"></v-ons-icon>
+          <v-ons-icon icon="fa-refresh" size="24px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
@@ -56,8 +56,8 @@
                 {{ post.updated_name }}</p>
             </div>
             <div class="entry_content">
-              <span class="post_content">{{ post.content }}</span>
-              <div class="mt-10">
+              <span class="post_content">{{ post.content | truncate}}</span>
+              <div class="mt-10" v-if="post.comment_count || post.quetionnaire_id">
                 <v-ons-icon icon="fa-comment-o" class="small gray"
                   v-if="post.comment_count">
                   <span class="ml-5">{{ post.comment_count }}</span>

@@ -15,7 +15,8 @@ let mix = require('laravel-mix');
 mix.js('resources/assets/js/app.js', 'public/js')
   .sass('resources/assets/sass/app.scss', 'public/css')
   .extract(['jquery', 'vue', 'vuex', 'onsenui', 'vue-onsenui', 'lodash'
-  ,'moment', 'vue-moment']);
+  ,'moment', 'vue-moment'])
+;
 
 // コンパイルしたファイルのバージョン付け
 // https://readouble.com/laravel/5.5/ja/mix.html

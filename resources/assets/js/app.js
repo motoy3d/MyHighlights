@@ -68,10 +68,21 @@ Vue.use(VueOnsen);
 
 const moment = require('moment');
 require('moment/locale/ja');
-
 Vue.use(require('vue-moment'), {
   moment
 });
+
+Vue.filter('truncate', function(value, length, omission) {
+  var length = length ? parseInt(length, 10) : 70;
+  var ommision = omission ? omission.toString() : '...';
+  if(value.length <= length) {
+    return value;
+  }
+  else {
+    return value.substring(0, length) + ommision;
+  }
+});
+
 
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
