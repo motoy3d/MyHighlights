@@ -27,13 +27,8 @@
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
-      <div v-if="$store.state.timeline.loading" class="center mt-30">
-        <svg class="progress-circular progress-circular--indeterminate">
-          <circle class="progress-circular__background"/>
-          <circle class="progress-circular__primary progress-circular--indeterminate__primary"/>
-          <circle class="progress-circular__secondary progress-circular--indeterminate__secondary"/>
-        </svg>
-        読み込み中...
+      <div v-if="$store.state.timeline.loading" class="progress-div">
+        <v-ons-progress-circular indeterminate class="progress-circular"></v-ons-progress-circular>
       </div>
       <template v-else>
         <v-ons-list id="timeline_list">
@@ -81,29 +76,27 @@
   import Calendar from './Calendar.vue';
   export default {
     mounted() {
-      console.log("Timeline#mounted");
-      // this.load();
-      // store.jsでsetしても画面に反映されない
       this.$store.dispatch('timeline/loadTimeline', this.$http);
     },
     methods: {
-      load() {
-        this.loading = true;
-        this.$http.get('/api/posts')
-          .then((response)=>{
-            this.$store.commit('timeline/set', response.data.data);
-          })
-          .catch(error => {
-            console.log(error);
-            this.errored = true;
-            if (error.response.status == 401) {
-              window.location.href = "/login"; return;
-            }
-          })
-          .finally(() => this.loading = false);
-      },
+      // store.jsで実行
+      // load() {
+      //   this.loading = true;
+      //   this.$http.get('/api/posts')
+      //     .then((response)=>{
+      //       this.$store.commit('timeline/set', response.data.data);
+      //     })
+      //     .catch(error => {
+      //       console.log(error);
+      //       this.errored = true;
+      //       if (error.response.status == 401) {
+      //         window.location.href = "/login"; return;
+      //       }
+      //     })
+      //     .finally(() => this.loading = false);
+      // },
       openArticle(post_id) {
-        console.log("post_id=" + post_id);
+        // console.log("post_id=" + post_id);
         this.$store.commit('article/setPostId', post_id);
         this.$store.commit('navigator/push', {
           extends: Article,

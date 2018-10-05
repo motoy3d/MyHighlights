@@ -1519,42 +1519,34 @@ if (false) {(function () {
 //
 //
 //
-//
-//
-//
-//
-//
 
 
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   mounted: function mounted() {
-    console.log("Timeline#mounted");
-    // this.load();
-    // store.jsでsetしても画面に反映されない
     this.$store.dispatch('timeline/loadTimeline', this.$http);
   },
 
   methods: {
-    load: function load() {
-      var _this = this;
-
-      this.loading = true;
-      this.$http.get('/api/posts').then(function (response) {
-        _this.$store.commit('timeline/set', response.data.data);
-      }).catch(function (error) {
-        console.log(error);
-        _this.errored = true;
-        if (error.response.status == 401) {
-          window.location.href = "/login";return;
-        }
-      }).finally(function () {
-        return _this.loading = false;
-      });
-    },
+    // store.jsで実行
+    // load() {
+    //   this.loading = true;
+    //   this.$http.get('/api/posts')
+    //     .then((response)=>{
+    //       this.$store.commit('timeline/set', response.data.data);
+    //     })
+    //     .catch(error => {
+    //       console.log(error);
+    //       this.errored = true;
+    //       if (error.response.status == 401) {
+    //         window.location.href = "/login"; return;
+    //       }
+    //     })
+    //     .finally(() => this.loading = false);
+    // },
     openArticle: function openArticle(post_id) {
-      console.log("post_id=" + post_id);
+      // console.log("post_id=" + post_id);
       this.$store.commit('article/setPostId', post_id);
       this.$store.commit('navigator/push', {
         extends: __WEBPACK_IMPORTED_MODULE_0__Article_vue__["a" /* default */],
@@ -1594,6 +1586,7 @@ if (false) {(function () {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Post_vue__ = __webpack_require__(198);
 //
 //
 //
@@ -1786,6 +1779,17 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   mounted: function mounted() {
@@ -1814,6 +1818,8 @@ if (false) {(function () {
     load: function load() {
       var _this = this;
 
+      console.log('start load');
+      this.loading = true;
       var post_id = this.$store.state.article.post_id;
       this.$http.get('/api/posts/' + post_id).then(function (response) {
         _this.post = response.data.post;
@@ -1822,6 +1828,7 @@ if (false) {(function () {
         _this.quetionnaire = response.data.quetionnaire;
         _this.comments = response.data.comments;
         _this.user = response.data.user;
+        _this.loading = false;
       }).catch(function (error) {
         console.log(error);
         _this.errored = true;
@@ -1877,6 +1884,13 @@ if (false) {(function () {
         }
       }).finally(function () {
         return self.loading = false;
+      });
+    },
+    openPost: function openPost() {
+      this.$store.commit('post/setPostId', post_id);
+      this.$store.commit('navigator/push', {
+        extends: __WEBPACK_IMPORTED_MODULE_0__Post_vue__["a" /* default */],
+        onsNavigatorOptions: { animation: 'lift' }
       });
     },
     toggleHeart: function toggleHeart() {
@@ -4413,6 +4427,23 @@ module.exports = function spread(callback) {
       }
     },
 
+    // 投稿画面(新規/編集)
+    post: {
+      strict: true,
+      namespaced: true,
+      state: {
+        post_id: null,
+        loading: false
+      },
+      mutations: {
+        setPostId: function setPostId(state, post_id) {
+          state.post_id = post_id;
+        },
+        setLoading: function setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      }
+    },
     // 記事画面
     article: {
       strict: true,
@@ -4827,310 +4858,398 @@ var render = function() {
         staticStyle: { "background-color": "white" }
       }),
       _vm._v(" "),
-      _c(
-        "v-ons-row",
-        { staticClass: "space" },
-        [
-          _c("v-ons-col", [
-            _c("div", { staticClass: "entry_title_row" }, [
-              _c("p", { staticClass: "entry_title" }, [
-                _vm._v(_vm._s(_vm.post.title))
-              ]),
-              _vm._v(" "),
-              _c("p", { staticClass: "updated_at" }, [
-                _vm._v(
-                  "\n            " +
-                    _vm._s(
-                      _vm._f("moment")(_vm.post.updated_at, "YYYY.M.D H:mm")
-                    ) +
-                    "\n            　" +
-                    _vm._s(_vm.post.updated_name)
-                )
-              ])
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "entry_content" }, [
-              _c("span", [_vm._v(_vm._s(_vm.post.content) + "\n\t      ")])
+      _vm.errored
+        ? _c("section", [
+            _c("p", [
+              _vm._v(
+                "ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m"
+              )
             ])
           ])
-        ],
-        1
-      ),
-      _vm._v(" "),
-      _vm.quetionnaire
-        ? _c(
-            "v-ons-row",
-            { staticClass: "space" },
+        : _c(
+            "section",
             [
-              _c("v-ons-col", [
-                _c(
-                  "p",
-                  { staticClass: "bold" },
-                  [
-                    _c("v-ons-icon", {
-                      staticClass: "black",
-                      attrs: { icon: "fa-bookmark" }
-                    }),
-                    _vm._v("\n          6/9(土)ルーキーリーグ出欠確認")
-                  ],
-                  1
-                ),
-                _vm._v(" "),
-                _c("div", { staticClass: "mt-5" }, [
-                  _c("table", { staticClass: "quetionnaire_table" }, [
-                    _c("tr", [
-                      _c("td", [_vm._v("回答候補１")]),
-                      _vm._v(" "),
-                      _c("td", { staticClass: "quetionnaire_results" }, [
-                        _vm._v("○10 △0 ✕1")
-                      ]),
-                      _vm._v(" "),
-                      _c(
-                        "td",
-                        { staticClass: "quetionnaire_btn" },
-                        [
-                          _c(
-                            "v-ons-button",
-                            {
-                              staticClass: "smallBtn button--quiet",
-                              attrs: {
-                                onclick: "showQuestionnaireActionSheet();"
-                              }
-                            },
-                            [
-                              _vm._v(
-                                "\n                  回答\n                "
-                              )
-                            ]
-                          )
-                        ],
-                        1
-                      )
-                    ]),
-                    _vm._v(" "),
-                    _c("tr", [
-                      _c("td", [_vm._v("回答候補２")]),
-                      _vm._v(" "),
-                      _c("td", [_vm._v("○10 △0 ✕1")]),
-                      _vm._v(" "),
-                      _c(
-                        "td",
-                        { staticClass: "quetionnaire_btn" },
-                        [
-                          _c(
-                            "v-ons-button",
-                            {
-                              staticClass: "smallBtn button--quiet",
-                              attrs: {
-                                onclick: "showQuestionnaireActionSheet();"
-                              }
-                            },
-                            [
-                              _vm._v(
-                                "\n                  回答\n                "
-                              )
-                            ]
-                          )
-                        ],
-                        1
-                      )
-                    ])
-                  ])
-                ])
-              ])
-            ],
-            1
-          )
-        : _vm._e(),
-      _vm._v(" "),
-      _c(
-        "v-ons-row",
-        { staticClass: "space" },
-        [
-          _c(
-            "v-ons-col",
-            [
-              _c("hr", { staticStyle: { "background-color": "#e2e2e2" } }),
-              _vm._v(" "),
-              _c(
-                "div",
-                { staticClass: "center mt-15" },
-                [
-                  _c(
-                    "v-ons-icon",
-                    {
-                      staticClass: "heart",
-                      attrs: {
-                        icon: _vm.isHeartOn ? "fa-heart" : "fa-heart-o"
-                      },
-                      on: {
-                        click: function($event) {
-                          _vm.toggleHeart()
-                        }
-                      }
-                    },
+              _vm.loading
+                ? _c(
+                    "div",
+                    { staticClass: "progress-div" },
                     [
-                      _c("span", { staticClass: "heart_text" }, [
-                        _vm._v("いいね")
-                      ]),
-                      _vm._v(" "),
-                      _vm.heartCount
-                        ? _c("span", { staticClass: "heart-count" }, [
-                            _vm._v(_vm._s(_vm.heartCount))
-                          ])
-                        : _vm._e()
-                    ]
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "v-ons-icon",
-                    {
-                      staticClass: "star",
-                      attrs: { icon: _vm.isStarOn ? "fa-star" : "fa-star-o" },
-                      on: {
-                        click: function($event) {
-                          _vm.toggleStar()
-                        }
-                      }
-                    },
-                    [
-                      _c("span", { staticClass: "star_text" }, [
-                        _vm._v("お気に入り保存")
-                      ])
-                    ]
-                  )
-                ],
-                1
-              ),
-              _vm._v(" "),
-              _c(
-                "v-ons-row",
-                { staticClass: "mt-30" },
-                [
-                  _c("v-ons-col", [
-                    _c("textarea", {
-                      directives: [
-                        {
-                          name: "model",
-                          rawName: "v-model",
-                          value: _vm.comment_text,
-                          expression: "comment_text"
-                        }
-                      ],
-                      staticClass: "textarea comment_textarea",
-                      attrs: { rows: "4", placeholder: "コメント" },
-                      domProps: { value: _vm.comment_text },
-                      on: {
-                        input: function($event) {
-                          if ($event.target.composing) {
-                            return
-                          }
-                          _vm.comment_text = $event.target.value
-                        }
-                      }
-                    })
-                  ]),
-                  _vm._v(" "),
-                  _c(
-                    "v-ons-col",
-                    { attrs: { width: "50px", "vertical-align": "bottom" } },
-                    [
-                      _c(
-                        "v-ons-button",
-                        {
-                          staticClass: "ml-10 mt-10 right",
-                          attrs: { ripple: "" },
-                          on: {
-                            click: function($event) {
-                              _vm.postComment()
-                            }
-                          }
-                        },
-                        [
-                          _c("v-ons-icon", {
-                            attrs: { icon: "fa-paper-plane" }
-                          })
-                        ],
-                        1
-                      )
+                      _c("v-ons-progress-circular", {
+                        staticClass: "progress-circular",
+                        attrs: { indeterminate: "" }
+                      })
                     ],
                     1
                   )
-                ],
-                1
-              )
-            ],
-            1
-          )
-        ],
-        1
-      ),
-      _vm._v(" "),
-      _vm.comments
-        ? _c(
-            "v-ons-row",
-            { staticClass: "space lastspace" },
-            [
-              _c(
-                "v-ons-col",
-                _vm._l(_vm.comments, function(comment, index) {
-                  return _c(
-                    "div",
-                    { key: comment.id, staticClass: "mt-10 ml-15" },
-                    [
-                      _c("div", [
-                        _c("span", { staticClass: "bold" }, [
-                          _vm._v(
-                            "\n              " +
-                              _vm._s(comment.name) +
-                              "\n            "
-                          )
-                        ]),
-                        _vm._v(" "),
-                        _c("span", { staticClass: "updated_at" }, [
-                          _vm._v(
-                            "\n              " +
-                              _vm._s(
-                                _vm._f("moment")(comment.created_at, "from")
-                              ) +
-                              "　\n            "
-                          )
-                        ])
-                      ]),
-                      _vm._v(" "),
-                      _c("div", [
-                        _c("div", { staticClass: "speech-bubble" }, [
-                          _c("span", { staticClass: "comment" }, [
-                            _vm._v(_vm._s(comment.comment_text))
+                : [
+                    _c(
+                      "v-ons-row",
+                      { staticClass: "space" },
+                      [
+                        _c("v-ons-col", [
+                          _c("div", { staticClass: "entry_title_row" }, [
+                            _c("p", { staticClass: "entry_title" }, [
+                              _vm._v(_vm._s(_vm.post.title))
+                            ]),
+                            _vm._v(" "),
+                            _c("p", { staticClass: "updated_at" }, [
+                              _vm._v(
+                                "\n              " +
+                                  _vm._s(
+                                    _vm._f("moment")(
+                                      _vm.post.updated_at,
+                                      "YYYY.M.D H:mm"
+                                    )
+                                  ) +
+                                  "\n              　" +
+                                  _vm._s(_vm.post.updated_name)
+                              )
+                            ])
                           ]),
                           _vm._v(" "),
-                          comment.user_id == _vm.user.id
-                            ? _c(
-                                "span",
+                          _c("div", { staticClass: "entry_content" }, [
+                            _c("span", [
+                              _vm._v(_vm._s(_vm.post.content) + "\n          ")
+                            ])
+                          ])
+                        ])
+                      ],
+                      1
+                    ),
+                    _vm._v(" "),
+                    _vm.quetionnaire
+                      ? _c(
+                          "v-ons-row",
+                          { staticClass: "space" },
+                          [
+                            _c("v-ons-col", [
+                              _c(
+                                "p",
+                                { staticClass: "bold" },
                                 [
                                   _c("v-ons-icon", {
-                                    staticClass: "delete_comment_icon",
-                                    attrs: { icon: "fa-trash-o" },
+                                    staticClass: "black",
+                                    attrs: { icon: "fa-bookmark" }
+                                  }),
+                                  _vm._v(
+                                    "\n            6/9(土)ルーキーリーグ出欠確認"
+                                  )
+                                ],
+                                1
+                              ),
+                              _vm._v(" "),
+                              _c("div", { staticClass: "mt-5" }, [
+                                _c(
+                                  "table",
+                                  { staticClass: "quetionnaire_table" },
+                                  [
+                                    _c("tr", [
+                                      _c("td", [_vm._v("回答候補１")]),
+                                      _vm._v(" "),
+                                      _c(
+                                        "td",
+                                        { staticClass: "quetionnaire_results" },
+                                        [_vm._v("○10 △0 ✕1")]
+                                      ),
+                                      _vm._v(" "),
+                                      _c(
+                                        "td",
+                                        { staticClass: "quetionnaire_btn" },
+                                        [
+                                          _c(
+                                            "v-ons-button",
+                                            {
+                                              staticClass:
+                                                "smallBtn button--quiet",
+                                              attrs: {
+                                                onclick:
+                                                  "showQuestionnaireActionSheet();"
+                                              }
+                                            },
+                                            [
+                                              _vm._v(
+                                                "\n                    回答\n                  "
+                                              )
+                                            ]
+                                          )
+                                        ],
+                                        1
+                                      )
+                                    ]),
+                                    _vm._v(" "),
+                                    _c("tr", [
+                                      _c("td", [_vm._v("回答候補２")]),
+                                      _vm._v(" "),
+                                      _c("td", [_vm._v("○10 △0 ✕1")]),
+                                      _vm._v(" "),
+                                      _c(
+                                        "td",
+                                        { staticClass: "quetionnaire_btn" },
+                                        [
+                                          _c(
+                                            "v-ons-button",
+                                            {
+                                              staticClass:
+                                                "smallBtn button--quiet",
+                                              attrs: {
+                                                onclick:
+                                                  "showQuestionnaireActionSheet();"
+                                              }
+                                            },
+                                            [
+                                              _vm._v(
+                                                "\n                    回答\n                  "
+                                              )
+                                            ]
+                                          )
+                                        ],
+                                        1
+                                      )
+                                    ])
+                                  ]
+                                )
+                              ])
+                            ])
+                          ],
+                          1
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _c(
+                      "v-ons-row",
+                      { staticClass: "space" },
+                      [
+                        _c(
+                          "v-ons-col",
+                          [
+                            _c("hr", {
+                              staticStyle: { "background-color": "#e2e2e2" }
+                            }),
+                            _vm._v(" "),
+                            _c(
+                              "div",
+                              { staticClass: "center mt-15" },
+                              [
+                                _c(
+                                  "v-ons-icon",
+                                  {
+                                    staticClass: "heart",
+                                    attrs: {
+                                      icon: _vm.isHeartOn
+                                        ? "fa-heart"
+                                        : "fa-heart-o"
+                                    },
                                     on: {
                                       click: function($event) {
-                                        _vm.confirmDeleteComment(comment.id)
+                                        _vm.toggleHeart()
+                                      }
+                                    }
+                                  },
+                                  [
+                                    _c("span", { staticClass: "heart_text" }, [
+                                      _vm._v("いいね")
+                                    ]),
+                                    _vm._v(" "),
+                                    _vm.heartCount
+                                      ? _c(
+                                          "span",
+                                          { staticClass: "heart-count" },
+                                          [_vm._v(_vm._s(_vm.heartCount))]
+                                        )
+                                      : _vm._e()
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c(
+                                  "v-ons-icon",
+                                  {
+                                    staticClass: "star",
+                                    attrs: {
+                                      icon: _vm.isStarOn
+                                        ? "fa-star"
+                                        : "fa-star-o"
+                                    },
+                                    on: {
+                                      click: function($event) {
+                                        _vm.toggleStar()
+                                      }
+                                    }
+                                  },
+                                  [
+                                    _c("span", { staticClass: "star_text" }, [
+                                      _vm._v("お気に入り保存")
+                                    ])
+                                  ]
+                                )
+                              ],
+                              1
+                            ),
+                            _vm._v(" "),
+                            _c(
+                              "v-ons-row",
+                              { staticClass: "mt-30" },
+                              [
+                                _c("v-ons-col", [
+                                  _c("textarea", {
+                                    directives: [
+                                      {
+                                        name: "model",
+                                        rawName: "v-model",
+                                        value: _vm.comment_text,
+                                        expression: "comment_text"
+                                      }
+                                    ],
+                                    staticClass: "textarea comment_textarea",
+                                    attrs: {
+                                      rows: "4",
+                                      placeholder: "コメント"
+                                    },
+                                    domProps: { value: _vm.comment_text },
+                                    on: {
+                                      input: function($event) {
+                                        if ($event.target.composing) {
+                                          return
+                                        }
+                                        _vm.comment_text = $event.target.value
                                       }
                                     }
                                   })
-                                ],
-                                1
-                              )
-                            : _vm._e()
-                        ])
-                      ])
-                    ]
-                  )
-                })
-              )
+                                ]),
+                                _vm._v(" "),
+                                _c(
+                                  "v-ons-col",
+                                  {
+                                    attrs: {
+                                      width: "50px",
+                                      "vertical-align": "bottom"
+                                    }
+                                  },
+                                  [
+                                    _c(
+                                      "v-ons-button",
+                                      {
+                                        staticClass: "ml-10 mt-10 right",
+                                        attrs: { ripple: "" },
+                                        on: {
+                                          click: function($event) {
+                                            _vm.postComment()
+                                          }
+                                        }
+                                      },
+                                      [
+                                        _c("v-ons-icon", {
+                                          attrs: { icon: "fa-paper-plane" }
+                                        })
+                                      ],
+                                      1
+                                    )
+                                  ],
+                                  1
+                                )
+                              ],
+                              1
+                            )
+                          ],
+                          1
+                        )
+                      ],
+                      1
+                    ),
+                    _vm._v(" "),
+                    _vm.comments
+                      ? _c(
+                          "v-ons-row",
+                          { staticClass: "space lastspace" },
+                          [
+                            _c(
+                              "v-ons-col",
+                              _vm._l(_vm.comments, function(comment, index) {
+                                return _c(
+                                  "div",
+                                  {
+                                    key: comment.id,
+                                    staticClass: "mt-10 ml-15"
+                                  },
+                                  [
+                                    _c("div", [
+                                      _c("span", { staticClass: "bold" }, [
+                                        _vm._v(
+                                          "\n                " +
+                                            _vm._s(comment.name) +
+                                            "\n              "
+                                        )
+                                      ]),
+                                      _vm._v(" "),
+                                      _c(
+                                        "span",
+                                        { staticClass: "updated_at" },
+                                        [
+                                          _vm._v(
+                                            "\n                " +
+                                              _vm._s(
+                                                _vm._f("moment")(
+                                                  comment.created_at,
+                                                  "from"
+                                                )
+                                              ) +
+                                              "　\n              "
+                                          )
+                                        ]
+                                      )
+                                    ]),
+                                    _vm._v(" "),
+                                    _c("div", [
+                                      _c(
+                                        "div",
+                                        { staticClass: "speech-bubble" },
+                                        [
+                                          _c(
+                                            "span",
+                                            { staticClass: "comment" },
+                                            [
+                                              _vm._v(
+                                                _vm._s(comment.comment_text)
+                                              )
+                                            ]
+                                          ),
+                                          _vm._v(" "),
+                                          comment.user_id == _vm.user.id
+                                            ? _c(
+                                                "span",
+                                                [
+                                                  _c("v-ons-icon", {
+                                                    staticClass:
+                                                      "delete_comment_icon",
+                                                    attrs: {
+                                                      icon: "fa-trash-o"
+                                                    },
+                                                    on: {
+                                                      click: function($event) {
+                                                        _vm.confirmDeleteComment(
+                                                          comment.id
+                                                        )
+                                                      }
+                                                    }
+                                                  })
+                                                ],
+                                                1
+                                              )
+                                            : _vm._e()
+                                        ]
+                                      )
+                                    ])
+                                  ]
+                                )
+                              })
+                            )
+                          ],
+                          1
+                        )
+                      : _vm._e()
+                  ]
             ],
-            1
-          )
-        : _vm._e(),
+            2
+          ),
       _vm._v(" "),
       _c("v-ons-modal", { attrs: { var: "quetionnaireAnswerModal" } }, [
         _c(
@@ -6665,31 +6784,17 @@ var render = function() {
             "section",
             [
               _vm.$store.state.timeline.loading
-                ? _c("div", { staticClass: "center mt-30" }, [
-                    _c(
-                      "svg",
-                      {
-                        staticClass:
-                          "progress-circular progress-circular--indeterminate"
-                      },
-                      [
-                        _c("circle", {
-                          staticClass: "progress-circular__background"
-                        }),
-                        _vm._v(" "),
-                        _c("circle", {
-                          staticClass:
-                            "progress-circular__primary progress-circular--indeterminate__primary"
-                        }),
-                        _vm._v(" "),
-                        _c("circle", {
-                          staticClass:
-                            "progress-circular__secondary progress-circular--indeterminate__secondary"
-                        })
-                      ]
-                    ),
-                    _vm._v("\n      読み込み中...\n    ")
-                  ])
+                ? _c(
+                    "div",
+                    { staticClass: "progress-div" },
+                    [
+                      _c("v-ons-progress-circular", {
+                        staticClass: "progress-circular",
+                        attrs: { indeterminate: "" }
+                      })
+                    ],
+                    1
+                  )
                 : [
                     _c(
                       "v-ons-list",

@@ -16,117 +16,127 @@
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
-    <v-ons-row class="space">
-      <v-ons-col>
-        <div class="entry_title_row">
-          <p class="entry_title">{{ post.title }}</p>
-          <p class="updated_at">
-            {{ post.updated_at | moment('YYYY.M.D H:mm') }}
-            　{{ post.updated_name }}</p>
-        </div>
-        <div class="entry_content"><span>{{ post.content }}
-	      </span>
-        </div>
-      </v-ons-col>
-    </v-ons-row>
-    <!-- アンケート -->
-    <v-ons-row class="space" v-if="quetionnaire">
-      <v-ons-col>
-        <p class="bold"><v-ons-icon icon="fa-bookmark" class="black"></v-ons-icon>
-          6/9(土)ルーキーリーグ出欠確認</p>
-        <!-- ActionSheetで入力するので不要
-              <div class="mt-5">
-                <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
-                  アンケートに回答する</v-ons-button>
-              </div>-->
-        <div class="mt-5">
-          <table class="quetionnaire_table">
-            <tr>
-              <td>回答候補１</td>
-              <td class="quetionnaire_results">○10 △0 ✕1</td>
-              <td class="quetionnaire_btn">
-                <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
-                  回答
-                </v-ons-button>
-              </td>
-            </tr>
-            <tr>
-              <td>回答候補２</td>
-              <td>○10 △0 ✕1</td>
-              <td class="quetionnaire_btn">
-                <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
-                  回答
-                </v-ons-button>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </v-ons-col>
-    </v-ons-row>
-    <v-ons-row class="space">
-      <v-ons-col>
-        <hr style="background-color: #e2e2e2">
-        <!-- ハート -->
-        <div class="center mt-15">
-          <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
-                      @click="toggleHeart();">
-            <span class="heart_text">いいね</span>
-            <span class="heart-count" v-if="heartCount">{{ heartCount }}</span>
-          </v-ons-icon>
-          <v-ons-icon :icon="isStarOn? 'fa-star' : 'fa-star-o'" class="star"
-                      @click="toggleStar();">
-            <span class="star_text">お気に入り保存</span>
-            <!--<span class="star-count" v-if="starCount">{{ starCount }}</span>-->
-          </v-ons-icon>
-        </div>
-        <!-- コメント -->
-        <v-ons-row class="mt-30">
+    <section v-if="errored">
+      <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
+    </section>
+    <section v-else>
+      <div v-if="loading" class="progress-div">
+        <v-ons-progress-circular indeterminate class="progress-circular"></v-ons-progress-circular>
+      </div>
+      <template v-else>
+        <v-ons-row class="space">
           <v-ons-col>
-            <textarea class="textarea comment_textarea"
-                      rows="4" placeholder="コメント" v-model="comment_text"></textarea>
-          </v-ons-col>
-          <v-ons-col width="50px" vertical-align="bottom">
-            <v-ons-button class="ml-10 mt-10 right" ripple
-              @click="postComment()">
-              <v-ons-icon icon="fa-paper-plane"></v-ons-icon></v-ons-button>
+            <div class="entry_title_row">
+              <p class="entry_title">{{ post.title }}</p>
+              <p class="updated_at">
+                {{ post.updated_at | moment('YYYY.M.D H:mm') }}
+                　{{ post.updated_name }}</p>
+            </div>
+            <div class="entry_content"><span>{{ post.content }}
+            </span>
+            </div>
           </v-ons-col>
         </v-ons-row>
-        <!--<div class="upload-btn-wrapper">-->
-          <!--<v-ons-button class="smallBtn button&#45;&#45;outline">添付ファイル</v-ons-button>-->
-          <!--<input type="file" name="myfile" />-->
-        <!--</div>-->
-      </v-ons-col>
-    </v-ons-row>
-    <v-ons-row class="space lastspace" v-if="comments">
-      <v-ons-col>
-        <div class="mt-10 ml-15" v-for="(comment, index) in comments" :key="comment.id">
-          <!--<hr class="mt-15">-->
-          <div>
-            <span class="bold">
-              {{ comment.name }}
-            </span>
-            <span class="updated_at">
-              {{ comment.created_at | moment("from")}}　
-            </span>
-          </div>
-          <div>
-            <div class="speech-bubble">
-              <span class="comment">{{ comment.comment_text }}</span>
-              <span v-if="comment.user_id == user.id">
-                <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
-                  @click="confirmDeleteComment(comment.id)"></v-ons-icon>
-              </span>
+        <!-- アンケート -->
+        <v-ons-row class="space" v-if="quetionnaire">
+          <v-ons-col>
+            <p class="bold"><v-ons-icon icon="fa-bookmark" class="black"></v-ons-icon>
+              6/9(土)ルーキーリーグ出欠確認</p>
+            <!-- ActionSheetで入力するので不要
+                  <div class="mt-5">
+                    <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
+                      アンケートに回答する</v-ons-button>
+                  </div>-->
+            <div class="mt-5">
+              <table class="quetionnaire_table">
+                <tr>
+                  <td>回答候補１</td>
+                  <td class="quetionnaire_results">○10 △0 ✕1</td>
+                  <td class="quetionnaire_btn">
+                    <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
+                      回答
+                    </v-ons-button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>回答候補２</td>
+                  <td>○10 △0 ✕1</td>
+                  <td class="quetionnaire_btn">
+                    <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
+                      回答
+                    </v-ons-button>
+                  </td>
+                </tr>
+              </table>
             </div>
-          </div>
-          <!--<div class="right mr-10">-->
-            <!--<v-ons-icon icon="fa-thumbs-up"-->
-                        <!--:class="isLike? 'like_on' : 'like_off'"-->
-                        <!--onclick="toggleLike(this)"></v-ons-icon>-->
-            <!--<span class="like-count">{{ comment.like_user_ids.length }}</span>-->
-          <!--</div>-->
-        </div>
-      </v-ons-col>
-    </v-ons-row>
+          </v-ons-col>
+        </v-ons-row>
+        <v-ons-row class="space">
+          <v-ons-col>
+            <hr style="background-color: #e2e2e2">
+            <!-- ハート -->
+            <div class="center mt-15">
+              <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
+                          @click="toggleHeart();">
+                <span class="heart_text">いいね</span>
+                <span class="heart-count" v-if="heartCount">{{ heartCount }}</span>
+              </v-ons-icon>
+              <v-ons-icon :icon="isStarOn? 'fa-star' : 'fa-star-o'" class="star"
+                          @click="toggleStar();">
+                <span class="star_text">お気に入り保存</span>
+                <!--<span class="star-count" v-if="starCount">{{ starCount }}</span>-->
+              </v-ons-icon>
+            </div>
+            <!-- コメント -->
+            <v-ons-row class="mt-30">
+              <v-ons-col>
+                <textarea class="textarea comment_textarea"
+                          rows="4" placeholder="コメント" v-model="comment_text"></textarea>
+              </v-ons-col>
+              <v-ons-col width="50px" vertical-align="bottom">
+                <v-ons-button class="ml-10 mt-10 right" ripple
+                  @click="postComment()">
+                  <v-ons-icon icon="fa-paper-plane"></v-ons-icon></v-ons-button>
+              </v-ons-col>
+            </v-ons-row>
+            <!--<div class="upload-btn-wrapper">-->
+              <!--<v-ons-button class="smallBtn button&#45;&#45;outline">添付ファイル</v-ons-button>-->
+              <!--<input type="file" name="myfile" />-->
+            <!--</div>-->
+          </v-ons-col>
+        </v-ons-row>
+        <v-ons-row class="space lastspace" v-if="comments">
+          <v-ons-col>
+            <div class="mt-10 ml-15" v-for="(comment, index) in comments" :key="comment.id">
+              <!--<hr class="mt-15">-->
+              <div>
+                <span class="bold">
+                  {{ comment.name }}
+                </span>
+                <span class="updated_at">
+                  {{ comment.created_at | moment("from")}}　
+                </span>
+              </div>
+              <div>
+                <div class="speech-bubble">
+                  <span class="comment">{{ comment.comment_text }}</span>
+                  <span v-if="comment.user_id == user.id">
+                    <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
+                      @click="confirmDeleteComment(comment.id)"></v-ons-icon>
+                  </span>
+                </div>
+              </div>
+              <!--<div class="right mr-10">-->
+                <!--<v-ons-icon icon="fa-thumbs-up"-->
+                            <!--:class="isLike? 'like_on' : 'like_off'"-->
+                            <!--onclick="toggleLike(this)"></v-ons-icon>-->
+                <!--<span class="like-count">{{ comment.like_user_ids.length }}</span>-->
+              <!--</div>-->
+            </div>
+          </v-ons-col>
+        </v-ons-row>
+      </template>
+    </section>
 
     <!-- アンケート回答画面Modal ※ActionSheetで回答入力するので不要 -->
     <v-ons-modal var="quetionnaireAnswerModal">
@@ -191,6 +201,7 @@
 </template>
 
 <script>
+  import Post from './Post.vue';
   export default {
     mounted() {
       this.load();
@@ -215,6 +226,8 @@
     },
     methods: {
       load() {
+        console.log('start load');
+        this.loading = true;
         let post_id = this.$store.state.article.post_id;
         this.$http.get('/api/posts/' + post_id)
           .then((response)=>{
@@ -224,6 +237,7 @@
             this.quetionnaire = response.data.quetionnaire;
             this.comments = response.data.comments;
             this.user = response.data.user;
+            this.loading = false;
           })
           .catch(error => {
             console.log(error);
@@ -279,6 +293,13 @@
             }
           })
           .finally(() => self.loading = false);
+      },
+      openPost() {
+        this.$store.commit('post/setPostId', post_id);
+        this.$store.commit('navigator/push', {
+          extends: Post,
+          onsNavigatorOptions: {animation: 'lift'}
+        });
       },
       toggleHeart() {
         if(this.isHeartOn) {
