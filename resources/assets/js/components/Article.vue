@@ -8,11 +8,11 @@
           <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
-      <div class="right mr-5">
-        <v-ons-toolbar-button>
-          <v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>
-        </v-ons-toolbar-button>
-      </div>
+      <!--<div class="right mr-5">-->
+        <!--<v-ons-toolbar-button>-->
+          <!--<v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>-->
+        <!--</v-ons-toolbar-button>-->
+      <!--</div>-->
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>

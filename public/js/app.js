@@ -2011,6 +2011,13 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   beforeCreate: function beforeCreate() {
@@ -2036,7 +2043,9 @@ if (false) {(function () {
       selected_category: null,
       category_id: null,
       contents: "",
-      notification_flg: false
+      notification_flg: false,
+      files: [],
+      fileNames: []
     };
   },
 
@@ -2053,9 +2062,21 @@ if (false) {(function () {
         this.$ons.notification.alert('内容は必須です', { title: '' });
         return;
       }
-      this.category_id = this.selected_category ? this.selected_category.id : null;
+      this.category_id = this.selected_category ? this.selected_category : this.categories[0].id;
+      console.log('選択カテゴリID ' + this.selected_category);
+      console.log('カテゴリID ' + this.category_id);
       var self = this;
-      this.$http.post('/api/posts', this.$data).then(function (response) {
+      // 送信フォームデータ準備
+      var formData = new FormData();
+      formData.append('title', this.title);
+      formData.append('contents', this.contents);
+      formData.append('category_id', this.category_id);
+      formData.append('notification_flg', this.notification_flg);
+      for (var i = 0; i < this.files.length; i++) {
+        formData.append('files[]', this.files[i]);
+      }
+      // 送信
+      this.$http.post('/api/posts', formData).then(function (response) {
         console.log(response.data);
         _this2.$ons.notification.alert('投稿しました', { title: '' }).then(function () {
           self.afterPost();
@@ -2072,6 +2093,17 @@ if (false) {(function () {
     afterPost: function afterPost() {
       this.$store.commit('navigator/pop');
       this.$store.dispatch('timeline/loadTimeline', this.$http);
+    },
+
+    // ファイルが選択された時
+    onFileSet: function onFileSet(event) {
+      console.log("onFileSet.");
+      this.files = event.target.files;
+      this.fileNames = [];
+      for (var i = 0; i < this.files.length; i++) {
+        this.fileNames.push(this.files[i].name);
+      }
+      console.log(this.files);
     },
     showQuestionnaireModal: function showQuestionnaireModal() {
       var modal = document.querySelector('ons-modal');
@@ -4816,24 +4848,6 @@ var render = function() {
             )
           ],
           1
-        ),
-        _vm._v(" "),
-        _c(
-          "div",
-          { staticClass: "right mr-5" },
-          [
-            _c(
-              "v-ons-toolbar-button",
-              [
-                _c("v-ons-icon", {
-                  staticClass: "white",
-                  attrs: { icon: "fa-pencil", size: "24px" }
-                })
-              ],
-              1
-            )
-          ],
-          1
         )
       ]),
       _vm._v(" "),
@@ -5512,7 +5526,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -5651,6 +5665,21 @@ var render = function() {
                 })
               ]),
               _vm._v(" "),
+              0 < _vm.fileNames.length
+                ? _c("div", { staticClass: "mb-10" }, [
+                    _c(
+                      "ul",
+                      _vm._l(_vm.fileNames, function(file, index) {
+                        return _c("li", { staticClass: "mtb-10" }, [
+                          _vm._v(
+                            "\n              " + _vm._s(file) + "\n            "
+                          )
+                        ])
+                      })
+                    )
+                  ])
+                : _vm._e(),
+              _vm._v(" "),
               _c(
                 "div",
                 { staticClass: "space" },
@@ -5669,7 +5698,10 @@ var render = function() {
                         1
                       ),
                       _vm._v(" "),
-                      _c("input", { attrs: { type: "file", name: "myfile" } })
+                      _c("input", {
+                        attrs: { type: "file", multiple: "" },
+                        on: { change: _vm.onFileSet }
+                      })
                     ],
                     1
                   ),

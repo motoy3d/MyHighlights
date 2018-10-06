@@ -29,11 +29,18 @@
             <textarea class="textarea w-100p" rows="10" placeholder="内容"
             v-model="contents"></textarea>
           </div>
+          <div class="mb-10" v-if="0 < fileNames.length">
+            <ul>
+              <li v-for="(file, index) in fileNames" class="mtb-10">
+                {{ file }}
+              </li>
+            </ul>
+          </div>
           <div class="space">
             <div class="upload-btn-wrapper">
               <v-ons-button class="smallBtn button--outline">
                 <v-ons-icon icon="fa-file"></v-ons-icon> 添付ファイル</v-ons-button>
-              <input type="file" name="myfile" />
+              <input type="file" multiple @change="onFileSet"/>
             </div>
             <v-ons-button class="smallBtn button--outline" style="float:right"
                           @click="showQuestionnaireModal()">
@@ -114,7 +121,9 @@
         selected_category: null,
         category_id: null,
         contents: "",
-        notification_flg: false
+        notification_flg: false,
+        files: [],
+        fileNames: []
       }
     },
     methods: {
@@ -128,9 +137,21 @@
           this.$ons.notification.alert('内容は必須です', {title: ''});
           return;
         }
-        this.category_id = this.selected_category? this.selected_category.id : null;
+        this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
+    console.log('選択カテゴリID ' + this.selected_category);
+    console.log('カテゴリID ' + this.category_id);
         let self = this;
-        this.$http.post('/api/posts', this.$data)
+        // 送信フォームデータ準備
+        let formData = new FormData();
+        formData.append('title', this.title);
+        formData.append('contents', this.contents);
+        formData.append('category_id', this.category_id);
+        formData.append('notification_flg', this.notification_flg);
+        for(let i = 0; i < this.files.length; i++){
+          formData.append('files[]', this.files[i]);
+        }
+        // 送信
+        this.$http.post('/api/posts', formData)
           .then(response => {
             console.log(response.data);
             this.$ons.notification.alert('投稿しました', {title: ''})
@@ -149,6 +170,16 @@
       afterPost() {
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/loadTimeline', this.$http);
+      },
+      // ファイルが選択された時
+      onFileSet(event) {
+        console.log("onFileSet.");
+        this.files = event.target.files;
+        this.fileNames = [];
+        for (let i=0; i<this.files.length; i++) {
+          this.fileNames.push(this.files[i].name);
+        }
+        console.log(this.files);
       },
       showQuestionnaireModal() {
         var modal = document.querySelector('ons-modal');

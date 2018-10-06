@@ -81,6 +81,7 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
+    Log::info('カテゴリーID=' . $request->category_id);
     $post = Post::create([
       "team_id" => Auth::user()->team_id,
       "title" => $request->title,
@@ -92,19 +93,19 @@ class PostController extends Controller
       "updated_id" => Auth::id()
     ]);
     if ($request->allFiles()) { //添付がある場合
-      $files = $request->allFiles();
+      $files = $request->file('files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
+        // ファイル保存
+        $filePath = $file->storePublicly('post_attachment');
         $postAttachment = PostAttachment::create([
           "post_id" => $post->id,
-          "file_name" => $originalFilename,
-          "file_type" => substr($originalFilename, strrpos($originalFilename, '.')),
+          "file_path" => $filePath,
+          "file_type" => substr($originalFilename, strrpos($originalFilename, '.') + 1),
           "created_id" => Auth::id(),
           "updated_id" => Auth::id()
         ]);
-        // ファイル保存
-        $file->storePubliclyAs('post_attachment',
-          $postAttachment->id . $postAttachment->file_type);
+
       }
     }
 
