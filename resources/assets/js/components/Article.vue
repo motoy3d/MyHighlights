@@ -32,8 +32,13 @@
                 {{ post.updated_at | moment('YYYY.M.D H:mm') }}
                 　{{ post.updated_name }}</p>
             </div>
-            <div class="entry_content"><span>{{ post.content }}
-            </span>
+            <div class="entry_content"><span>{{ post.content }}</span>
+              <template v-for="att in post_attachments">
+                <p v-if="isImage(att.file_type)">
+                  <img :src="att.file_path" class="image_in_post">
+                </p>
+                <p v-else><a :href="att.file_path">{{ att.original_file_name }}</a></p>
+              </template>
             </div>
           </v-ons-col>
         </v-ons-row>
@@ -120,7 +125,7 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id == user.id">
+                  <span v-if="comment.user_id === user.id">
                     <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
@@ -210,7 +215,7 @@
       return {
         post: {},
         post_responses: {},
-        post_attachements: {},
+        post_attachments: {},
         quetionnaire: {},
         comments: {},
         comment_text: "",
@@ -233,7 +238,7 @@
           .then((response)=>{
             this.post = response.data.post;
             this.post_responses = response.data.post_responses;
-            this.post_attachements = response.data.post_attachements;
+            this.post_attachments = response.data.post_attachments;
             this.quetionnaire = response.data.quetionnaire;
             this.comments = response.data.comments;
             this.user = response.data.user;
@@ -288,7 +293,7 @@
           .catch(error => {
             console.log(error);
             errored = true;
-            if (error.response.status == 401) {
+            if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
           })
@@ -335,6 +340,17 @@
           cancelable: true,
           buttons: ['◯', '△', '✕', 'キャンセル']
         });
+      },
+      isImage(fileExtension) {
+        if (fileExtension.toLowerCase() === 'jpg' ||
+          fileExtension.toLowerCase() === 'jpeg' ||
+          fileExtension.toLowerCase() === 'png' ||
+          fileExtension.toLowerCase() === 'gif' ||
+          fileExtension.toLowerCase() === 'bmp'
+        ) {
+          return true;
+        }
+        return false;
       }
     }
   };
@@ -477,5 +493,8 @@
   .delete_comment_icon {
     color: gray;
     float: right;
+  }
+  .image_in_post {
+    max-width: 100%;
   }
 </style>

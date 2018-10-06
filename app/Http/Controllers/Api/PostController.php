@@ -98,14 +98,16 @@ class PostController extends Controller
         $originalFilename = $file->getClientOriginalName();
         // ファイル保存
         $filePath = $file->storePublicly('public/post_attachment');
+        // URLのために置換
+        $filePath = str_replace('public/', 'storage/', $filePath);
         $postAttachment = PostAttachment::create([
           "post_id" => $post->id,
+          "original_file_name" => $originalFilename,
           "file_path" => $filePath,
           "file_type" => substr($originalFilename, strrpos($originalFilename, '.') + 1),
           "created_id" => Auth::id(),
           "updated_id" => Auth::id()
         ]);
-
       }
     }
 
@@ -139,7 +141,7 @@ class PostController extends Controller
       ->first();
 
     // 投稿添付ファイル
-    $post_attachements = DB::table('post_attachments')
+    $post_attachments = DB::table('post_attachments')
       ->where('post_id', $post->id)
       ->orderBy('id')
       ->get();
@@ -155,7 +157,7 @@ class PostController extends Controller
     // コメント
     $comments = DB::table('post_comments')
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
-//TODO 添付      ->leftJoin('post_comment_attachements', 'post_comments.id', '=', 'post_comment_attachements.post_comment_id')
+//TODO 添付      ->leftJoin('post_comment_attachments', 'post_comments.id', '=', 'post_comment_attachments.post_comment_id')
       ->select(
         'post_comments.id', 'comment_text',
         'post_comments.created_at',
@@ -170,7 +172,7 @@ class PostController extends Controller
     return Response::json([
       'post' => $post,
       'post_responses' => $post_response? $post_response : [],
-      'post_attachements' => $post_attachements,
+      'post_attachments' => $post_attachments,
       'quetionnaire' => $quetionnaire,
       'comments' => $comments,
       'user' => Auth::user()

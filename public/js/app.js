@@ -1773,6 +1773,11 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -1783,7 +1788,7 @@ if (false) {(function () {
     return {
       post: {},
       post_responses: {},
-      post_attachements: {},
+      post_attachments: {},
       quetionnaire: {},
       comments: {},
       comment_text: "",
@@ -1808,7 +1813,7 @@ if (false) {(function () {
       this.$http.get('/api/posts/' + post_id).then(function (response) {
         _this.post = response.data.post;
         _this.post_responses = response.data.post_responses;
-        _this.post_attachements = response.data.post_attachements;
+        _this.post_attachments = response.data.post_attachments;
         _this.quetionnaire = response.data.quetionnaire;
         _this.comments = response.data.comments;
         _this.user = response.data.user;
@@ -1863,7 +1868,7 @@ if (false) {(function () {
       }).catch(function (error) {
         console.log(error);
         errored = true;
-        if (error.response.status == 401) {
+        if (error.response.status === 401) {
           window.location.href = "/login";return;
         }
       }).finally(function () {
@@ -1910,6 +1915,12 @@ if (false) {(function () {
         cancelable: true,
         buttons: ['◯', '△', '✕', 'キャンセル']
       });
+    },
+    isImage: function isImage(fileExtension) {
+      if (fileExtension.toLowerCase() === 'jpg' || fileExtension.toLowerCase() === 'jpeg' || fileExtension.toLowerCase() === 'png' || fileExtension.toLowerCase() === 'gif' || fileExtension.toLowerCase() === 'bmp') {
+        return true;
+      }
+      return false;
     }
   }
 });
@@ -1919,6 +1930,9 @@ if (false) {(function () {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+//
+//
+//
 //
 //
 //
@@ -2038,6 +2052,7 @@ if (false) {(function () {
   data: function data() {
     return {
       loading: false,
+      posting: false,
       categories: null,
       title: "",
       selected_category: null,
@@ -2049,22 +2064,31 @@ if (false) {(function () {
     };
   },
 
+  computed: {
+    postBtnColor: {
+      get: function get() {
+        return this.posting ? "white" : "";
+      }
+    }
+  },
   methods: {
     post: function post() {
       var _this2 = this;
 
       //TODO validate
+      if (this.posting) {
+        return;
+      }
       if (!this.title) {
-        this.$ons.notification.alert('タイトルは必須です', { title: '' });
+        this.$ons.notification.alert('タイトルを入れてください', { title: '' });
         return;
       }
       if (!this.contents) {
-        this.$ons.notification.alert('内容は必須です', { title: '' });
+        this.$ons.notification.alert('本文を入れてください', { title: '' });
         return;
       }
+      this.posting = true;
       this.category_id = this.selected_category ? this.selected_category : this.categories[0].id;
-      console.log('選択カテゴリID ' + this.selected_category);
-      console.log('カテゴリID ' + this.category_id);
       var self = this;
       // 送信フォームデータ準備
       var formData = new FormData();
@@ -2087,7 +2111,7 @@ if (false) {(function () {
           window.location.href = "/login";return;
         }
       }).finally(function () {
-        return _this2.loading = false;
+        _this2.loading = false;_this2.posting = false;
       });
     },
     afterPost: function afterPost() {
@@ -4804,7 +4828,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 80px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n", ""]);
+exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.quetionnaire_table {\n  width: 100%;\n}\n.quetionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.quetionnaire_results {\n  width: 100px;\n}\n.quetionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 80px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n.image_in_post {\n  max-width: 100%;\n}\n", ""]);
 
 // exports
 
@@ -4905,11 +4929,37 @@ var render = function() {
                             ])
                           ]),
                           _vm._v(" "),
-                          _c("div", { staticClass: "entry_content" }, [
-                            _c("span", [
-                              _vm._v(_vm._s(_vm.post.content) + "\n          ")
-                            ])
-                          ])
+                          _c(
+                            "div",
+                            { staticClass: "entry_content" },
+                            [
+                              _c("span", [_vm._v(_vm._s(_vm.post.content))]),
+                              _vm._v(" "),
+                              _vm._l(_vm.post_attachments, function(att) {
+                                return [
+                                  _vm.isImage(att.file_type)
+                                    ? _c("p", [
+                                        _c("img", {
+                                          staticClass: "image_in_post",
+                                          attrs: { src: att.file_path }
+                                        })
+                                      ])
+                                    : _c("p", [
+                                        _c(
+                                          "a",
+                                          { attrs: { href: att.file_path } },
+                                          [
+                                            _vm._v(
+                                              _vm._s(att.original_file_name)
+                                            )
+                                          ]
+                                        )
+                                      ])
+                                ]
+                              })
+                            ],
+                            2
+                          )
                         ])
                       ],
                       1
@@ -5211,7 +5261,7 @@ var render = function() {
                                             ]
                                           ),
                                           _vm._v(" "),
-                                          comment.user_id == _vm.user.id
+                                          comment.user_id === _vm.user.id
                                             ? _c(
                                                 "span",
                                                 [
@@ -5526,7 +5576,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n.post_progress {\n  margin-right: 10px;\n  width: 15px;\n  color: white;\n}\n", ""]);
 
 // exports
 
@@ -5652,7 +5702,7 @@ var render = function() {
                     }
                   ],
                   staticClass: "textarea w-100p",
-                  attrs: { rows: "10", placeholder: "内容" },
+                  attrs: { rows: "10", placeholder: "本文" },
                   domProps: { value: _vm.contents },
                   on: {
                     input: function($event) {
@@ -5761,14 +5811,26 @@ var render = function() {
                     "v-ons-button",
                     {
                       staticClass: "mtb-20",
-                      attrs: { modifier: "large" },
+                      attrs: {
+                        id: "postBtn",
+                        modifier: "large",
+                        disabled: _vm.posting
+                      },
                       on: {
                         click: function($event) {
                           _vm.post()
                         }
                       }
                     },
-                    [_vm._v("投稿")]
+                    [
+                      _vm.posting
+                        ? _c("v-ons-icon", {
+                            attrs: { icon: "fa-spinner", spin: "" }
+                          })
+                        : _vm._e(),
+                      _vm._v("\n            投稿\n          ")
+                    ],
+                    1
                   )
                 ],
                 1

@@ -26,7 +26,7 @@
             </v-ons-select>
           </div>
           <div class="space">
-            <textarea class="textarea w-100p" rows="10" placeholder="内容"
+            <textarea class="textarea w-100p" rows="10" placeholder="本文"
             v-model="contents"></textarea>
           </div>
           <div class="mb-10" v-if="0 < fileNames.length">
@@ -53,8 +53,11 @@
             <label for="notificate" class="middle">みんなにメール通知</label>
           </div>
           <div class="space">
-            <v-ons-button class="mtb-20" modifier="large"
-                          @click="post()">投稿</v-ons-button>
+            <v-ons-button id="postBtn" class="mtb-20" modifier="large"
+                          @click="post()" :disabled="posting">
+              <v-ons-icon icon="fa-spinner" spin v-if="posting"></v-ons-icon>
+              投稿
+            </v-ons-button>
           </div>
         </form>
       </div>
@@ -116,6 +119,7 @@
     data() {
       return {
         loading: false,
+        posting: false,
         categories: null,
         title: "",
         selected_category: null,
@@ -126,20 +130,27 @@
         fileNames: []
       }
     },
+    computed: {
+      postBtnColor: {
+        get() {return this.posting? "white" : "";}
+      }
+    },
     methods: {
       post() {
         //TODO validate
+        if (this.posting) {
+          return;
+        }
         if (!this.title) {
-          this.$ons.notification.alert('タイトルは必須です', {title: ''});
+          this.$ons.notification.alert('タイトルを入れてください', {title: ''});
           return;
         }
         if (!this.contents) {
-          this.$ons.notification.alert('内容は必須です', {title: ''});
+          this.$ons.notification.alert('本文を入れてください', {title: ''});
           return;
         }
+        this.posting = true;
         this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
-    console.log('選択カテゴリID ' + this.selected_category);
-    console.log('カテゴリID ' + this.category_id);
         let self = this;
         // 送信フォームデータ準備
         let formData = new FormData();
@@ -165,7 +176,7 @@
               window.location.href = "/login"; return;
             }
           })
-          .finally(() => this.loading = false);
+          .finally(() => {this.loading = false; this.posting = false;});
       },
       afterPost() {
         this.$store.commit('navigator/pop');
@@ -193,4 +204,10 @@
   };
 </script>
 
-<style></style>
+<style>
+  .post_progress {
+    margin-right: 10px;
+    width: 15px;
+    color: white;
+  }
+</style>
