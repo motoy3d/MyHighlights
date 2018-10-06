@@ -97,7 +97,7 @@ class PostController extends Controller
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
         // ファイル保存
-        $filePath = $file->storePublicly('post_attachment');
+        $filePath = $file->storePublicly('public/post_attachment');
         $postAttachment = PostAttachment::create([
           "post_id" => $post->id,
           "file_path" => $filePath,
