@@ -34,10 +34,12 @@
             </div>
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
-                <p v-if="isImage(att.file_type)">
+                <div v-if="isImage(att.file_type)" class="pt-10">
                   <a :href="att.file_path" target="_blank"><img :src="att.file_path" class="image_in_post"></a>
-                </p>
-                <p v-else><a :href="att.file_path">{{ att.original_file_name }}</a></p>
+                </div>
+                <div v-else class="pt-10">
+                  <a :href="att.file_path">{{ att.original_file_name }}</a>
+                </div>
               </template>
             </div>
           </v-ons-col>
@@ -78,7 +80,7 @@
         </v-ons-row>
         <v-ons-row class="space">
           <v-ons-col class="bordertop">
-            <div class="center mt-20">
+            <div class="mt-10 ml-5">
               <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
                           @click="toggleHeart();">
                 <span class="heart_text">いいね</span>

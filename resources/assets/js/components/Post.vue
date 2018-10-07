@@ -180,7 +180,7 @@
       },
       afterPost() {
         this.$store.commit('navigator/pop');
-        this.$store.dispatch('timeline/loadTimeline', this.$http);
+        this.$store.dispatch('timeline/load', this.$http);
       },
       // ファイルが選択された時
       onFileSet(event) {

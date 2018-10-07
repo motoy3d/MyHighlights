@@ -29,23 +29,6 @@ export default {
       }
     },
 
-    splitter: {
-      strict: true,
-      namespaced: true,
-      state: {
-        open: false
-      },
-      mutations: {
-        toggle(state, shouldOpen) {
-          if (typeof shouldOpen === 'boolean') {
-            state.open = shouldOpen;
-          } else {
-            state.open = !state.open;
-          }
-        }
-      }
-    },
-
     tabbar: {
       strict: true,
       namespaced: true,
@@ -59,29 +42,36 @@ export default {
       }
     },
 
+    // タイムライン
     timeline: {
       strict: true,
       namespaced: true,
       state: {
         posts: [],
+        nextPageUrl: null,
         loading: false
       },
       mutations: {
         set(state, posts) {
-          console.log('store.js#timeline/set '  + posts);
           state.posts = posts;
+        },
+        add(state, morePosts) {
+          state.posts = state.posts.concat(morePosts);
+        },
+        setNextPageUrl(state, url) {
+          state.nextPageUrl = url;
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
         }
       },
       actions: {
-        loadTimeline(context, $http) {
+        load(context, $http) {
           context.commit('setLoading', true);
-          console.log('store.js#timeline/loadTimeline');
           $http.get('/api/posts')
             .then((response)=>{
               context.commit('set', response.data.data);
+              context.commit('setNextPageUrl', response.data.next_page_url);
             })
             .catch(error => {
               console.log(error);
@@ -89,7 +79,25 @@ export default {
                 window.location.href = "/login"; return;
               }
             })
-          .finally(() => context.commit('setLoading', false))
+            .finally(() => context.commit('setLoading', false))
+            ;
+        },
+        loadMore(context, param) {
+          if (!context.state.nextPageUrl) {
+            return;
+          }
+          param.http.get(context.state.nextPageUrl)
+            .then((response)=>{
+              context.commit('add', response.data.data);
+              context.commit('setNextPageUrl', response.data.next_page_url);
+            })
+            .catch(error => {
+              console.log(error);
+              if (error.response.status == 401) {
+                window.location.href = "/login"; return;
+              }
+            })
+            .finally(() => param.done())
           ;
         }
       }
@@ -112,6 +120,7 @@ export default {
         }
       }
     },
+
     // 記事画面
     article: {
       strict: true,

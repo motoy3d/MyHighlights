@@ -1519,16 +1519,20 @@ if (false) {(function () {
 //
 //
 //
+//
 
 
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   mounted: function mounted() {
-    this.$store.dispatch('timeline/loadTimeline', this.$http);
+    this.$store.dispatch('timeline/load', this.$http);
   },
 
   methods: {
+    loadMore: function loadMore(done) {
+      this.$store.dispatch('timeline/loadMore', { 'http': this.$http, 'done': done });
+    },
     openArticle: function openArticle(post_id) {
       // console.log("post_id=" + post_id);
       this.$store.commit('article/setPostId', post_id);
@@ -1571,6 +1575,8 @@ if (false) {(function () {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Post_vue__ = __webpack_require__(198);
+//
+//
 //
 //
 //
@@ -2159,7 +2165,7 @@ if (false) {(function () {
     },
     afterPost: function afterPost() {
       this.$store.commit('navigator/pop');
-      this.$store.dispatch('timeline/loadTimeline', this.$http);
+      this.$store.dispatch('timeline/load', this.$http);
     },
 
     // ファイルが選択された時
@@ -4446,23 +4452,6 @@ module.exports = function spread(callback) {
       }
     },
 
-    splitter: {
-      strict: true,
-      namespaced: true,
-      state: {
-        open: false
-      },
-      mutations: {
-        toggle: function toggle(state, shouldOpen) {
-          if (typeof shouldOpen === 'boolean') {
-            state.open = shouldOpen;
-          } else {
-            state.open = !state.open;
-          }
-        }
-      }
-    },
-
     tabbar: {
       strict: true,
       namespaced: true,
@@ -4476,28 +4465,35 @@ module.exports = function spread(callback) {
       }
     },
 
+    // タイムライン
     timeline: {
       strict: true,
       namespaced: true,
       state: {
         posts: [],
+        nextPageUrl: null,
         loading: false
       },
       mutations: {
         set: function set(state, posts) {
-          console.log('store.js#timeline/set ' + posts);
           state.posts = posts;
+        },
+        add: function add(state, morePosts) {
+          state.posts = state.posts.concat(morePosts);
+        },
+        setNextPageUrl: function setNextPageUrl(state, url) {
+          state.nextPageUrl = url;
         },
         setLoading: function setLoading(state, isLoading) {
           state.loading = isLoading;
         }
       },
       actions: {
-        loadTimeline: function loadTimeline(context, $http) {
+        load: function load(context, $http) {
           context.commit('setLoading', true);
-          console.log('store.js#timeline/loadTimeline');
           $http.get('/api/posts').then(function (response) {
             context.commit('set', response.data.data);
+            context.commit('setNextPageUrl', response.data.next_page_url);
           }).catch(function (error) {
             console.log(error);
             if (error.response.status == 401) {
@@ -4505,6 +4501,22 @@ module.exports = function spread(callback) {
             }
           }).finally(function () {
             return context.commit('setLoading', false);
+          });
+        },
+        loadMore: function loadMore(context, param) {
+          if (!context.state.nextPageUrl) {
+            return;
+          }
+          param.http.get(context.state.nextPageUrl).then(function (response) {
+            context.commit('add', response.data.data);
+            context.commit('setNextPageUrl', response.data.next_page_url);
+          }).catch(function (error) {
+            console.log(error);
+            if (error.response.status == 401) {
+              window.location.href = "/login";return;
+            }
+          }).finally(function () {
+            return param.done();
           });
         }
       }
@@ -4527,6 +4539,7 @@ module.exports = function spread(callback) {
         }
       }
     },
+
     // 記事画面
     article: {
       strict: true,
@@ -4772,7 +4785,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.post_content {\n  white-space: pre-wrap;\n}\n", ""]);
+exports.push([module.i, "\n.timeline_search {\n  margin: auto;\n  width: 50%;\n}\n.timeline_search2 {\n  margin: 8px 0 8px 0;\n  width: 90%;\n}\n.timeline_item_read {\n  background-color: #f2f2f2;\n}\n.new_icon {\n  color: #ff6633;\n  margin-right: 3px;\n}\n.entry_title_row {\n  width: 97%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.entry_content {\n  width: 95%;\n  text-align:left;\n  margin: 5px 0 0 5px;\n}\n.post_content {\n  white-space: pre-wrap;\n}\n.after_list {\n  margin: 20px;\n  text-align: center;\n}\n", ""]);
 
 // exports
 
@@ -4981,7 +4994,7 @@ var render = function() {
                               _vm._l(_vm.post_attachments, function(att) {
                                 return [
                                   _vm.isImage(att.file_type)
-                                    ? _c("p", [
+                                    ? _c("div", { staticClass: "pt-10" }, [
                                         _c(
                                           "a",
                                           {
@@ -4998,7 +5011,7 @@ var render = function() {
                                           ]
                                         )
                                       ])
-                                    : _c("p", [
+                                    : _c("div", { staticClass: "pt-10" }, [
                                         _c(
                                           "a",
                                           { attrs: { href: att.file_path } },
@@ -5127,7 +5140,7 @@ var render = function() {
                           [
                             _c(
                               "div",
-                              { staticClass: "center mt-20" },
+                              { staticClass: "mt-10 ml-5" },
                               [
                                 _c(
                                   "v-ons-icon",
@@ -6844,7 +6857,7 @@ var render = function() {
               {
                 on: {
                   click: function($event) {
-                    _vm.$store.dispatch("timeline/loadTimeline", _vm.$http)
+                    _vm.$store.dispatch("timeline/load", _vm.$http)
                   }
                 }
               },
@@ -6904,103 +6917,142 @@ var render = function() {
                   )
                 : [
                     _c(
-                      "v-ons-list",
-                      { attrs: { id: "timeline_list" } },
-                      _vm._l(_vm.posts, function(post) {
-                        return _c(
-                          "v-ons-list-item",
-                          {
-                            key: post.id,
-                            attrs: { tappable: "", modifier: "chevron" },
-                            on: {
-                              click: function($event) {
-                                _vm.openArticle(post.id)
-                              }
-                            }
-                          },
-                          [
-                            _c("div", { staticClass: "entry_title_row" }, [
-                              _c(
-                                "p",
-                                { staticClass: "entry_title" },
-                                [
-                                  !post.read_flg
-                                    ? _c("v-ons-icon", {
-                                        staticClass: "new_icon",
-                                        attrs: {
-                                          icon: "fa-circle",
-                                          size: "16px"
-                                        }
-                                      })
-                                    : _vm._e(),
-                                  _vm._v(
-                                    "\n              " + _vm._s(post.title)
-                                  )
-                                ],
-                                1
-                              ),
-                              _vm._v(" "),
-                              _c("p", { staticClass: "updated_at" }, [
-                                _vm._v(
-                                  "\n              " +
-                                    _vm._s(
-                                      _vm._f("moment")(post.updated_at, "from")
-                                    ) +
-                                    "　\n              " +
-                                    _vm._s(post.updated_name)
-                                )
-                              ])
-                            ]),
-                            _vm._v(" "),
-                            _c("div", { staticClass: "entry_content" }, [
-                              _c("span", { staticClass: "post_content" }, [
-                                _vm._v(_vm._s(_vm._f("truncate")(post.content)))
-                              ]),
-                              _vm._v(" "),
-                              post.comment_count || post.quetionnaire_id
-                                ? _c(
-                                    "div",
-                                    { staticClass: "mt-10" },
+                      "v-ons-page",
+                      { attrs: { "infinite-scroll": _vm.loadMore } },
+                      [
+                        _c(
+                          "v-ons-list",
+                          { attrs: { id: "timeline_list" } },
+                          _vm._l(_vm.posts, function(post) {
+                            return _c(
+                              "v-ons-list-item",
+                              {
+                                key: post.id,
+                                attrs: { tappable: "", modifier: "chevron" },
+                                on: {
+                                  click: function($event) {
+                                    _vm.openArticle(post.id)
+                                  }
+                                }
+                              },
+                              [
+                                _c("div", { staticClass: "entry_title_row" }, [
+                                  _c(
+                                    "p",
+                                    { staticClass: "entry_title" },
                                     [
-                                      post.comment_count
-                                        ? _c(
-                                            "v-ons-icon",
-                                            {
-                                              staticClass: "small gray",
-                                              attrs: { icon: "fa-comment-o" }
-                                            },
-                                            [
-                                              _c(
-                                                "span",
-                                                { staticClass: "ml-5" },
+                                      !post.read_flg
+                                        ? _c("v-ons-icon", {
+                                            staticClass: "new_icon",
+                                            attrs: {
+                                              icon: "fa-circle",
+                                              size: "16px"
+                                            }
+                                          })
+                                        : _vm._e(),
+                                      _vm._v(
+                                        "\n                " +
+                                          _vm._s(post.title)
+                                      )
+                                    ],
+                                    1
+                                  ),
+                                  _vm._v(" "),
+                                  _c("p", { staticClass: "updated_at" }, [
+                                    _vm._v(
+                                      "\n                " +
+                                        _vm._s(
+                                          _vm._f("moment")(
+                                            post.updated_at,
+                                            "from"
+                                          )
+                                        ) +
+                                        "　\n                " +
+                                        _vm._s(post.updated_name)
+                                    )
+                                  ])
+                                ]),
+                                _vm._v(" "),
+                                _c("div", { staticClass: "entry_content" }, [
+                                  _c("span", { staticClass: "post_content" }, [
+                                    _vm._v(
+                                      _vm._s(_vm._f("truncate")(post.content))
+                                    )
+                                  ]),
+                                  _vm._v(" "),
+                                  post.comment_count || post.quetionnaire_id
+                                    ? _c(
+                                        "div",
+                                        { staticClass: "mt-10" },
+                                        [
+                                          post.comment_count
+                                            ? _c(
+                                                "v-ons-icon",
+                                                {
+                                                  staticClass: "small gray",
+                                                  attrs: {
+                                                    icon: "fa-comment-o"
+                                                  }
+                                                },
                                                 [
-                                                  _vm._v(
-                                                    _vm._s(post.comment_count)
+                                                  _c(
+                                                    "span",
+                                                    { staticClass: "ml-5" },
+                                                    [
+                                                      _vm._v(
+                                                        _vm._s(
+                                                          post.comment_count
+                                                        )
+                                                      )
+                                                    ]
                                                   )
                                                 ]
                                               )
-                                            ]
-                                          )
-                                        : _vm._e(),
-                                      _vm._v(" "),
-                                      post.quetionnaire_id
-                                        ? _c(
-                                            "v-ons-icon",
-                                            {
-                                              staticClass: "small gray ml-10",
-                                              attrs: { icon: "fa-list-alt" }
-                                            },
-                                            [_c("span", [_vm._v("アンケート")])]
-                                          )
-                                        : _vm._e()
-                                    ],
-                                    1
-                                  )
-                                : _vm._e()
-                            ])
-                          ]
-                        )
-                      })
+                                            : _vm._e(),
+                                          _vm._v(" "),
+                                          post.quetionnaire_id
+                                            ? _c(
+                                                "v-ons-icon",
+                                                {
+                                                  staticClass:
+                                                    "small gray ml-10",
+                                                  attrs: { icon: "fa-list-alt" }
+                                                },
+                                                [
+                                                  _c("span", [
+                                                    _vm._v("アンケート")
+                                                  ])
+                                                ]
+                                              )
+                                            : _vm._e()
+                                        ],
+                                        1
+                                      )
+                                    : _vm._e()
+                                ])
+                              ]
+                            )
+                          })
+                        ),
+                        _vm._v(" "),
+                        _vm.$store.state.timeline.nextPageUrl
+                          ? _c(
+                              "div",
+                              { staticClass: "after_list" },
+                              [
+                                _c("v-ons-icon", {
+                                  attrs: {
+                                    icon: "fa-spinner",
+                                    size: "26px",
+                                    spin: ""
+                                  }
+                                })
+                              ],
+                              1
+                            )
+                          : _vm._e()
+                      ],
+                      1
                     )
                   ]
             ],
