@@ -46,7 +46,7 @@
         ログアウトしますか？
       </div>
       <div class="alert-dialog-footer">
-        <v-ons-alert-dialog-button onclick="location.href='login.html'">OK</v-ons-alert-dialog-button>
+        <v-ons-alert-dialog-button onclick="location.href='login'">OK</v-ons-alert-dialog-button>
         <v-ons-alert-dialog-button onclick="$('#logout_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
       </div>
     </v-ons-alert-dialog>

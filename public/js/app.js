@@ -1776,8 +1776,6 @@ if (false) {(function () {
 //
 //
 //
-//
-//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -1792,17 +1790,48 @@ if (false) {(function () {
       quetionnaire: {},
       comments: {},
       comment_text: "",
+      likes_count: 0,
+      likes: [],
       user: {},
-      isHeartOn: 1,
-      heartCount: 2,
-      isStarOn: 0,
-      starCount: 0,
-      isLike: 1,
       loading: false,
       errored: false
     };
   },
 
+  computed: {
+    isHeartOn: {
+      get: function get() {
+        return this.post_responses.like_flg;
+      },
+      set: function set(like_flg) {
+        this.post_responses.like_flg = like_flg;
+      }
+    },
+    heartCount: {
+      get: function get() {
+        return this.likes_count;
+      },
+      set: function set(likes_count) {
+        this.likes_count++;
+      }
+    },
+    isStarOn: {
+      get: function get() {
+        return this.post_responses.star_flg;
+      },
+      set: function set(like_flg) {
+        this.post_responses.star_flg = star_flg;
+      }
+    },
+    starCount: {
+      get: function get() {
+        return this.post.star_count;
+      },
+      set: function set(star_count) {
+        this.post.star_count++;
+      }
+    }
+  },
   methods: {
     load: function load() {
       var _this = this;
@@ -1816,6 +1845,8 @@ if (false) {(function () {
         _this.post_attachments = response.data.post_attachments;
         _this.quetionnaire = response.data.quetionnaire;
         _this.comments = response.data.comments;
+        _this.likes = response.data.likes;
+        _this.likes_count = _this.likes ? _this.likes.length : 0;
         _this.user = response.data.user;
         _this.loading = false;
       }).catch(function (error) {
@@ -1883,22 +1914,34 @@ if (false) {(function () {
       });
     },
     toggleHeart: function toggleHeart() {
+      var _this3 = this;
+
       if (this.isHeartOn) {
-        this.isHeartOn = 0;
-        this.heartCount--;
+        this.isHeartOn = 0;this.heartCount--;
       } else {
-        this.isHeartOn = 1;
-        this.heartCount++;
+        this.isHeartOn = 1;this.heartCount++;
       }
+      var form = new FormData();
+      form.append('like_flg', this.isHeartOn);
+      var post_id = this.$store.state.article.post_id;
+      this.$http.post('/api/post_responses/' + post_id, form).catch(function (error) {
+        _this3.errored = true;
+      });
     },
     toggleStar: function toggleStar(starIcon) {
+      var _this4 = this;
+
       if (this.isStarOn) {
-        this.isStarOn = 0;
-        this.starCount--;
+        this.isStarOn = 0;this.starCount--;
       } else {
-        this.isStarOn = 1;
-        this.starCount++;
+        this.isStarOn = 1;this.starCount++;
       }
+      var form = new FormData();
+      form.append('star_flg', this.isStarOn);
+      var post_id = this.$store.state.article.post_id;
+      this.$http.post('/api/post_responses/' + post_id, form).catch(function (error) {
+        _this4.errored = true;
+      });
     },
     toggleLike: function toggleLike(likeIcon) {},
     showQuestionnaireModal: function showQuestionnaireModal() {
@@ -4939,10 +4982,21 @@ var render = function() {
                                 return [
                                   _vm.isImage(att.file_type)
                                     ? _c("p", [
-                                        _c("img", {
-                                          staticClass: "image_in_post",
-                                          attrs: { src: att.file_path }
-                                        })
+                                        _c(
+                                          "a",
+                                          {
+                                            attrs: {
+                                              href: att.file_path,
+                                              target: "_blank"
+                                            }
+                                          },
+                                          [
+                                            _c("img", {
+                                              staticClass: "image_in_post",
+                                              attrs: { src: att.file_path }
+                                            })
+                                          ]
+                                        )
                                       ])
                                     : _c("p", [
                                         _c(
@@ -5069,14 +5123,11 @@ var render = function() {
                       [
                         _c(
                           "v-ons-col",
+                          { staticClass: "bordertop" },
                           [
-                            _c("hr", {
-                              staticStyle: { "background-color": "#e2e2e2" }
-                            }),
-                            _vm._v(" "),
                             _c(
                               "div",
-                              { staticClass: "center mt-15" },
+                              { staticClass: "center mt-20" },
                               [
                                 _c(
                                   "v-ons-icon",
@@ -5105,28 +5156,6 @@ var render = function() {
                                           [_vm._v(_vm._s(_vm.heartCount))]
                                         )
                                       : _vm._e()
-                                  ]
-                                ),
-                                _vm._v(" "),
-                                _c(
-                                  "v-ons-icon",
-                                  {
-                                    staticClass: "star",
-                                    attrs: {
-                                      icon: _vm.isStarOn
-                                        ? "fa-star"
-                                        : "fa-star-o"
-                                    },
-                                    on: {
-                                      click: function($event) {
-                                        _vm.toggleStar()
-                                      }
-                                    }
-                                  },
-                                  [
-                                    _c("span", { staticClass: "star_text" }, [
-                                      _vm._v("お気に入り保存")
-                                    ])
                                   ]
                                 )
                               ],
@@ -8422,7 +8451,7 @@ var render = function() {
             [
               _c(
                 "v-ons-alert-dialog-button",
-                { attrs: { onclick: "location.href='login.html'" } },
+                { attrs: { onclick: "location.href='login'" } },
                 [_vm._v("OK")]
               ),
               _vm._v(" "),

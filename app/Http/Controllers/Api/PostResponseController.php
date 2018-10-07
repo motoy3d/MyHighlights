@@ -16,8 +16,8 @@ class PostResponseController extends Controller
   /**
    * 以下３つの用途でpost_responsesテーブルに保存する。
    * 1.投稿に対する既読の登録。
-   * 2.投稿に対するいいねの更新。(既読ですでに登録済みのはずなので）
-   * 3.投稿に対するスターの更新。(既読ですでに登録済みのはずなので）
+   * 2.投稿に対するいいねの更新。(既読ですでにレコードは登録済みのはずなので）
+   * 3.投稿に対するスターの更新。(既読ですでにレコードは登録済みのはずなので）
    *
    * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\JsonResponse
@@ -36,11 +36,16 @@ class PostResponseController extends Controller
       ->where('user_id', '=', Auth::id())
       ->where('post_id', '=', $request->post_id)
       ->first();
+    Log::info("----store ");
     if ($postResponse) {
+      Log::info("like_flg: " . $request->like_flg);
+      Log::info("star_flg: " . $request->star_flg);
       $postResponseModel = PostResponse::findOrFail($postResponse->id);
       if (isset($request->like_flg)) { //いいね
         $postResponseModel->like_flg = $request->like_flg;
         $postResponseModel->save();
+        //TODO いいね合計数更新
+        Log::info("like_flg saved.");
       } else if (isset($request->star_flg)) { //スター
         $postResponseModel->star_flg = $request->star_flg;
         $postResponseModel->save();
@@ -62,5 +67,4 @@ class PostResponseController extends Controller
     }
     return Response::json($postResponseResult);
   }
-
 }

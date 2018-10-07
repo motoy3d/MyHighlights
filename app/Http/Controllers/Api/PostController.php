@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Category;
 use App\Post;
 use App\PostAttachment;
+use App\PostResponse;
 use App\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -133,12 +134,34 @@ class PostController extends Controller
       return response()->json(null, 404);
     }
 
-    // 投稿へのいいね、スター
+    // 投稿の既読、いいね、スター　(ログインユーザーの行動)
+    // 一度INSERTしてからSELECT
     $post_response = DB::table('post_responses')
       ->select('read_flg', 'like_flg', 'star_flg')
       ->where('user_id', Auth::id())
       ->where('post_id', $post->id)
       ->first();
+    if (!$post_response) { //初回表示時はINSERT
+      $post_response = PostResponse::create([
+        "user_id" => Auth::id(),
+        "post_id" => $id,
+        "read_flg" => true,
+        "like_flg" => false,
+        "star_flg" => false,
+        "created_id" => Auth::id(),
+        "updated_id" => Auth::id()
+      ]);
+      $post_response = DB::table('post_responses')
+        ->select('read_flg', 'like_flg', 'star_flg')
+        ->where('user_id', Auth::id())
+        ->where('post_id', $post->id)
+        ->first();
+    }
+
+    // いいねリスト
+    $likes = DB::table('post_responses')
+      ->where('post_id', $id)->where('like_flg', 1)
+      ->get();
 
     // 投稿添付ファイル
     $post_attachments = DB::table('post_attachments')
@@ -175,6 +198,7 @@ class PostController extends Controller
       'post_attachments' => $post_attachments,
       'quetionnaire' => $quetionnaire,
       'comments' => $comments,
+      'likes' => $likes,
       'user' => Auth::user()
     ]);
   }

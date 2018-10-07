@@ -35,7 +35,7 @@
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
                 <p v-if="isImage(att.file_type)">
-                  <img :src="att.file_path" class="image_in_post">
+                  <a :href="att.file_path" target="_blank"><img :src="att.file_path" class="image_in_post"></a>
                 </p>
                 <p v-else><a :href="att.file_path">{{ att.original_file_name }}</a></p>
               </template>
@@ -77,20 +77,18 @@
           </v-ons-col>
         </v-ons-row>
         <v-ons-row class="space">
-          <v-ons-col>
-            <hr style="background-color: #e2e2e2">
-            <!-- ハート -->
-            <div class="center mt-15">
+          <v-ons-col class="bordertop">
+            <div class="center mt-20">
               <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
                           @click="toggleHeart();">
                 <span class="heart_text">いいね</span>
                 <span class="heart-count" v-if="heartCount">{{ heartCount }}</span>
               </v-ons-icon>
-              <v-ons-icon :icon="isStarOn? 'fa-star' : 'fa-star-o'" class="star"
-                          @click="toggleStar();">
-                <span class="star_text">お気に入り保存</span>
+              <!--<v-ons-icon :icon="isStarOn? 'fa-star' : 'fa-star-o'" class="star"-->
+                          <!--@click="toggleStar();">-->
+                <!--<span class="star_text">お気に入り保存</span>-->
                 <!--<span class="star-count" v-if="starCount">{{ starCount }}</span>-->
-              </v-ons-icon>
+              <!--</v-ons-icon>-->
             </div>
             <!-- コメント -->
             <v-ons-row class="mt-30">
@@ -219,15 +217,30 @@
         quetionnaire: {},
         comments: {},
         comment_text: "",
+        likes_count: 0,
+        likes: [],
         user: {},
-        isHeartOn: 1,
-        heartCount: 2,
-        isStarOn: 0,
-        starCount: 0,
-        isLike: 1,
         loading: false,
         errored: false
       }
+    },
+    computed: {
+      isHeartOn: {
+        get() {return this.post_responses.like_flg;},
+        set(like_flg) {this.post_responses.like_flg = like_flg;}
+      },
+      heartCount: {
+        get() {return this.likes_count;},
+        set(likes_count) {this.likes_count++;}
+      },
+      isStarOn: {
+        get() {return this.post_responses.star_flg;},
+        set(like_flg) {this.post_responses.star_flg = star_flg;}
+      },
+      starCount: {
+        get() {return this.post.star_count;},
+        set(star_count) {this.post.star_count++;}
+      },
     },
     methods: {
       load() {
@@ -241,6 +254,8 @@
             this.post_attachments = response.data.post_attachments;
             this.quetionnaire = response.data.quetionnaire;
             this.comments = response.data.comments;
+            this.likes = response.data.likes;
+            this.likes_count = this.likes? this.likes.length : 0;
             this.user = response.data.user;
             this.loading = false;
           })
@@ -308,21 +323,31 @@
       },
       toggleHeart() {
         if(this.isHeartOn) {
-          this.isHeartOn = 0;
-          this.heartCount--;
+          this.isHeartOn = 0; this.heartCount--;
         } else {
-          this.isHeartOn = 1;
-          this.heartCount++;
+          this.isHeartOn = 1; this.heartCount++;
         }
+        let form = new FormData();
+        form.append('like_flg', this.isHeartOn);
+        let post_id = this.$store.state.article.post_id;
+        this.$http.post('/api/post_responses/' + post_id, form)
+          .catch(error => {
+            this.errored = true;
+          });
       },
       toggleStar(starIcon) {
         if(this.isStarOn) {
-          this.isStarOn = 0;
-          this.starCount--;
+          this.isStarOn = 0; this.starCount--;
         } else {
-          this.isStarOn = 1;
-          this.starCount++;
+          this.isStarOn = 1; this.starCount++;
         }
+        let form = new FormData();
+        form.append('star_flg', this.isStarOn);
+        let post_id = this.$store.state.article.post_id;
+        this.$http.post('/api/post_responses/' + post_id, form)
+          .catch(error => {
+            this.errored = true;
+          });
       },
       toggleLike(likeIcon) {
       },
