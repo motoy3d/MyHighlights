@@ -231,7 +231,7 @@
       },
       heartCount: {
         get() {return this.likes_count;},
-        set(likes_count) {this.likes_count++;}
+        set(likes_count) {this.likes_count = likes_count;}
       },
       isStarOn: {
         get() {return this.post_responses.star_flg;},
@@ -239,7 +239,7 @@
       },
       starCount: {
         get() {return this.post.star_count;},
-        set(star_count) {this.post.star_count++;}
+        set(star_count) {this.post.star_count = star_count;}
       },
     },
     methods: {

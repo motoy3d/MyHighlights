@@ -1812,7 +1812,7 @@ if (false) {(function () {
         return this.likes_count;
       },
       set: function set(likes_count) {
-        this.likes_count++;
+        this.likes_count = likes_count;
       }
     },
     isStarOn: {
@@ -1828,7 +1828,7 @@ if (false) {(function () {
         return this.post.star_count;
       },
       set: function set(star_count) {
-        this.post.star_count++;
+        this.post.star_count = star_count;
       }
     }
   },
