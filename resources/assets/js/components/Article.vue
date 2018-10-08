@@ -94,14 +94,19 @@
             </div>
             <!-- コメント -->
             <v-ons-row class="mt-30">
-              <v-ons-col>
-                <textarea class="textarea comment_textarea"
-                          rows="4" placeholder="コメント" v-model="comment_text"></textarea>
+              <v-ons-col width="40px" vertical-align="bottom" class="left">
+                <v-ons-button class="mt-10 center bg-white" ripple
+                              @click="postComment()">
+                  <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"></v-ons-icon></v-ons-button>
               </v-ons-col>
-              <v-ons-col width="50px" vertical-align="bottom">
-                <v-ons-button class="ml-10 mt-10 right" ripple
+              <v-ons-col>
+                <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
+                          v-model="comment_text" @keyup="fitTextarea()"></textarea>
+              </v-ons-col>
+              <v-ons-col width="50px" vertical-align="bottom" class="center">
+                <v-ons-button class="ml-5 mt-10 center" ripple
                   @click="postComment()">
-                  <v-ons-icon icon="fa-paper-plane"></v-ons-icon></v-ons-button>
+                  <v-ons-icon icon="fa-paper-plane" class="messageBtn"></v-ons-icon></v-ons-button>
               </v-ons-col>
             </v-ons-row>
             <!--<div class="upload-btn-wrapper">-->
@@ -378,6 +383,14 @@
           return true;
         }
         return false;
+      },
+      fitTextarea() {
+        let num = event.srcElement.value.match(/\r\n|\n/g);
+        if (num != null && 3 < num.length) {
+          event.srcElement.rows = num.length > 8 ? 8 : num.length + 1;
+        } else {
+          event.srcElement.rows = 3;
+        }
       }
     }
   };
@@ -446,6 +459,7 @@
   .heart_text {
     color: black;
     font-size: 16px;
+    margin-left: 5px;
   }
   .star {
     color: orange;
@@ -523,5 +537,8 @@
   }
   .image_in_post {
     max-width: 100%;
+  }
+  .messageBtn {
+    width: 20px;
   }
 </style>
