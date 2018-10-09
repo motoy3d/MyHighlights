@@ -1787,6 +1787,19 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -1801,6 +1814,7 @@ if (false) {(function () {
       quetionnaire: {},
       comments: {},
       comment_text: "",
+      comment_files: [],
       likes_count: 0,
       likes: [],
       user: {},
@@ -1878,9 +1892,16 @@ if (false) {(function () {
       }
       var post_id = this.$store.state.article.post_id;
       var self = this;
-      this.$http.post('/api/post_comments/' + post_id, this.$data).then(function (response) {
+      // 送信フォームデータ準備
+      var formData = new FormData();
+      formData.append('comment_text', this.comment_text);
+      for (var i = 0; i < this.comment_files.length; i++) {
+        formData.append('comment_files[]', this.comment_files[i]);
+      }
+      this.$http.post('/api/post_comments/' + post_id, formData).then(function (response) {
         console.log(response.data);
         self.comment_text = '';
+        self.comment_files = [];
         self.load();
       }).catch(function (error) {
         _this2.errored = true;
@@ -1975,6 +1996,17 @@ if (false) {(function () {
         return true;
       }
       return false;
+    },
+
+    // ファイルが選択された時
+    onFileSet: function onFileSet(event) {
+      console.log("onFileSet.");
+      this.comment_files = event.target.files;
+      // this.fileNames = [];
+      // for (let i=0; i<this.files.length; i++) {
+      //   this.fileNames.push(this.files[i].name);
+      // }
+      // console.log(this.files);
     },
     fitTextarea: function fitTextarea() {
       var num = event.srcElement.value.match(/\r\n|\n/g);
@@ -5698,60 +5730,90 @@ var render = function() {
                                   },
                                   [
                                     _c(
-                                      "v-ons-button",
-                                      {
-                                        staticClass: "mt-10 center bg-white",
-                                        attrs: { ripple: "" },
-                                        on: {
-                                          click: function($event) {
-                                            _vm.postComment()
-                                          }
-                                        }
-                                      },
+                                      "div",
+                                      { staticClass: "upload-btn-wrapper" },
                                       [
-                                        _c("v-ons-icon", {
-                                          staticClass: "goodblue",
-                                          attrs: {
-                                            icon: "fa-paperclip",
-                                            size: "24px"
-                                          }
+                                        0 < _vm.comment_files.length
+                                          ? _c(
+                                              "span",
+                                              { staticClass: "notification" },
+                                              [
+                                                _vm._v(
+                                                  "\n                  " +
+                                                    _vm._s(
+                                                      _vm.comment_files.length
+                                                    )
+                                                )
+                                              ]
+                                            )
+                                          : _vm._e(),
+                                        _vm._v(" "),
+                                        _c(
+                                          "v-ons-button",
+                                          {
+                                            staticClass: "center bg-white",
+                                            attrs: { ripple: "" },
+                                            on: {
+                                              click: function($event) {
+                                                _vm.postComment()
+                                              }
+                                            }
+                                          },
+                                          [
+                                            _c("v-ons-icon", {
+                                              staticClass: "goodblue",
+                                              attrs: {
+                                                icon: "fa-paperclip",
+                                                size: "24px"
+                                              }
+                                            })
+                                          ],
+                                          1
+                                        ),
+                                        _vm._v(" "),
+                                        _c("input", {
+                                          attrs: { type: "file", multiple: "" },
+                                          on: { change: _vm.onFileSet }
                                         })
                                       ],
                                       1
                                     )
-                                  ],
-                                  1
+                                  ]
                                 ),
                                 _vm._v(" "),
-                                _c("v-ons-col", [
-                                  _c("textarea", {
-                                    directives: [
-                                      {
-                                        name: "model",
-                                        rawName: "v-model",
-                                        value: _vm.comment_text,
-                                        expression: "comment_text"
-                                      }
-                                    ],
-                                    staticClass: "textarea comment_textarea",
-                                    attrs: {
-                                      rows: "3",
-                                      placeholder: "コメント"
-                                    },
-                                    domProps: { value: _vm.comment_text },
-                                    on: {
-                                      keyup: function($event) {
-                                        _vm.fitTextarea()
-                                      },
-                                      input: function($event) {
-                                        if ($event.target.composing) {
-                                          return
+                                _c(
+                                  "v-ons-col",
+                                  { attrs: { "vertical-align": "bottom" } },
+                                  [
+                                    _c("textarea", {
+                                      directives: [
+                                        {
+                                          name: "model",
+                                          rawName: "v-model",
+                                          value: _vm.comment_text,
+                                          expression: "comment_text"
                                         }
-                                        _vm.comment_text = $event.target.value
+                                      ],
+                                      staticClass: "textarea comment_textarea",
+                                      attrs: {
+                                        rows: "3",
+                                        placeholder: "コメント"
+                                      },
+                                      domProps: { value: _vm.comment_text },
+                                      on: {
+                                        keyup: function($event) {
+                                          _vm.fitTextarea()
+                                        },
+                                        input: function($event) {
+                                          if ($event.target.composing) {
+                                            return
+                                          }
+                                          _vm.comment_text = $event.target.value
+                                        }
                                       }
-                                    }
-                                  })
-                                ]),
+                                    })
+                                  ]
+                                ),
                                 _vm._v(" "),
                                 _c(
                                   "v-ons-col",
@@ -5873,8 +5935,41 @@ var render = function() {
                                                 ],
                                                 1
                                               )
-                                            : _vm._e()
-                                        ]
+                                            : _vm._e(),
+                                          _vm._v(" "),
+                                          _vm._l(comment.attachments, function(
+                                            att
+                                          ) {
+                                            return _c("p", [
+                                              _c(
+                                                "a",
+                                                {
+                                                  attrs: { href: att.file_path }
+                                                },
+                                                [
+                                                  _vm.isImage(att.file_type)
+                                                    ? _c("img", {
+                                                        staticClass:
+                                                          "image_in_post",
+                                                        attrs: {
+                                                          src: att.file_path
+                                                        }
+                                                      })
+                                                    : _vm._e(),
+                                                  _vm._v(" "),
+                                                  _c("span", [
+                                                    _vm._v(
+                                                      _vm._s(
+                                                        att.original_file_name
+                                                      )
+                                                    )
+                                                  ])
+                                                ]
+                                              )
+                                            ])
+                                          })
+                                        ],
+                                        2
                                       )
                                     ])
                                   ]

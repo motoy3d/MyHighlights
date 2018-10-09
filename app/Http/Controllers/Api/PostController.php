@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Category;
 use App\Post;
 use App\PostAttachment;
+use App\PostCommentAttachment;
 use App\PostResponse;
 use App\User;
 use Illuminate\Database\Query\JoinClause;
@@ -177,17 +178,24 @@ class PostController extends Controller
         ->first();
     }
 
-    // コメント
+    // コメント&コメント添付
     $comments = DB::table('post_comments')
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
-//TODO 添付      ->leftJoin('post_comment_attachments', 'post_comments.id', '=', 'post_comment_attachments.post_comment_id')
       ->select(
-        'post_comments.id', 'comment_text',
-        'post_comments.created_at',
-        'like_user_ids', 'user_id', 'users.name')
+        'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
+//        'post_comment_attachments.original_file_name',
+//        'post_comment_attachments.file_path',
+        'like_user_ids', 'post_comments.user_id', 'users.name')
       ->where('post_id', $post->id)
       ->orderByDesc('post_comments.id')
       ->get();
+    for ($i=0; $i<count($comments); $i++) {
+      $postCommentId = $comments[$i]->id;
+      $commentAttachments = DB::table('post_comment_attachments')
+        ->where('post_comment_id', '=', $postCommentId)
+        ->get();
+      $comments[$i]->attachments = $commentAttachments;
+    }
 
     //TODO コメントへのいいねリスト
 

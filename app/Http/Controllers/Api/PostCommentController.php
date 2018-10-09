@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Post;
 use App\PostComment;
+use App\PostCommentAttachment;
 use App\PostResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +37,27 @@ class PostCommentController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+
+    if ($request->allFiles()) { //添付がある場合
+      $files = $request->file('comment_files');
+      foreach ($files as $file) {
+        $originalFilename = $file->getClientOriginalName();
+        // ファイル保存
+        $filePath = $file->storePublicly('public/comment_attachment');
+        // URLのために置換
+        $filePath = str_replace('public/', 'storage/', $filePath);
+        $postCommentAttachment = PostCommentAttachment::create([
+          "post_comment_id" => $postCommentResult->id,
+          "original_file_name" => $originalFilename,
+          "file_path" => $filePath,
+          "file_type" => strtolower(substr($originalFilename,strrpos($originalFilename, '.') + 1)),
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
+      }
+    }
+
+    // コメント数の更新
     $post->comment_count = $post->comment_count + 1;
     $post->save();
     return Response::json($postCommentResult);

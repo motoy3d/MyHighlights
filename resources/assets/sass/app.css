@@ -316,6 +316,9 @@ textarea {
 .middle {
   vertical-align: middle; }
 
+.bottom {
+  vertical-align: bottom; }
+
 .text-input {
   border-width: 1px; }
 

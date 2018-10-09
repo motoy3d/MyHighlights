@@ -35,7 +35,8 @@
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="pt-10">
-                  <a :href="att.file_path" target="_blank"><img :src="att.file_path" class="image_in_post"></a>
+                  <a :href="att.file_path" target="_blank">
+                    <img :src="att.file_path" class="image_in_post"></a>
                 </div>
                 <div v-else class="pt-10">
                   <a :href="att.file_path">{{ att.original_file_name }}</a>
@@ -95,11 +96,17 @@
             <!-- コメント -->
             <v-ons-row class="mt-30">
               <v-ons-col width="40px" vertical-align="bottom" class="left">
-                <v-ons-button class="mt-10 center bg-white" ripple
-                              @click="postComment()">
-                  <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"></v-ons-icon></v-ons-button>
+                <div class="upload-btn-wrapper">
+                  <span class="notification" v-if="0 < comment_files.length">
+                    {{ comment_files.length }}</span>
+                  <v-ons-button class="center bg-white" ripple
+                                @click="postComment()">
+                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"></v-ons-icon>
+                  </v-ons-button>
+                  <input type="file" multiple @change="onFileSet"/>
+                </div>
               </v-ons-col>
-              <v-ons-col>
+              <v-ons-col vertical-align="bottom">
                 <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
                           v-model="comment_text" @keyup="fitTextarea()"></textarea>
               </v-ons-col>
@@ -134,6 +141,12 @@
                     <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
+                  <p v-for="att in comment.attachments">
+                    <a :href="att.file_path">
+                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
+                      <span>{{ att.original_file_name }}</span>
+                    </a>
+                  </p>
                 </div>
               </div>
               <!--<div class="right mr-10">-->
@@ -224,6 +237,7 @@
         quetionnaire: {},
         comments: {},
         comment_text: "",
+        comment_files: [],
         likes_count: 0,
         likes: [],
         user: {},
@@ -281,10 +295,17 @@
         }
         let post_id = this.$store.state.article.post_id;
         let self = this;
-        this.$http.post('/api/post_comments/' + post_id, this.$data)
+        // 送信フォームデータ準備
+        let formData = new FormData();
+        formData.append('comment_text', this.comment_text);
+        for(let i = 0; i < this.comment_files.length; i++){
+          formData.append('comment_files[]', this.comment_files[i]);
+        }
+        this.$http.post('/api/post_comments/' + post_id, formData)
           .then((response)=>{
             console.log(response.data);
             self.comment_text = '';
+            self.comment_files = [];
             self.load();
           })
           .catch(error => {
@@ -383,6 +404,16 @@
           return true;
         }
         return false;
+      },
+      // ファイルが選択された時
+      onFileSet(event) {
+        console.log("onFileSet.");
+        this.comment_files = event.target.files;
+        // this.fileNames = [];
+        // for (let i=0; i<this.files.length; i++) {
+        //   this.fileNames.push(this.files[i].name);
+        // }
+        // console.log(this.files);
       },
       fitTextarea() {
         let num = event.srcElement.value.match(/\r\n|\n/g);
