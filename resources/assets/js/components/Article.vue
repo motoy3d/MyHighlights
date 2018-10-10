@@ -137,7 +137,7 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id === user.id">
+                  <span v-if="comment.user_id == user.id">
                     <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>

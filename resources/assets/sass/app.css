@@ -215,6 +215,9 @@ table.calendar-table tr td span {
 .mt-10 {
   margin-top: 10px; }
 
+.mt-15 {
+  margin-top: 15px; }
+
 .mt-20 {
   margin-top: 20px; }
 
@@ -317,7 +320,7 @@ textarea {
   vertical-align: middle; }
 
 .bottom {
-  vertical-align: bottom; }
+  vertical-align: middle; }
 
 .text-input {
   border-width: 1px; }

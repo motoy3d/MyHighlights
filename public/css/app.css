@@ -8684,6 +8684,10 @@ table.calendar-table tr td span {
   margin-top: 10px;
 }
 
+.mt-15 {
+  margin-top: 15px;
+}
+
 .mt-20 {
   margin-top: 20px;
 }
@@ -8816,7 +8820,7 @@ textarea {
 }
 
 .bottom {
-  vertical-align: bottom;
+  vertical-align: middle;
 }
 
 .text-input {

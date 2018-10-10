@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Category;
+use App\Config;
 use App\Post;
 use App\PostAttachment;
 use App\PostCommentAttachment;
@@ -32,6 +33,7 @@ class PostController extends Controller
    */
   public function index(Request $request)
   {
+    Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
     $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
     Log::info("PostController#index");
     Log::info("team_id=" . Auth::user());

@@ -68,30 +68,38 @@
       <form id="createQuetionnaireForm" action="#" method="POST">
         <div class="quetionnaire_container p-10">
           <div class="row">
-            <div class="col">
-              <h4>アンケート作成</h4>
+            <div class="col space">
+              <div class="right">
+                <v-ons-icon icon="fa-close" size="24px" class="gray"
+                            @click="hideQuestionnaireModal();"></v-ons-icon>
+              </div>
+              <h4 class="mt-5">アンケート作成</h4>
               <div class="mt-10">
-                <v-ons-input modifier="border" placeholder="アンケートタイトル" name="q_title" class="w-90p"></v-ons-input>
+                <v-ons-input modifier="border" placeholder="タイトル・質問" name="q_title"
+                             class="w-100p" v-model="quetionnaire_title_tmp"></v-ons-input>
               </div>
-              <div class="mt-20">
-                <v-ons-input modifier="border" placeholder="選択肢1" name="q_answer01" class="w-90p"></v-ons-input>
-              </div>
-              <div class="mt-10">
-                <v-ons-input modifier="border" placeholder="選択肢2" name="q_answer02" class="w-90p"></v-ons-input>
-              </div>
-              <div class="mt-10 mb-10">
-                <v-ons-input modifier="border" placeholder="選択肢3" name="q_answer03" class="w-90p"></v-ons-input>
+              <v-ons-page>
+                <template v-for="(selection, index) in quetionnaire_selections_tmp">
+                  <div :class="index === 0? 'mt-30' : 'mt-10'">
+                    <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
+                                 v-model="selection.text"></v-ons-input>
+                    <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"></v-ons-icon>
+                  </div>
+                </template>
+              </v-ons-page>
+              <div class="mt-10 left">
+                <v-ons-button class="small button--quiet" ripple
+                  @click="addQuetionnaireSelection()">
+                  <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
+                  選択肢追加
+                </v-ons-button>
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row mt-10">
             <div class="space">
-              <v-ons-button class="plr-20"
-                            @click="hideQuestionnaireModal();">作成する</v-ons-button>
-            </div>
-            <div class="space">
-              <v-ons-button class="bg-gray"
-                            @click="hideQuestionnaireModal();">閉じる</v-ons-button>
+              <v-ons-button class="plr-30"
+                            @click="saveQuetionnaire();">作成する</v-ons-button>
             </div>
           </div>
         </div>
@@ -127,7 +135,11 @@
         contents: "",
         notification_flg: false,
         files: [],
-        fileNames: []
+        fileNames: [],
+        quetionnaire_title_tmp: null,
+        quetionnaire_title: null,
+        quetionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
+        quetionnaire_selections: [{text:''}, {text:''}, {text:''}]
       }
     },
     computed: {
@@ -193,12 +205,22 @@
         console.log(this.files);
       },
       showQuestionnaireModal() {
+        this.quetionnaire_title_tmp = this.quetionnaire_title;
+        this.quetionnaire_selections_tmp = JSON.parse(JSON.stringify(this.quetionnaire_selections));
         var modal = document.querySelector('ons-modal');
         modal.show();
       },
       hideQuestionnaireModal() {
         var modal = document.querySelector('ons-modal');
         modal.hide();
+      },
+      saveQuetionnaire() {
+        this.quetionnaire_title = this.quetionnaire_title_tmp;
+        this.quetionnaire_selections = JSON.parse(JSON.stringify(this.quetionnaire_selections_tmp));
+        this.hideQuestionnaireModal();
+      },
+      addQuetionnaireSelection() {
+        this.quetionnaire_selections_tmp.push({text: ''});
       }
     }
   };
@@ -209,5 +231,10 @@
     margin-right: 10px;
     width: 15px;
     color: white;
+  }
+  .delete_selection_icon {
+    color: gray;
+    float: right;
+    margin: 10px;
   }
 </style>

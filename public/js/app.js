@@ -2184,6 +2184,14 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   beforeCreate: function beforeCreate() {
@@ -2212,7 +2220,11 @@ if (false) {(function () {
       contents: "",
       notification_flg: false,
       files: [],
-      fileNames: []
+      fileNames: [],
+      quetionnaire_title_tmp: null,
+      quetionnaire_title: null,
+      quetionnaire_selections_tmp: [{ text: '' }, { text: '' }, { text: '' }],
+      quetionnaire_selections: [{ text: '' }, { text: '' }, { text: '' }]
     };
   },
 
@@ -2282,12 +2294,22 @@ if (false) {(function () {
       console.log(this.files);
     },
     showQuestionnaireModal: function showQuestionnaireModal() {
+      this.quetionnaire_title_tmp = this.quetionnaire_title;
+      this.quetionnaire_selections_tmp = JSON.parse(JSON.stringify(this.quetionnaire_selections));
       var modal = document.querySelector('ons-modal');
       modal.show();
     },
     hideQuestionnaireModal: function hideQuestionnaireModal() {
       var modal = document.querySelector('ons-modal');
       modal.hide();
+    },
+    saveQuetionnaire: function saveQuetionnaire() {
+      this.quetionnaire_title = this.quetionnaire_title_tmp;
+      this.quetionnaire_selections = JSON.parse(JSON.stringify(this.quetionnaire_selections_tmp));
+      this.hideQuestionnaireModal();
+    },
+    addQuetionnaireSelection: function addQuetionnaireSelection() {
+      this.quetionnaire_selections_tmp.push({ text: '' });
     }
   }
 });
@@ -5028,7 +5050,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.post_progress {\n  margin-right: 10px;\n  width: 15px;\n  color: white;\n}\n", ""]);
+exports.push([module.i, "\n.post_progress {\n  margin-right: 10px;\n  width: 15px;\n  color: white;\n}\n.delete_selection_icon {\n  color: gray;\n  float: right;\n  margin: 10px;\n}\n", ""]);
 
 // exports
 
@@ -5301,76 +5323,129 @@ var render = function() {
           [
             _c("div", { staticClass: "quetionnaire_container p-10" }, [
               _c("div", { staticClass: "row" }, [
-                _c("div", { staticClass: "col" }, [
-                  _c("h4", [_vm._v("アンケート作成")]),
-                  _vm._v(" "),
-                  _c(
-                    "div",
-                    { staticClass: "mt-10" },
-                    [
-                      _c("v-ons-input", {
-                        staticClass: "w-90p",
-                        attrs: {
-                          modifier: "border",
-                          placeholder: "アンケートタイトル",
-                          name: "q_title"
-                        }
-                      })
-                    ],
-                    1
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "div",
-                    { staticClass: "mt-20" },
-                    [
-                      _c("v-ons-input", {
-                        staticClass: "w-90p",
-                        attrs: {
-                          modifier: "border",
-                          placeholder: "選択肢1",
-                          name: "q_answer01"
-                        }
-                      })
-                    ],
-                    1
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "div",
-                    { staticClass: "mt-10" },
-                    [
-                      _c("v-ons-input", {
-                        staticClass: "w-90p",
-                        attrs: {
-                          modifier: "border",
-                          placeholder: "選択肢2",
-                          name: "q_answer02"
-                        }
-                      })
-                    ],
-                    1
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "div",
-                    { staticClass: "mt-10 mb-10" },
-                    [
-                      _c("v-ons-input", {
-                        staticClass: "w-90p",
-                        attrs: {
-                          modifier: "border",
-                          placeholder: "選択肢3",
-                          name: "q_answer03"
-                        }
-                      })
-                    ],
-                    1
-                  )
-                ])
+                _c(
+                  "div",
+                  { staticClass: "col space" },
+                  [
+                    _c(
+                      "div",
+                      { staticClass: "right" },
+                      [
+                        _c("v-ons-icon", {
+                          staticClass: "gray",
+                          attrs: { icon: "fa-close", size: "24px" },
+                          on: {
+                            click: function($event) {
+                              _vm.hideQuestionnaireModal()
+                            }
+                          }
+                        })
+                      ],
+                      1
+                    ),
+                    _vm._v(" "),
+                    _c("h4", { staticClass: "mt-5" }, [
+                      _vm._v("アンケート作成")
+                    ]),
+                    _vm._v(" "),
+                    _c(
+                      "div",
+                      { staticClass: "mt-10" },
+                      [
+                        _c("v-ons-input", {
+                          staticClass: "w-100p",
+                          attrs: {
+                            modifier: "border",
+                            placeholder: "タイトル・質問",
+                            name: "q_title"
+                          },
+                          model: {
+                            value: _vm.quetionnaire_title_tmp,
+                            callback: function($$v) {
+                              _vm.quetionnaire_title_tmp = $$v
+                            },
+                            expression: "quetionnaire_title_tmp"
+                          }
+                        })
+                      ],
+                      1
+                    ),
+                    _vm._v(" "),
+                    _c(
+                      "v-ons-page",
+                      [
+                        _vm._l(_vm.quetionnaire_selections_tmp, function(
+                          selection,
+                          index
+                        ) {
+                          return [
+                            _c(
+                              "div",
+                              { class: index === 0 ? "mt-30" : "mt-10" },
+                              [
+                                _c("v-ons-input", {
+                                  staticClass: "w-90p",
+                                  attrs: {
+                                    modifier: "border",
+                                    placeholder: "選択肢" + (index + 1)
+                                  },
+                                  model: {
+                                    value: selection.text,
+                                    callback: function($$v) {
+                                      _vm.$set(selection, "text", $$v)
+                                    },
+                                    expression: "selection.text"
+                                  }
+                                }),
+                                _vm._v(" "),
+                                _c("v-ons-icon", {
+                                  staticClass: "delete_selection_icon",
+                                  attrs: { icon: "fa-trash-o" }
+                                })
+                              ],
+                              1
+                            )
+                          ]
+                        })
+                      ],
+                      2
+                    ),
+                    _vm._v(" "),
+                    _c(
+                      "div",
+                      { staticClass: "mt-10 left" },
+                      [
+                        _c(
+                          "v-ons-button",
+                          {
+                            staticClass: "small button--quiet",
+                            attrs: { ripple: "" },
+                            on: {
+                              click: function($event) {
+                                _vm.addQuetionnaireSelection()
+                              }
+                            }
+                          },
+                          [
+                            _c("v-ons-icon", {
+                              staticClass: "mr-5",
+                              attrs: { icon: "fa-plus" }
+                            }),
+                            _vm._v(
+                              "\n                選択肢追加\n              "
+                            )
+                          ],
+                          1
+                        )
+                      ],
+                      1
+                    )
+                  ],
+                  1
+                )
               ]),
               _vm._v(" "),
-              _c("div", { staticClass: "row" }, [
+              _c("div", { staticClass: "row mt-10" }, [
                 _c(
                   "div",
                   { staticClass: "space" },
@@ -5378,34 +5453,14 @@ var render = function() {
                     _c(
                       "v-ons-button",
                       {
-                        staticClass: "plr-20",
+                        staticClass: "plr-30",
                         on: {
                           click: function($event) {
-                            _vm.hideQuestionnaireModal()
+                            _vm.saveQuetionnaire()
                           }
                         }
                       },
                       [_vm._v("作成する")]
-                    )
-                  ],
-                  1
-                ),
-                _vm._v(" "),
-                _c(
-                  "div",
-                  { staticClass: "space" },
-                  [
-                    _c(
-                      "v-ons-button",
-                      {
-                        staticClass: "bg-gray",
-                        on: {
-                          click: function($event) {
-                            _vm.hideQuestionnaireModal()
-                          }
-                        }
-                      },
-                      [_vm._v("閉じる")]
                     )
                   ],
                   1
@@ -5914,7 +5969,7 @@ var render = function() {
                                             ]
                                           ),
                                           _vm._v(" "),
-                                          comment.user_id === _vm.user.id
+                                          comment.user_id == _vm.user.id
                                             ? _c(
                                                 "span",
                                                 [
