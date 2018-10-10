@@ -78,15 +78,13 @@
                 <v-ons-input modifier="border" placeholder="タイトル・質問" name="q_title"
                              class="w-100p" v-model="quetionnaire_title_tmp"></v-ons-input>
               </div>
-              <v-ons-page>
-                <template v-for="(selection, index) in quetionnaire_selections_tmp">
-                  <div :class="index === 0? 'mt-30' : 'mt-10'">
-                    <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
-                                 v-model="selection.text"></v-ons-input>
-                    <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"></v-ons-icon>
-                  </div>
-                </template>
-              </v-ons-page>
+              <template v-for="(selection, index) in quetionnaire_selections_tmp">
+                <div :class="index === 0? 'mt-30' : 'mt-10'">
+                  <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
+                               v-model="selection.text"></v-ons-input>
+                  <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"></v-ons-icon>
+                </div>
+              </template>
               <div class="mt-10 left">
                 <v-ons-button class="small button--quiet" ripple
                   @click="addQuetionnaireSelection()">
