@@ -2190,8 +2190,6 @@ if (false) {(function () {
 //
 //
 //
-//
-//
 
 /* harmony default export */ __webpack_exports__["a"] = ({
   beforeCreate: function beforeCreate() {
@@ -5371,45 +5369,39 @@ var render = function() {
                       1
                     ),
                     _vm._v(" "),
-                    _c(
-                      "v-ons-page",
-                      [
-                        _vm._l(_vm.quetionnaire_selections_tmp, function(
-                          selection,
-                          index
-                        ) {
-                          return [
-                            _c(
-                              "div",
-                              { class: index === 0 ? "mt-30" : "mt-10" },
-                              [
-                                _c("v-ons-input", {
-                                  staticClass: "w-90p",
-                                  attrs: {
-                                    modifier: "border",
-                                    placeholder: "選択肢" + (index + 1)
-                                  },
-                                  model: {
-                                    value: selection.text,
-                                    callback: function($$v) {
-                                      _vm.$set(selection, "text", $$v)
-                                    },
-                                    expression: "selection.text"
-                                  }
-                                }),
-                                _vm._v(" "),
-                                _c("v-ons-icon", {
-                                  staticClass: "delete_selection_icon",
-                                  attrs: { icon: "fa-trash-o" }
-                                })
-                              ],
-                              1
-                            )
-                          ]
-                        })
-                      ],
-                      2
-                    ),
+                    _vm._l(_vm.quetionnaire_selections_tmp, function(
+                      selection,
+                      index
+                    ) {
+                      return [
+                        _c(
+                          "div",
+                          { class: index === 0 ? "mt-30" : "mt-10" },
+                          [
+                            _c("v-ons-input", {
+                              staticClass: "w-90p",
+                              attrs: {
+                                modifier: "border",
+                                placeholder: "選択肢" + (index + 1)
+                              },
+                              model: {
+                                value: selection.text,
+                                callback: function($$v) {
+                                  _vm.$set(selection, "text", $$v)
+                                },
+                                expression: "selection.text"
+                              }
+                            }),
+                            _vm._v(" "),
+                            _c("v-ons-icon", {
+                              staticClass: "delete_selection_icon",
+                              attrs: { icon: "fa-trash-o" }
+                            })
+                          ],
+                          1
+                        )
+                      ]
+                    }),
                     _vm._v(" "),
                     _c(
                       "div",
@@ -5441,7 +5433,7 @@ var render = function() {
                       1
                     )
                   ],
-                  1
+                  2
                 )
               ]),
               _vm._v(" "),
