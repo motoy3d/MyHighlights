@@ -49,13 +49,13 @@
               </div>
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
-                <div class="mt-10" v-if="post.comment_count || post.quetionnaire_id">
+                <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
                   <v-ons-icon icon="fa-comment-o" class="small gray"
                     v-if="post.comment_count">
                     <span class="ml-5">{{ post.comment_count }}</span>
                   </v-ons-icon>
                   <v-ons-icon icon="fa-list-alt" class="small gray ml-10"
-                    v-if="post.quetionnaire_id">
+                    v-if="post.questionnaire_id">
                     <span>アンケート</span>
                   </v-ons-icon>
                 </div>

@@ -8,7 +8,7 @@ use App\Post;
 use App\PostAttachment;
 use App\PostCommentAttachment;
 use App\PostResponse;
-use App\Quetionnaire;
+use App\Questionnaire;
 use App\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -87,23 +87,23 @@ class PostController extends Controller
   {
     //TODO validate
 
-    Log::info("quetionnaire_selections:" . $request->quetionnaire_selections);
-    if ($request->quetionnaire_title && $request->quetionnaire_selections) {
-      $quetionnaire = Quetionnaire::create([
-        "title" => $request->quetionnaire_title,
-        "items" => $request->quetionnaire_selections, // json形式 ["a","b","c"]
+    Log::info("questionnaire_selections:" . $request->questionnaire_selections);
+    if ($request->questionnaire_title && $request->questionnaire_selections) {
+      $questionnaire = Questionnaire::create([
+        "title" => $request->questionnaire_title,
+        "items" => $request->questionnaire_selections, // json形式 ["a","b","c"]
         "created_id" => Auth::id(),
         "updated_id" => Auth::id()
       ]);
     }
     Log::info('アンケート');
-    Log::info($quetionnaire);
+    Log::info($questionnaire);
     $post = Post::create([
       "team_id" => Auth::user()->team_id,
       "title" => $request->title,
       "content" => $request->contents,
       "category_id" => $request->category_id,
-      "quetionnaire_id" => $quetionnaire? $quetionnaire->id : null,
+      "questionnaire_id" => $questionnaire? $questionnaire->id : null,
       "notification_flg" => $request->notification_flg == 1? true : false,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
@@ -185,13 +185,21 @@ class PostController extends Controller
       ->get();
 
     //TODO アンケート
-    $quetionnaire = null;
-    if ($post->quetionnaire_id) {
-      $quetionnaire = DB::table('quetionnaires')
-        ->where('id', $post->quetionnaire_id)
+    $questionnaire = null;
+    if ($post->questionnaire_id) {
+      $questionnaire = DB::table('questionnaires')
+        ->where('id', $post->questionnaire_id)
         ->first();
-      if ($quetionnaire) {
-        $quetionnaire->items = json_decode($quetionnaire->items);
+      if ($questionnaire) {
+        $answers = DB::table('questionnaire_answers')
+          ->select(DB::raw('count(*) as answer_count, question_no'))
+          ->where('questionnaire_id', $post->questionnaire_id)
+          ->groupBy('question_no')
+          ->get();
+        Log::info('回答');
+        Log::info(json_encode($answers));
+        $questionnaire->items = json_decode($questionnaire->items);
+
       }
     }
 
@@ -221,7 +229,7 @@ class PostController extends Controller
       'post' => $post,
       'post_responses' => $post_response? $post_response : [],
       'post_attachments' => $post_attachments,
-      'quetionnaire' => $quetionnaire,
+      'questionnaire' => $questionnaire,
       'comments' => $comments,
       'likes' => $likes,
       'user' => Auth::user()
@@ -246,7 +254,7 @@ class PostController extends Controller
     $post->title = $request->title;
     $post->content = $request->contents;
     $post->category_id = $request->category_id;
-    $post->quetionnaire_id = $request->quetionnaire_id;
+    $post->questionnaire_id = $request->questionnaire_id;
     $post->notification_flg = $request->notification_flg;
     $post->updated_id = Auth::id();
     $post = $post->save();

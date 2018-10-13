@@ -227,16 +227,16 @@ textarea {
 .video_thumbnail {
   margin: 6px 0 6px 0;
 }
-.quetionnaire_table {
+.questionnaire_table {
   width: 100%;
 }
-.quetionnaire_table td {
+.questionnaire_table td {
   border-bottom: 1px solid gray;
 }
-.quetionnaire_results {
+.questionnaire_results {
   width: 100px;
 }
-.quetionnaire_btn {
+.questionnaire_btn {
   width: 60px;
 }
 .responsebar {
@@ -343,7 +343,7 @@ textarea {
 .article_comments {
   margin-left: 35px;
 }
-.quetionnaire_container {
+.questionnaire_container {
   color: black;
   background-color: white;
   width: 95%;

@@ -46,21 +46,21 @@
           </v-ons-col>
         </v-ons-row>
         <!-- アンケート -->
-        <v-ons-row class="space" v-if="quetionnaire">
+        <v-ons-row class="space" v-if="questionnaire">
           <v-ons-col>
-            <p class="bold"><v-ons-icon icon="fa-bookmark" class="black"></v-ons-icon>
-              {{ quetionnaire.title }}</p>
+            <p class="bold"><v-ons-icon icon="fa-list-alt" class="black"></v-ons-icon>
+              {{ questionnaire.title }}</p>
             <!-- ActionSheetで入力するので不要
                   <div class="mt-5">
                     <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
                       アンケートに回答する</v-ons-button>
                   </div>-->
             <div class="mt-5">
-              <table class="quetionnaire_table">
-                <tr v-for="(q, index) in quetionnaire.items">
+              <table class="questionnaire_table">
+                <tr v-for="(q, index) in questionnaire.items">
                   <td>{{ q.text }}</td>
-                  <td class="quetionnaire_results">◯10 △0 ✕1</td>
-                  <td class="quetionnaire_btn">
+                  <td class="questionnaire_results">◯10 △0 ✕1</td>
+                  <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn button--quiet"
                                   @click="showQuestionnaireActionSheet();">
                       回答
@@ -162,7 +162,7 @@
         post: {},
         post_responses: {},
         post_attachments: {},
-        quetionnaire: {},
+        questionnaire: {},
         comments: {},
         comment_text: "",
         comment_files: [],
@@ -201,7 +201,7 @@
             this.post = response.data.post;
             this.post_responses = response.data.post_responses;
             this.post_attachments = response.data.post_attachments;
-            this.quetionnaire = response.data.quetionnaire;
+            this.questionnaire = response.data.questionnaire;
             this.comments = response.data.comments;
             this.likes = response.data.likes;
             this.likes_count = this.likes? this.likes.length : 0;
@@ -332,11 +332,6 @@
       onFileSet(event) {
         console.log("onFileSet.");
         this.comment_files = event.target.files;
-        // this.fileNames = [];
-        // for (let i=0; i<this.files.length; i++) {
-        //   this.fileNames.push(this.files[i].name);
-        // }
-        // console.log(this.files);
       },
       fitTextarea() {
         let num = event.srcElement.value.match(/\r\n|\n/g);
@@ -384,16 +379,16 @@
   .video_thumbnail {
     margin: 6px 0 6px 0;
   }
-  .quetionnaire_table {
+  .questionnaire_table {
     width: 100%;
   }
-  .quetionnaire_table td {
+  .questionnaire_table td {
     border-bottom: 1px solid gray;
   }
-  .quetionnaire_results {
+  .questionnaire_results {
     width: 100px;
   }
-  .quetionnaire_btn {
+  .questionnaire_btn {
     width: 60px;
   }
   .responsebar {

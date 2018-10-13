@@ -38,18 +38,18 @@
           </div>
 
           <!-- アンケート -->
-          <v-ons-row class="space mb-20" v-if="quetionnaire_title">
+          <v-ons-row class="space mb-20" v-if="questionnaire_title">
             <v-ons-col>
               <p><v-ons-icon icon="fa-list-alt"></v-ons-icon>
-                <span class="bold">{{ quetionnaire_title }}</span>
-                <a href="#" class="small fl-right" @click="deleteQuetionnaire()">アンケート削除</a>
+                <span class="bold">{{ questionnaire_title }}</span>
+                <a href="#" class="small fl-right" @click="deleteQuestionnaire()">アンケート削除</a>
               </p>
               <div class="mt-5">
-                <table class="quetionnaire_table">
-                  <template v-for="(q, index) in quetionnaire_selections">
+                <table class="questionnaire_table">
+                  <template v-for="(q, index) in questionnaire_selections">
                     <tr v-if="q.text">
                       <td>{{ q.text }}</td>
-                      <td class="quetionnaire_results">◯　△　✕</td>
+                      <td class="questionnaire_results">◯　△　✕</td>
                     </tr>
                   </template>
                 </table>
@@ -85,9 +85,9 @@
     </div>
 
     <!-- アンケート作成画面Modal -->
-    <v-ons-modal var="quetionnaireModal">
-      <form id="createQuetionnaireForm" action="#" method="POST">
-        <div class="quetionnaire_container p-10">
+    <v-ons-modal var="questionnaireModal">
+      <form id="createQuestionnaireForm" action="#" method="POST">
+        <div class="questionnaire_container p-10">
           <div class="row">
             <div class="col space">
               <div class="right">
@@ -97,19 +97,19 @@
               <h4 class="mt-5">アンケート作成</h4>
               <div class="mt-10">
                 <v-ons-input modifier="border" placeholder="タイトル・質問" name="q_title"
-                             class="w-100p" v-model="quetionnaire_title_tmp"></v-ons-input>
+                             class="w-100p" v-model="questionnaire_title_tmp"></v-ons-input>
               </div>
-              <template v-for="(selection, index) in quetionnaire_selections_tmp">
+              <template v-for="(selection, index) in questionnaire_selections_tmp">
                 <div :class="index === 0? 'mt-30' : 'mt-10'">
                   <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
                                v-model="selection.text"></v-ons-input>
                   <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"
-                    @click="deleteQuetionnaireSelection(index);"></v-ons-icon>
+                    @click="deleteQuestionnaireSelection(index);"></v-ons-icon>
                 </div>
               </template>
-              <div class="mt-10 left" v-if="quetionnaire_selections_tmp.length <= 7">
+              <div class="mt-10 left" v-if="questionnaire_selections_tmp.length <= 7">
                 <v-ons-button class="small button--quiet" ripple
-                  @click="addQuetionnaireSelection()">
+                  @click="addQuestionnaireSelection()">
                   <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
                   選択肢追加
                 </v-ons-button>
@@ -119,7 +119,7 @@
           <div class="row mt-10">
             <div class="space">
               <v-ons-button class="plr-30"
-                            @click="saveQuetionnaire();">作成する</v-ons-button>
+                            @click="saveQuestionnaire();">作成する</v-ons-button>
             </div>
           </div>
         </div>
@@ -156,10 +156,10 @@
         notification_flg: false,
         files: [],
         fileNames: [],
-        quetionnaire_title_tmp: null,
-        quetionnaire_title: null,
-        quetionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
-        quetionnaire_selections: [{text:''}, {text:''}, {text:''}]
+        questionnaire_title_tmp: null,
+        questionnaire_title: null,
+        questionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
+        questionnaire_selections: [{text:''}, {text:''}, {text:''}]
       }
     },
     computed: {
@@ -184,9 +184,9 @@
         formData.append('contents', this.contents);
         formData.append('category_id', this.category_id);
         formData.append('notification_flg', this.notification_flg);
-        if (this.quetionnaire_title) {
-          formData.append('quetionnaire_title', this.quetionnaire_title);
-          formData.append('quetionnaire_selections', JSON.stringify(this.quetionnaire_selections));
+        if (this.questionnaire_title) {
+          formData.append('questionnaire_title', this.questionnaire_title);
+          formData.append('questionnaire_selections', JSON.stringify(this.questionnaire_selections));
         }
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
@@ -223,9 +223,9 @@
         console.log(this.files);
       },
       showQuestionnaireModal() {
-        this.quetionnaire_title_tmp = this.quetionnaire_title;
+        this.questionnaire_title_tmp = this.questionnaire_title;
         // ディープコピー
-        this.quetionnaire_selections_tmp = JSON.parse(JSON.stringify(this.quetionnaire_selections));
+        this.questionnaire_selections_tmp = JSON.parse(JSON.stringify(this.questionnaire_selections));
         var modal = document.querySelector('ons-modal');
         modal.show();
       },
@@ -233,29 +233,29 @@
         var modal = document.querySelector('ons-modal');
         modal.hide();
       },
-      saveQuetionnaire() {
-        if (!this.quetionnaire_title_tmp) {
+      saveQuestionnaire() {
+        if (!this.questionnaire_title_tmp) {
           this.$ons.notification.alert('タイトル・質問を入れてください');return;}
-        if (!this.quetionnaire_selections_tmp[0].text) {
+        if (!this.questionnaire_selections_tmp[0].text) {
           this.$ons.notification.alert('選択肢を入れてください');return;}
 
-        this.quetionnaire_title = this.quetionnaire_title_tmp;
+        this.questionnaire_title = this.questionnaire_title_tmp;
         // ディープコピー
-        this.quetionnaire_selections = JSON.parse(JSON.stringify(this.quetionnaire_selections_tmp));
+        this.questionnaire_selections = JSON.parse(JSON.stringify(this.questionnaire_selections_tmp));
         this.hideQuestionnaireModal();
       },
-      addQuetionnaireSelection() {
-        this.quetionnaire_selections_tmp.push({text: ''});
+      addQuestionnaireSelection() {
+        this.questionnaire_selections_tmp.push({text: ''});
       },
-      deleteQuetionnaireSelection(index) {
-        if (this.quetionnaire_selections_tmp.length === 1) {
+      deleteQuestionnaireSelection(index) {
+        if (this.questionnaire_selections_tmp.length === 1) {
           return;
         }
-        this.quetionnaire_selections_tmp.splice(index, 1);
+        this.questionnaire_selections_tmp.splice(index, 1);
       },
-      deleteQuetionnaire() {
-        this.quetionnaire_title = null;
-        this.quetionnaire_selections = [{text: ''}, {text: ''}, {text: ''}];
+      deleteQuestionnaire() {
+        this.questionnaire_title = null;
+        this.questionnaire_selections = [{text: ''}, {text: ''}, {text: ''}];
       }
     }
   };
@@ -267,16 +267,16 @@
     float: right;
     margin: 10px;
   }
-  .quetionnaire_table {
+  .questionnaire_table {
     width: 100%;
   }
-  .quetionnaire_table td {
+  .questionnaire_table td {
     border-bottom: 1px solid gray;
   }
-  .quetionnaire_results {
+  .questionnaire_results {
     width: 100px;
   }
-  .quetionnaire_container {
+  .questionnaire_container {
     color: black;
     background-color: white;
     width: 95%;
