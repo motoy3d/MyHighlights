@@ -8,6 +8,7 @@ use App\Post;
 use App\PostAttachment;
 use App\PostCommentAttachment;
 use App\PostResponse;
+use App\Quetionnaire;
 use App\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -85,13 +86,24 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
-    Log::info('カテゴリーID=' . $request->category_id);
+
+    Log::info("quetionnaire_selections:" . $request->quetionnaire_selections);
+    if ($request->quetionnaire_title && $request->quetionnaire_selections) {
+      $quetionnaire = Quetionnaire::create([
+        "title" => $request->quetionnaire_title,
+        "items" => $request->quetionnaire_selections, // json形式 ["a","b","c"]
+        "created_id" => Auth::id(),
+        "updated_id" => Auth::id()
+      ]);
+    }
+    Log::info('アンケート');
+    Log::info($quetionnaire);
     $post = Post::create([
       "team_id" => Auth::user()->team_id,
       "title" => $request->title,
       "content" => $request->contents,
       "category_id" => $request->category_id,
-      "quetionnaire_id" => 0, //TODO アンケート
+      "quetionnaire_id" => $quetionnaire? $quetionnaire->id : null,
       "notification_flg" => $request->notification_flg == 1? true : false,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
@@ -175,9 +187,12 @@ class PostController extends Controller
     //TODO アンケート
     $quetionnaire = null;
     if ($post->quetionnaire_id) {
-      $quetionnaire = DB::table('quetionnaire')
+      $quetionnaire = DB::table('quetionnaires')
         ->where('id', $post->quetionnaire_id)
         ->first();
+      if ($quetionnaire) {
+        $quetionnaire->items = json_decode($quetionnaire->items);
+      }
     }
 
     // コメント&コメント添付

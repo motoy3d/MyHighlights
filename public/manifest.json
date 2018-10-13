@@ -1,13 +1,15 @@
 {
-    "short_name": "つばさ",
-    "name": "横浜SCつばさ",
-    "icons": [
-        {
-            "src": "appicon.png",
-            "type": "image/png",
-            "sizes": "192x192"
-        }
-    ],
-    "start_url": "home?launcher=true",
-    "display": "standalone"
+  "short_name": "つばさ",
+  "name": "横浜SCつばさ",
+  "icons": [
+    {
+      "src": "appicon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "home?launcher=true",
+  "display": "standalone",
+  "theme_color": "#2c74e8",
+  "background_color": "#fff"
 }

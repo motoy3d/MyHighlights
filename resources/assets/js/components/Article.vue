@@ -49,7 +49,7 @@
         <v-ons-row class="space" v-if="quetionnaire">
           <v-ons-col>
             <p class="bold"><v-ons-icon icon="fa-bookmark" class="black"></v-ons-icon>
-              6/9(土)ルーキーリーグ出欠確認</p>
+              {{ quetionnaire.title }}</p>
             <!-- ActionSheetで入力するので不要
                   <div class="mt-5">
                     <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
@@ -57,20 +57,12 @@
                   </div>-->
             <div class="mt-5">
               <table class="quetionnaire_table">
-                <tr>
-                  <td>回答候補１</td>
-                  <td class="quetionnaire_results">○10 △0 ✕1</td>
+                <tr v-for="(q, index) in quetionnaire.items">
+                  <td>{{ q.text }}</td>
+                  <td class="quetionnaire_results">◯10 △0 ✕1</td>
                   <td class="quetionnaire_btn">
-                    <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
-                      回答
-                    </v-ons-button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>回答候補２</td>
-                  <td>○10 △0 ✕1</td>
-                  <td class="quetionnaire_btn">
-                    <v-ons-button class="smallBtn button--quiet" onclick="showQuestionnaireActionSheet();">
+                    <v-ons-button class="smallBtn button--quiet"
+                                  @click="showQuestionnaireActionSheet();">
                       回答
                     </v-ons-button>
                   </td>
@@ -116,10 +108,6 @@
                   <v-ons-icon icon="fa-paper-plane" class="messageBtn"></v-ons-icon></v-ons-button>
               </v-ons-col>
             </v-ons-row>
-            <!--<div class="upload-btn-wrapper">-->
-              <!--<v-ons-button class="smallBtn button&#45;&#45;outline">添付ファイル</v-ons-button>-->
-              <!--<input type="file" name="myfile" />-->
-            <!--</div>-->
           </v-ons-col>
         </v-ons-row>
         <v-ons-row class="space lastspace" v-if="comments">
@@ -160,66 +148,6 @@
         </v-ons-row>
       </template>
     </section>
-
-    <!-- アンケート回答画面Modal ※ActionSheetで回答入力するので不要 -->
-    <v-ons-modal var="quetionnaireAnswerModal">
-      <form id="quetionnaireAnswerForm" action="#" method="POST">
-        <div class="quetionnaire_container p-10">
-          <div class="row">
-            <div class="col">
-              <h4>6/9(土)ルーキーリーグ出欠確認</h4>
-              <div class="mt-20">
-                <p>回答候補１</p>
-                <v-ons-radio name="selection" input-id="selection-0"></v-ons-radio>
-                <label for="selection-0" class="center">◯</label>
-                <v-ons-radio name="selection" input-id="selection-1"></v-ons-radio>
-                <label for="selection-1" class="center">△</label>
-                <v-ons-radio name="selection" input-id="selection-2"></v-ons-radio>
-                <label for="selection-2" class="center">✕</label>
-                <p>回答候補２</p>
-                <v-ons-radio name="selection" input-id="selection-0"></v-ons-radio>
-                <label for="selection-0" class="center">◯</label>
-                <v-ons-radio name="selection" input-id="selection-1"></v-ons-radio>
-                <label for="selection-1" class="center">△</label>
-
-                <table class="quetionnaire_table">
-                  <tr>
-                    <td>回答候補１</td>
-                    <td>
-                      <v-ons-select>
-                        <option></option>
-                        <option>◯</option>
-                        <option>△</option>
-                        <option>✕</option>
-                      </v-ons-select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>回答候補２</td>
-                    <td>
-                      <v-ons-select>
-                        <option></option>
-                        <option>◯</option>
-                        <option>△</option>
-                        <option>✕</option>
-                      </v-ons-select>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="space">
-              <v-ons-button class="plr-30" onclick="hideQuestionnaireModal();">OK</v-ons-button>
-            </div>
-            <div class="space">
-              <v-ons-button class="bg-gray" onclick="hideQuestionnaireModal();">閉じる</v-ons-button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </v-ons-modal>
   </v-ons-page>
 </template>
 
@@ -395,12 +323,7 @@
         });
       },
       isImage(fileExtension) {
-        if (fileExtension.toLowerCase() === 'jpg' ||
-          fileExtension.toLowerCase() === 'jpeg' ||
-          fileExtension.toLowerCase() === 'png' ||
-          fileExtension.toLowerCase() === 'gif' ||
-          fileExtension.toLowerCase() === 'bmp'
-        ) {
+        if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
           return true;
         }
         return false;
@@ -522,6 +445,7 @@
   .comment {
     font-size: 14px;
     margin: 0;
+    white-space: pre-wrap;
   }
   .comment_card {
     background-color: #81ff4f;

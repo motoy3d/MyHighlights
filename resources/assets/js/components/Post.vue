@@ -31,11 +31,32 @@
           </div>
           <div class="mb-10" v-if="0 < fileNames.length">
             <ul>
-              <li v-for="(file, index) in fileNames" class="mtb-10">
+              <li v-for="(file, index) in fileNames" class="mtb-10 break">
                 {{ file }}
               </li>
             </ul>
           </div>
+
+          <!-- アンケート -->
+          <v-ons-row class="space mb-20" v-if="quetionnaire_title">
+            <v-ons-col>
+              <p><v-ons-icon icon="fa-list-alt"></v-ons-icon>
+                <span class="bold">{{ quetionnaire_title }}</span>
+                <a href="#" class="small fl-right" @click="deleteQuetionnaire()">アンケート削除</a>
+              </p>
+              <div class="mt-5">
+                <table class="quetionnaire_table">
+                  <template v-for="(q, index) in quetionnaire_selections">
+                    <tr v-if="q.text">
+                      <td>{{ q.text }}</td>
+                      <td class="quetionnaire_results">◯　△　✕</td>
+                    </tr>
+                  </template>
+                </table>
+              </div>
+            </v-ons-col>
+          </v-ons-row>
+
           <div class="space">
             <div class="upload-btn-wrapper">
               <v-ons-button class="smallBtn button--outline">
@@ -82,10 +103,11 @@
                 <div :class="index === 0? 'mt-30' : 'mt-10'">
                   <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
                                v-model="selection.text"></v-ons-input>
-                  <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"></v-ons-icon>
+                  <v-ons-icon icon="fa-trash-o" class="delete_selection_icon"
+                    @click="deleteQuetionnaireSelection(index);"></v-ons-icon>
                 </div>
               </template>
-              <div class="mt-10 left">
+              <div class="mt-10 left" v-if="quetionnaire_selections_tmp.length <= 7">
                 <v-ons-button class="small button--quiet" ripple
                   @click="addQuetionnaireSelection()">
                   <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
@@ -151,14 +173,8 @@
         if (this.posting) {
           return;
         }
-        if (!this.title) {
-          this.$ons.notification.alert('タイトルを入れてください', {title: ''});
-          return;
-        }
-        if (!this.contents) {
-          this.$ons.notification.alert('本文を入れてください', {title: ''});
-          return;
-        }
+        if (!this.title) {this.$ons.notification.alert('タイトルを入れてください', {title: ''});return;}
+        if (!this.contents) {this.$ons.notification.alert('本文を入れてください', {title: ''});return;}
         this.posting = true;
         this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
         let self = this;
@@ -168,7 +184,11 @@
         formData.append('contents', this.contents);
         formData.append('category_id', this.category_id);
         formData.append('notification_flg', this.notification_flg);
-        for(let i = 0; i < this.files.length; i++){
+        if (this.quetionnaire_title) {
+          formData.append('quetionnaire_title', this.quetionnaire_title);
+          formData.append('quetionnaire_selections', JSON.stringify(this.quetionnaire_selections));
+        }
+        for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
         }
         // 送信
@@ -204,6 +224,7 @@
       },
       showQuestionnaireModal() {
         this.quetionnaire_title_tmp = this.quetionnaire_title;
+        // ディープコピー
         this.quetionnaire_selections_tmp = JSON.parse(JSON.stringify(this.quetionnaire_selections));
         var modal = document.querySelector('ons-modal');
         modal.show();
@@ -213,26 +234,52 @@
         modal.hide();
       },
       saveQuetionnaire() {
+        if (!this.quetionnaire_title_tmp) {
+          this.$ons.notification.alert('タイトル・質問を入れてください');return;}
+        if (!this.quetionnaire_selections_tmp[0].text) {
+          this.$ons.notification.alert('選択肢を入れてください');return;}
+
         this.quetionnaire_title = this.quetionnaire_title_tmp;
+        // ディープコピー
         this.quetionnaire_selections = JSON.parse(JSON.stringify(this.quetionnaire_selections_tmp));
         this.hideQuestionnaireModal();
       },
       addQuetionnaireSelection() {
         this.quetionnaire_selections_tmp.push({text: ''});
+      },
+      deleteQuetionnaireSelection(index) {
+        if (this.quetionnaire_selections_tmp.length === 1) {
+          return;
+        }
+        this.quetionnaire_selections_tmp.splice(index, 1);
+      },
+      deleteQuetionnaire() {
+        this.quetionnaire_title = null;
+        this.quetionnaire_selections = [{text: ''}, {text: ''}, {text: ''}];
       }
     }
   };
 </script>
 
 <style>
-  .post_progress {
-    margin-right: 10px;
-    width: 15px;
-    color: white;
-  }
   .delete_selection_icon {
     color: gray;
     float: right;
     margin: 10px;
+  }
+  .quetionnaire_table {
+    width: 100%;
+  }
+  .quetionnaire_table td {
+    border-bottom: 1px solid gray;
+  }
+  .quetionnaire_results {
+    width: 100px;
+  }
+  .quetionnaire_container {
+    color: black;
+    background-color: white;
+    width: 95%;
+    margin: 20px auto 20px auto;
   }
 </style>
