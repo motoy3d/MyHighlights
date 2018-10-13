@@ -1728,6 +1728,9 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -1740,6 +1743,7 @@ if (false) {(function () {
       post_responses: {},
       post_attachments: {},
       questionnaire: {},
+      questionnaire_answers: [],
       comments: {},
       comment_text: "",
       comment_files: [],
@@ -1912,11 +1916,33 @@ if (false) {(function () {
       var modal = document.querySelector('ons-modal');
       modal.hide();
     },
-    showQuestionnaireActionSheet: function showQuestionnaireActionSheet() {
-      ons.openActionSheet({
-        title: '回答',
+    showQuestionnaireActionSheet: function showQuestionnaireActionSheet(question, index) {
+      var selections = ['◯', '△', '✕', 'キャンセル'];
+      var self = this;
+      var answer = this.$ons.openActionSheet({
+        title: question,
         cancelable: true,
-        buttons: ['◯', '△', '✕', 'キャンセル']
+        buttons: selections
+      }).then(function (answer) {
+        if (answer === undefined || answer < 0 || 2 < answer) {
+          return;
+        }
+        var form = new FormData();
+        form.append('post_id', self.post.id);
+        form.append('questionnaire_id', self.questionnaire.id);
+        form.append('question_no', index);
+        form.append('answer', selections[answer]);
+        self.$http.post('/api/questionnaires/answer', form).then(function (response) {
+          console.log(response.data);
+          self.load();
+        }).catch(function (error) {
+          self.errored = true;
+          if (error.response.status === 401) {
+            window.location.href = "/login";return;
+          }
+        }).finally(function () {
+          return self.loading = false;
+        });
       });
     },
     isImage: function isImage(fileExtension) {
@@ -4973,7 +4999,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.questionnaire_table {\n  width: 100%;\n}\n.questionnaire_table td {\n  border-bottom: 1px solid gray;\n}\n.questionnaire_results {\n  width: 100px;\n}\n.questionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n  margin-left: 5px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n  white-space: pre-wrap;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 80px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n.image_in_post {\n  max-width: 100%;\n}\n.messageBtn {\n  width: 20px;\n}\n", ""]);
+exports.push([module.i, "\n.article_container {\n  padding: 15px;\n  background-color: white;\n}\n.comment_textarea {\n  width: 100%;\n}\n.entry_title {\n  font-size: 18px;\n  font-weight: bold;\n  text-align:left;\n  margin: 0;\n}\n.entry_content {\n  font-size: 16px;\n  text-align:left;\n  margin: 5px 0 0 5px;\n  white-space: pre-wrap;\n}\n.updated_at {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0 0 0 5px;\n}\n.highlight_summary {\n  font-size: 12px;\n  line-height: 50%;\n  margin: 0 0 0 10px;\n}\n.video_thumbnail {\n  margin: 6px 0 6px 0;\n}\n.questionnaire_table {\n  width: 100%;\n}\n.questionnaire_table td, th {\n  border-bottom: 1px solid gray;\n}\n.questionnaire_results {\n  width: 100px;\n}\n.answer {\n  width: 26px;\n  text-align: center;\n}\n.questionnaire_btn {\n  width: 60px;\n}\n.responsebar {\n  text-align: center;\n  margin: 20px auto 0 auto;\n  width: 100%;\n}\n.heart {\n  color: #ff6060;\n  font-size: 18px;\n  /*  margin: 0 0 0 30px;*/\n}\n.heart-count {\n  color: red;\n  font-size: 13px;\n}\n.heart_text {\n  color: black;\n  font-size: 16px;\n  margin-left: 5px;\n}\n.star {\n  color: orange;\n  font-size: 18px;\n  margin: 0 0 0 40px;\n}\n.star-count {\n  color: orange;\n  font-size: 13px;\n}\n.star_text {\n  color: black;\n  font-size: 16px;\n}\n.like_off {\n  color: #cccccc;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like_on {\n  color: #ff6060;\n  font-size: 24px;\n  margin-top: 5px;\n}\n.like-count {\n  font-size: 13px;\n  margin: 0 0 0 6px;\n}\n.comment {\n  font-size: 14px;\n  margin: 0;\n  white-space: pre-wrap;\n}\n.comment_card {\n  background-color: #81ff4f;\n  margin-bottom: 0;\n}\n.comment-count {\n  color: grey;\n  font-size: 13px;\n  margin: 0 0 0 4px;\n}\n.comment-toggle {\n  color: #cccccc;\n  font-size: 26px;\n  font-weight: bold;\n  margin: 0 0 0 20px;\n}\n.lastspace {\n  margin-bottom: 80px;\n}\n.speech-bubble {\n  position: relative;\n  background: #81ff4f;\n  border-radius: .3em;\n  padding: 15px;\n  margin-top: 6px;\n}\n.speech-bubble:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 5%;\n  width: 0;\n  height: 0;\n  border: 6px solid transparent;\n  border-bottom-color: #81ff4f;\n  border-top: 0;\n  margin-left: -6px;\n  margin-top: -6px;\n}\n.delete_comment_icon {\n  color: gray;\n  float: right;\n}\n.image_in_post {\n  max-width: 100%;\n}\n.messageBtn {\n  width: 20px;\n}\n", ""]);
 
 // exports
 
@@ -5674,7 +5700,7 @@ var render = function() {
                             _c("v-ons-col", [
                               _c(
                                 "p",
-                                { staticClass: "bold" },
+                                { staticClass: "bold mb-0" },
                                 [
                                   _c("v-ons-icon", {
                                     staticClass: "black",
@@ -5688,51 +5714,69 @@ var render = function() {
                                 1
                               ),
                               _vm._v(" "),
-                              _c("div", { staticClass: "mt-5" }, [
+                              _c("div", [
                                 _c(
                                   "table",
                                   { staticClass: "questionnaire_table" },
-                                  _vm._l(_vm.questionnaire.items, function(
-                                    q,
-                                    index
-                                  ) {
-                                    return _c("tr", [
-                                      _c("td", [_vm._v(_vm._s(q.text))]),
-                                      _vm._v(" "),
-                                      _c(
-                                        "td",
-                                        {
-                                          staticClass: "questionnaire_results"
-                                        },
-                                        [_vm._v("◯10 △0 ✕1")]
-                                      ),
-                                      _vm._v(" "),
-                                      _c(
-                                        "td",
-                                        { staticClass: "questionnaire_btn" },
-                                        [
-                                          _c(
-                                            "v-ons-button",
-                                            {
-                                              staticClass:
-                                                "smallBtn button--quiet",
-                                              on: {
-                                                click: function($event) {
-                                                  _vm.showQuestionnaireActionSheet()
+                                  [
+                                    _c("tr", [
+                                      _c("th"),
+                                      _c("th", [_vm._v("◯")]),
+                                      _c("th", [_vm._v("△")]),
+                                      _c("th", [_vm._v("✕")]),
+                                      _c("th")
+                                    ]),
+                                    _vm._v(" "),
+                                    _vm._l(_vm.questionnaire.items, function(
+                                      q,
+                                      index
+                                    ) {
+                                      return _c("tr", [
+                                        _c("td", [_vm._v(_vm._s(q.text))]),
+                                        _vm._v(" "),
+                                        _c("td", { staticClass: "answer" }, [
+                                          _vm._v(_vm._s(q["◯"] || 0))
+                                        ]),
+                                        _vm._v(" "),
+                                        _c("td", { staticClass: "answer" }, [
+                                          _vm._v(_vm._s(q["△"] || 0))
+                                        ]),
+                                        _vm._v(" "),
+                                        _c("td", { staticClass: "answer" }, [
+                                          _vm._v(_vm._s(q["✕"] || 0))
+                                        ]),
+                                        _vm._v(" "),
+                                        _c(
+                                          "td",
+                                          { staticClass: "questionnaire_btn" },
+                                          [
+                                            _c(
+                                              "v-ons-button",
+                                              {
+                                                staticClass:
+                                                  "smallBtn button--quiet",
+                                                on: {
+                                                  click: function($event) {
+                                                    _vm.showQuestionnaireActionSheet(
+                                                      q.text,
+                                                      index
+                                                    )
+                                                  }
                                                 }
-                                              }
-                                            },
-                                            [
-                                              _vm._v(
-                                                "\n                    回答\n                  "
-                                              )
-                                            ]
-                                          )
-                                        ],
-                                        1
-                                      )
-                                    ])
-                                  })
+                                              },
+                                              [
+                                                _vm._v(
+                                                  "\n                    回答\n                  "
+                                                )
+                                              ]
+                                            )
+                                          ],
+                                          1
+                                        )
+                                      ])
+                                    })
+                                  ],
+                                  2
                                 )
                               ])
                             ])
@@ -5985,7 +6029,7 @@ var render = function() {
                                             ]
                                           ),
                                           _vm._v(" "),
-                                          comment.user_id == _vm.user.id
+                                          comment.user_id === _vm.user.id
                                             ? _c(
                                                 "span",
                                                 [

@@ -48,21 +48,24 @@
         <!-- アンケート -->
         <v-ons-row class="space" v-if="questionnaire">
           <v-ons-col>
-            <p class="bold"><v-ons-icon icon="fa-list-alt" class="black"></v-ons-icon>
+            <p class="bold mb-0"><v-ons-icon icon="fa-list-alt" class="black"></v-ons-icon>
               {{ questionnaire.title }}</p>
             <!-- ActionSheetで入力するので不要
                   <div class="mt-5">
                     <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
                       アンケートに回答する</v-ons-button>
                   </div>-->
-            <div class="mt-5">
+            <div>
               <table class="questionnaire_table">
+                <tr><th></th><th>◯</th><th>△</th><th>✕</th><th></th></tr>
                 <tr v-for="(q, index) in questionnaire.items">
                   <td>{{ q.text }}</td>
-                  <td class="questionnaire_results">◯10 △0 ✕1</td>
+                  <td class="answer">{{ q['◯'] || 0 }}</td>
+                  <td class="answer">{{ q['△'] || 0 }}</td>
+                  <td class="answer">{{ q['✕'] || 0 }}</td>
                   <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn button--quiet"
-                                  @click="showQuestionnaireActionSheet();">
+                                  @click="showQuestionnaireActionSheet(q.text, index);">
                       回答
                     </v-ons-button>
                   </td>
@@ -125,7 +128,7 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id == user.id">
+                  <span v-if="comment.user_id === user.id">
                     <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
@@ -163,6 +166,7 @@
         post_responses: {},
         post_attachments: {},
         questionnaire: {},
+        questionnaire_answers: [],
         comments: {},
         comment_text: "",
         comment_files: [],
@@ -315,11 +319,33 @@
         var modal = document.querySelector('ons-modal');
         modal.hide();
       },
-      showQuestionnaireActionSheet() {
-        ons.openActionSheet({
-          title: '回答',
+      showQuestionnaireActionSheet(question, index) {
+        var selections = ['◯', '△', '✕', 'キャンセル'];
+        var self = this;
+        var answer = this.$ons.openActionSheet({
+          title: question,
           cancelable: true,
-          buttons: ['◯', '△', '✕', 'キャンセル']
+          buttons: selections
+        })
+        .then(function(answer){
+          if (answer === undefined || answer < 0 || 2 < answer) {return;}
+          let form = new FormData();
+          form.append('post_id', self.post.id);
+          form.append('questionnaire_id', self.questionnaire.id);
+          form.append('question_no', index);
+          form.append('answer', selections[answer]);
+          self.$http.post('/api/questionnaires/answer', form)
+            .then((response)=>{
+              console.log(response.data);
+              self.load();
+            })
+            .catch(error => {
+              self.errored = true;
+              if (error.response.status === 401) {
+                window.location.href = "/login"; return;
+              }
+            })
+            .finally(() => self.loading = false);
         });
       },
       isImage(fileExtension) {
@@ -382,11 +408,15 @@
   .questionnaire_table {
     width: 100%;
   }
-  .questionnaire_table td {
+  .questionnaire_table td, th {
     border-bottom: 1px solid gray;
   }
   .questionnaire_results {
     width: 100px;
+  }
+  .answer {
+    width: 26px;
+    text-align: center;
   }
   .questionnaire_btn {
     width: 60px;

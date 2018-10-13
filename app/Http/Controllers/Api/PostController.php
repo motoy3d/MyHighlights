@@ -86,12 +86,12 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
-
+    // アンケート
     Log::info("questionnaire_selections:" . $request->questionnaire_selections);
     if ($request->questionnaire_title && $request->questionnaire_selections) {
       $questionnaire = Questionnaire::create([
         "title" => $request->questionnaire_title,
-        "items" => $request->questionnaire_selections, // json形式 ["a","b","c"]
+        "items" => $request->questionnaire_selections, // json形式 [{"text":"質問1"},{"text":"質問2"}]
         "created_id" => Auth::id(),
         "updated_id" => Auth::id()
       ]);
@@ -151,6 +151,7 @@ class PostController extends Controller
 
     // 投稿の既読、いいね、スター　(ログインユーザーの行動)
     // 一度INSERTしてからSELECT
+    // TODO firstOrNewでリファクタ
     $post_response = DB::table('post_responses')
       ->select('read_flg', 'like_flg', 'star_flg')
       ->where('user_id', Auth::id())
@@ -184,22 +185,34 @@ class PostController extends Controller
       ->orderBy('id')
       ->get();
 
-    //TODO アンケート
+    // アンケート
     $questionnaire = null;
     if ($post->questionnaire_id) {
       $questionnaire = DB::table('questionnaires')
         ->where('id', $post->questionnaire_id)
         ->first();
       if ($questionnaire) {
-        $answers = DB::table('questionnaire_answers')
-          ->select(DB::raw('count(*) as answer_count, question_no'))
-          ->where('questionnaire_id', $post->questionnaire_id)
-          ->groupBy('question_no')
-          ->get();
-        Log::info('回答');
-        Log::info(json_encode($answers));
+        // ログインユーザーの回答
+
         $questionnaire->items = json_decode($questionnaire->items);
 
+        $counts = [0, 0, 0];
+        for ($i=0; $i<count($questionnaire->items); $i++) {
+          // 回答集計
+          $answerCounts = DB::table('questionnaire_answers')
+            ->select(DB::raw('count(*) as answer_count, answer'))
+            ->where('questionnaire_id', $post->questionnaire_id)
+            ->where('question_no', $i)
+            ->groupBy('answer')
+            ->get();
+          Log::info('回答');
+          Log::info(json_encode($answerCounts));
+          $question = $questionnaire->items[$i];
+          foreach ($answerCounts as $answerCount) {
+            $answer = $answerCount->answer;
+            $question->$answer = $answerCount->answer_count;
+          }
+        }
       }
     }
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Post;
 use App\PostResponse;
+use App\Questionnaire;
+use App\QuestionnaireAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,52 +17,44 @@ class QuestionnaireController extends Controller
 {
   /**
    * アンケートの回答をDB保存する。
+   * パラメータはpost_id,questionnaire_id,question_no,answer
    * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\JsonResponse
    */
   public function store(Request $request)
   {
+    if ($request->question_no === 3) {return;}  //キャンセルの場合(UIで制御するので来ないはず)
     $post = Post::findOrFail($request->post_id);
-    if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    //チームIDが別の場合やアンケートIDがマッチしない場合は404
+    if (!$post || $post->team_id != Auth::user()->team_id
+      || $post->questionnaire_id != $request->questionnaire_id) {
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',
       ], 404);
     }
-    $questionnaireResult = null;
-    $questionnaire = DB::table('quesltionnaires')
-      ->where('user_id', '=', Auth::id())
-      ->where('post_id', '=', $request->post_id)
-      ->first();
-    Log::info("----store ");
-    if ($postResponse) {
-      Log::info("like_flg: " . $request->like_flg);
-      Log::info("star_flg: " . $request->star_flg);
-      $postResponseModel = PostResponse::findOrFail($postResponse->id);
-      if (isset($request->like_flg)) { //いいね
-        $postResponseModel->like_flg = $request->like_flg;
-        $postResponseModel->save();
-        //TODO いいね合計数更新
-        Log::info("like_flg saved.");
-      } else if (isset($request->star_flg)) { //スター
-        $postResponseModel->star_flg = $request->star_flg;
-        $postResponseModel->save();
-      } else{
-        // ありえない
-      }
-      $postResponseResult = $postResponseModel;
-    } else {
-      // 既読
-      if (isset($request->read_flg)) { //既読
-        $postResponseResult = PostResponse::create([
-          "user_id" => Auth::id(),
-          "post_id" => $request->post_id,
-          "read_flg" => true,
-          "created_id" => Auth::id(),
-          "updated_id" => Auth::id()
-        ]);
-      }
+    $questionnaire = Questionnaire::findOrFail($request->questionnaire_id);
+    if (!$questionnaire) { // ヒットしない場合は404
+      return response()->json([
+        'message' => 'not found',
+      ], 404);
     }
-    return Response::json($postResponseResult);
+    Log::info("----store ");
+    $answer = QuestionnaireAnswer::updateOrCreate(
+      [
+        'questionnaire_id' => $request->questionnaire_id,
+        'user_id' => Auth::id(),
+        'question_no' => $request->question_no
+      ],
+      [
+        'answer' => $request->answer,
+        'created_id' => Auth::id(), //更新時に更新するのは本来NGだがアンケート回答は本人がする(create)はずなので許容
+        'updated_id' => Auth::id()
+      ]);
+//    $answer->answer = $request->answer;
+//    $answer->created_id = Auth::id();
+//    $answer->updated_id = Auth::id();
+//    $answer->save();
+    return Response::json($answer);
   }
 }
