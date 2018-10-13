@@ -1,6 +1,7 @@
 {
   "short_name": "つばさ",
   "name": "横浜SCつばさ",
+  "start_url": "/home",
   "icons": [
     {
       "src": "appicon.png",
