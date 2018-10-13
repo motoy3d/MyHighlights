@@ -5766,7 +5766,12 @@ var render = function() {
                                               },
                                               [
                                                 _vm._v(
-                                                  "\n                    回答\n                  "
+                                                  "\n                    回答 "
+                                                ),
+                                                _c(
+                                                  "span",
+                                                  { staticClass: "black" },
+                                                  [_vm._v(_vm._s(q.myAnswer))]
                                                 )
                                               ]
                                             )

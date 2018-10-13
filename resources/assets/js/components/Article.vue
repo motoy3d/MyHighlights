@@ -66,7 +66,7 @@
                   <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn button--quiet"
                                   @click="showQuestionnaireActionSheet(q.text, index);">
-                      回答
+                      回答 <span class="black">{{ q.myAnswer }}</span>
                     </v-ons-button>
                   </td>
                 </tr>

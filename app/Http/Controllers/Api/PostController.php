@@ -192,11 +192,15 @@ class PostController extends Controller
         ->where('id', $post->questionnaire_id)
         ->first();
       if ($questionnaire) {
-        // ログインユーザーの回答
-
         $questionnaire->items = json_decode($questionnaire->items);
 
-        $counts = [0, 0, 0];
+        // ログインユーザーの回答
+        $myAnswers = DB::table('questionnaire_answers')
+          ->where('questionnaire_id', $post->questionnaire_id)
+          ->where('user_id', Auth::id())
+          ->orderBy('question_no')
+          ->get();
+
         for ($i=0; $i<count($questionnaire->items); $i++) {
           // 回答集計
           $answerCounts = DB::table('questionnaire_answers')
@@ -211,6 +215,11 @@ class PostController extends Controller
           foreach ($answerCounts as $answerCount) {
             $answer = $answerCount->answer;
             $question->$answer = $answerCount->answer_count;
+          }
+          foreach ($myAnswers as $a) {
+            if ($i == $a->question_no){
+              $question->myAnswer = $a->answer;break;
+            };
           }
         }
       }
