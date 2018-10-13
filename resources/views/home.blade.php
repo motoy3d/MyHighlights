@@ -10,8 +10,9 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="manifest" href="/manifest.json">
   <link href="{{ mix('css/app.css') }}" rel="stylesheet">
-  <link rel="apple-touch-icon" sizes="192x192" href="appicon.png">
-  <link rel="shortcut icon" href="https://smartj.mobi/myhighlight-mock-cloud9/appicon.png">
+  <link rel="apple-touch-icon" href="appicon.png">
+  <link rel="apple-touch-startup-image" href="/launch.png">
+  <link rel="shortcut icon" href="https://tsubasa.smartj.mobi/appicon.png">
 </head>
 <body>
   <div id="app"></div>
