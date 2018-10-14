@@ -1729,8 +1729,6 @@ if (false) {(function () {
 //
 //
 //
-//
-//
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -5279,7 +5277,10 @@ var render = function() {
                     [
                       _c(
                         "v-ons-button",
-                        { staticClass: "smallBtn button--outline" },
+                        {
+                          staticClass: "smallBtn",
+                          attrs: { modifier: "outline" }
+                        },
                         [
                           _c("v-ons-icon", { attrs: { icon: "fa-file" } }),
                           _vm._v(" 添付ファイル")
@@ -5298,8 +5299,8 @@ var render = function() {
                   _c(
                     "v-ons-button",
                     {
-                      staticClass: "smallBtn button--outline",
-                      staticStyle: { float: "right" },
+                      staticClass: "smallBtn fl-right",
+                      attrs: { modifier: "outline" },
                       on: {
                         click: function($event) {
                           _vm.showQuestionnaireModal()
@@ -5488,8 +5489,8 @@ var render = function() {
                             _c(
                               "v-ons-button",
                               {
-                                staticClass: "small button--quiet",
-                                attrs: { ripple: "" },
+                                staticClass: "small",
+                                attrs: { modifier: "quiet", ripple: "" },
                                 on: {
                                   click: function($event) {
                                     _vm.addQuestionnaireSelection()
@@ -5759,8 +5760,8 @@ var render = function() {
                                             _c(
                                               "v-ons-button",
                                               {
-                                                staticClass:
-                                                  "smallBtn button--quiet",
+                                                staticClass: "smallBtn",
+                                                attrs: { modifier: "quiet" },
                                                 on: {
                                                   click: function($event) {
                                                     _vm.showQuestionnaireActionSheet(
@@ -5850,7 +5851,7 @@ var render = function() {
                                   {
                                     staticClass: "left",
                                     attrs: {
-                                      width: "40px",
+                                      width: "30px",
                                       "vertical-align": "bottom"
                                     }
                                   },
@@ -5874,28 +5875,13 @@ var render = function() {
                                             )
                                           : _vm._e(),
                                         _vm._v(" "),
-                                        _c(
-                                          "v-ons-button",
-                                          {
-                                            staticClass: "center bg-white",
-                                            attrs: { ripple: "" },
-                                            on: {
-                                              click: function($event) {
-                                                _vm.postComment()
-                                              }
-                                            }
-                                          },
-                                          [
-                                            _c("v-ons-icon", {
-                                              staticClass: "goodblue",
-                                              attrs: {
-                                                icon: "fa-paperclip",
-                                                size: "24px"
-                                              }
-                                            })
-                                          ],
-                                          1
-                                        ),
+                                        _c("v-ons-icon", {
+                                          staticClass: "goodblue",
+                                          attrs: {
+                                            icon: "fa-paperclip",
+                                            size: "24px"
+                                          }
+                                        }),
                                         _vm._v(" "),
                                         _c("input", {
                                           attrs: { type: "file", multiple: "" },
@@ -6447,7 +6433,7 @@ var render = function() {
                 [
                   _c(
                     "v-ons-button",
-                    { staticClass: "smallBtn button--outline" },
+                    { staticClass: "smallBtn", attrs: { modifier: "outline" } },
                     [_vm._v("添付ファイル")]
                   ),
                   _vm._v(" "),
@@ -6847,7 +6833,8 @@ var render = function() {
                             _c(
                               "v-ons-button",
                               {
-                                staticClass: "button button--outline smallBtn",
+                                staticClass: "button smallBtn",
+                                attrs: { modifier: "outline" },
                                 on: {
                                   click: function($event) {
                                     _vm.openAddSchedule()
@@ -6867,7 +6854,8 @@ var render = function() {
                             _c(
                               "v-ons-button",
                               {
-                                staticClass: "button button--outline smallBtn",
+                                staticClass: "button smallBtn",
+                                attrs: { modifier: "outline" },
                                 on: {
                                   click: function($event) {
                                     _vm.alert("TODO")
@@ -9088,72 +9076,6 @@ if (false) {
 
     this.loading = true;
     var self = this;
-
-    // $.ajax(
-    //   {
-    //     url: blogRssUrl,
-    //     type: 'GET',
-    //     cache: false,
-    //     dataType: 'xml',
-    //     timeout: 7000,
-    //
-    //     success: function(res, status)
-    //     {
-    //       if (status === 'success')
-    //       {
-    //         // responseText から取得して、xml 形式に変換する必要があり
-    //         var xmlText = res["responseText"];
-    //         var xml = $.parseXML(xmlText);
-    //
-    //         var row = 0;
-    //         var data = [];
-    //         var nodeName;
-    //
-    //         $(xml).find('item').each(function()
-    //         {
-    //           data[row] = {};
-    //           $(this).children().each(function()
-    //           { 			// 子要素を取得
-    //             nodeName = $(this)[0].nodeName; 			// 要素名
-    //             data[row][nodeName] = {}; 						// 初期化
-    //             attributes = $(this)[0].attributes; 	// 属性を取得
-    //             for (var i in attributes)
-    //             {
-    //               data[row][nodeName][attributes[i].name] = attributes[i].value; // 属性名 = 値
-    //             }
-    //             data[row][nodeName]['text'] = $(this).text();
-    //           });
-    //           row++;
-    //
-    //         });
-    //
-    //         for (i in data)
-    //         {
-    //
-    //           //時間を整形
-    //           var date = data[i]["dc:date"].text;
-    //           date = date.slice(0,9);
-    //           date = date.replace( /-/g , "." ) ;
-    //
-    //           //5件を出力
-    //           if(i < 6)
-    //           {
-    //             self.entries.push({
-    //               'title': data[i].title.text,
-    //               'link': data[i].link.text,
-    //               'date': date
-    //             });
-    //             console.log(data[i].title.text);
-    //             // $('#blog-rss').append('<li><a href="'+ data[i].link.text + '" target="_blank"><span class="date">'+ date + '</span><span class="title">'+ data[i].title.text +'</span></a></li>');
-    //           }
-    //         }
-    //
-    //       }
-    //     }
-    //
-    //   });
-
-
     this.$http.get('api/blog').then(function (response) {
       console.log(response.data);
       _this.entries = response.data;
@@ -9273,7 +9195,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.row {\n  width: 92%;\n}\n.title {\n  font-size: 18px;\n  text-align:left;\n  margin: 8px 0px;\n}\n.date {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0;\n}\n", ""]);
+exports.push([module.i, "\n.blog_row {\n  width: 92%;\n}\n.blog_entry_title {\n  font-size: 18px;\n  text-align:left;\n  margin: 8px 0px;\n}\n.blog_entry_date {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0;\n}\n", ""]);
 
 // exports
 
@@ -9304,7 +9226,7 @@ var render = function() {
           "div",
           { staticClass: "center navbartitle" },
           [
-            _c("v-ons-icon", { attrs: { icon: "fa-blog", size: "20px" } }),
+            _c("v-ons-icon", { attrs: { icon: "fa-rss", size: "20px" } }),
             _vm._v(" ブログ\n    ")
           ],
           1
@@ -9364,14 +9286,18 @@ var render = function() {
                                     }
                                   },
                                   [
-                                    _c("div", { staticClass: "row" }, [
-                                      _c("p", { staticClass: "date" }, [
-                                        _vm._v(_vm._s(entry.date))
-                                      ]),
+                                    _c("div", { staticClass: "blog_row" }, [
+                                      _c(
+                                        "p",
+                                        { staticClass: "blog_entry_date" },
+                                        [_vm._v(_vm._s(entry.date))]
+                                      ),
                                       _vm._v(" "),
-                                      _c("p", { staticClass: "title" }, [
-                                        _vm._v(_vm._s(entry.title))
-                                      ])
+                                      _c(
+                                        "p",
+                                        { staticClass: "blog_entry_title" },
+                                        [_vm._v(_vm._s(entry.title))]
+                                      )
                                     ])
                                   ]
                                 )

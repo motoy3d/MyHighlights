@@ -5,7 +5,7 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center navbartitle">
-        <v-ons-icon icon="fa-blog" size="20px"></v-ons-icon> ブログ
+        <v-ons-icon icon="fa-rss" size="20px"></v-ons-icon> ブログ
       </div>
     </v-ons-toolbar>
     <div class="page__background" style="background-color: white;"></div>
@@ -23,9 +23,9 @@
               <v-ons-list>
                 <v-ons-list-item v-for="(entry,index) in entries" :key="entry.link"
                                  modifier="chevron" tappable @click="openEntry(entry.link)">
-                  <div class="row">
-                    <p class="date">{{ entry.date }}</p>
-                    <p class="title">{{ entry.title }}</p>
+                  <div class="blog_row">
+                    <p class="blog_entry_date">{{ entry.date }}</p>
+                    <p class="blog_entry_title">{{ entry.title }}</p>
                   </div>
                 </v-ons-list-item>
               </v-ons-list>
@@ -42,72 +42,6 @@
     beforeCreate() {
       this.loading = true;
       let self = this;
-
-      // $.ajax(
-      //   {
-      //     url: blogRssUrl,
-      //     type: 'GET',
-      //     cache: false,
-      //     dataType: 'xml',
-      //     timeout: 7000,
-      //
-      //     success: function(res, status)
-      //     {
-      //       if (status === 'success')
-      //       {
-      //         // responseText から取得して、xml 形式に変換する必要があり
-      //         var xmlText = res["responseText"];
-      //         var xml = $.parseXML(xmlText);
-      //
-      //         var row = 0;
-      //         var data = [];
-      //         var nodeName;
-      //
-      //         $(xml).find('item').each(function()
-      //         {
-      //           data[row] = {};
-      //           $(this).children().each(function()
-      //           { 			// 子要素を取得
-      //             nodeName = $(this)[0].nodeName; 			// 要素名
-      //             data[row][nodeName] = {}; 						// 初期化
-      //             attributes = $(this)[0].attributes; 	// 属性を取得
-      //             for (var i in attributes)
-      //             {
-      //               data[row][nodeName][attributes[i].name] = attributes[i].value; // 属性名 = 値
-      //             }
-      //             data[row][nodeName]['text'] = $(this).text();
-      //           });
-      //           row++;
-      //
-      //         });
-      //
-      //         for (i in data)
-      //         {
-      //
-      //           //時間を整形
-      //           var date = data[i]["dc:date"].text;
-      //           date = date.slice(0,9);
-      //           date = date.replace( /-/g , "." ) ;
-      //
-      //           //5件を出力
-      //           if(i < 6)
-      //           {
-      //             self.entries.push({
-      //               'title': data[i].title.text,
-      //               'link': data[i].link.text,
-      //               'date': date
-      //             });
-      //             console.log(data[i].title.text);
-      //             // $('#blog-rss').append('<li><a href="'+ data[i].link.text + '" target="_blank"><span class="date">'+ date + '</span><span class="title">'+ data[i].title.text +'</span></a></li>');
-      //           }
-      //         }
-      //
-      //       }
-      //     }
-      //
-      //   });
-
-
       this.$http.get('api/blog')
         .then((response)=> {
           console.log(response.data);
@@ -136,15 +70,15 @@
 </script>
 
 <style>
-  .row {
+  .blog_row {
     width: 92%;
   }
-  .title {
+  .blog_entry_title {
     font-size: 18px;
     text-align:left;
     margin: 8px 0px;
   }
-  .date {
+  .blog_entry_date {
     color: grey;
     font-size: 13px;
     text-align: left;

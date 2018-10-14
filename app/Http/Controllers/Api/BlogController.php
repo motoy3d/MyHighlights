@@ -25,7 +25,7 @@ class BlogController extends Controller
     foreach($feed->get_items() as $item) {
       $title = trim($item->get_title());
       $link = trim($item->get_permalink());
-      $date = $item->get_date('Y/n/j');
+      $date = $item->get_date('Y.n.j');
       array_push($entries, [
         'title' => $title,
         'link' => $link,

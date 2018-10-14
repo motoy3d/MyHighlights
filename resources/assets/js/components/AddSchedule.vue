@@ -56,7 +56,7 @@
         </div>
         <div class="space">
           <div class="upload-btn-wrapper">
-            <v-ons-button class="smallBtn button--outline">添付ファイル</v-ons-button>
+            <v-ons-button class="smallBtn" modifier="outline">添付ファイル</v-ons-button>
             <input type="file" name="myfile" />
           </div>
         </div>

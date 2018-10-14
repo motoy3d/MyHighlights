@@ -52,7 +52,7 @@
               {{ questionnaire.title }}</p>
             <!-- ActionSheetで入力するので不要
                   <div class="mt-5">
-                    <v-ons-button class="smallBtn button--outline" onclick="showQuestionnaireModal();">
+                    <v-ons-button class="smallBtn" modifier="outline" onclick="showQuestionnaireModal();">
                       アンケートに回答する</v-ons-button>
                   </div>-->
             <div>
@@ -64,7 +64,7 @@
                   <td class="answer">{{ q['△'] || 0 }}</td>
                   <td class="answer">{{ q['✕'] || 0 }}</td>
                   <td class="questionnaire_btn">
-                    <v-ons-button class="smallBtn button--quiet"
+                    <v-ons-button class="smallBtn" modifier="quiet"
                                   @click="showQuestionnaireActionSheet(q.text, index);">
                       回答 <span class="black">{{ q.myAnswer }}</span>
                     </v-ons-button>
@@ -90,14 +90,12 @@
             </div>
             <!-- コメント -->
             <v-ons-row class="mt-30">
-              <v-ons-col width="40px" vertical-align="bottom" class="left">
+              <v-ons-col width="30px" vertical-align="bottom" class="left">
                 <div class="upload-btn-wrapper">
                   <span class="notification" v-if="0 < comment_files.length">
                     {{ comment_files.length }}</span>
-                  <v-ons-button class="center bg-white" ripple
-                                @click="postComment()">
-                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"></v-ons-icon>
-                  </v-ons-button>
+                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"
+                                ></v-ons-icon>
                   <input type="file" multiple @change="onFileSet"/>
                 </div>
               </v-ons-col>

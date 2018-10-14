@@ -59,11 +59,11 @@
 
           <div class="space">
             <div class="upload-btn-wrapper">
-              <v-ons-button class="smallBtn button--outline">
+              <v-ons-button class="smallBtn" modifier="outline">
                 <v-ons-icon icon="fa-file"></v-ons-icon> 添付ファイル</v-ons-button>
               <input type="file" multiple @change="onFileSet"/>
             </div>
-            <v-ons-button class="smallBtn button--outline" style="float:right"
+            <v-ons-button class="smallBtn fl-right" modifier="outline"
                           @click="showQuestionnaireModal()">
               <v-ons-icon icon="fa-list-alt"></v-ons-icon>アンケート作成</v-ons-button>
           </div>
@@ -108,7 +108,7 @@
                 </div>
               </template>
               <div class="mt-10 left" v-if="questionnaire_selections_tmp.length <= 7">
-                <v-ons-button class="small button--quiet" ripple
+                <v-ons-button class="small"  modifier="quiet" ripple
                   @click="addQuestionnaireSelection()">
                   <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
                   選択肢追加

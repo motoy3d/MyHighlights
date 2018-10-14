@@ -105,12 +105,12 @@
             </div>
             <div class="expandable-content">
               <p>{{ schedule.content }}</p>
-              <v-ons-button class="button button--outline smallBtn"
+              <v-ons-button class="button smallBtn" modifier="outline"
                             @click="openAddSchedule();">
                 <v-ons-icon icon="fa-pencil" class="schedule_edit_icon"></v-ons-icon>
                 編集
               </v-ons-button>
-              <v-ons-button class="button button--outline smallBtn"
+              <v-ons-button class="button smallBtn" modifier="outline"
                             @click="alert('TODO');">
                 <v-ons-icon icon="fa-copy" class="schedule_edit_icon"></v-ons-icon>
                 コピー
