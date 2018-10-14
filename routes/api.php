@@ -25,6 +25,7 @@
     Route::put('users/updatePassword', 'Api\UserController@updatePassword');
     Route::resource('members', 'Api\MemberController');
     Route::post('questionnaires/answer', 'Api\QuestionnaireController@store');
+    Route::get('blog', 'Api\BlogController@index');
 
   });
 

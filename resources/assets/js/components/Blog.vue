@@ -21,8 +21,12 @@
           <v-ons-col>
             <!--<v-ons-page :infinite-scroll="loadMore">-->
               <v-ons-list>
-                <v-ons-list-item modifier="chevron">
-                  <div>記事タイトル</div>
+                <v-ons-list-item v-for="(entry,index) in entries" :key="entry.link"
+                                 modifier="chevron" tappable @click="openEntry(entry.link)">
+                  <div class="row">
+                    <p class="date">{{ entry.date }}</p>
+                    <p class="title">{{ entry.title }}</p>
+                  </div>
                 </v-ons-list-item>
               </v-ons-list>
             <!--</v-ons-page>-->
@@ -34,7 +38,6 @@
 </template>
 
 <script>
-  var blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
   export default {
     beforeCreate() {
       this.loading = true;
@@ -105,15 +108,10 @@
       //   });
 
 
-      this.$http.get(blogRssUrl)
+      this.$http.get('api/blog')
         .then((response)=> {
-          alert(response.data);
-          // $(response.data).find("item").each(function () {
-          //   var el = $(this);
-          //   console.log(el.find("link").text());
-          //   console.log(el.find("title").text());
-          //
-          // });
+          console.log(response.data);
+          this.entries = response.data;
         })
         .catch(error => {
           this.errored = true;
@@ -130,8 +128,26 @@
       };
     },
     methods: {
+      openEntry(link) {
+        location.href = link;
+      }
     }
   };
 </script>
 
-<style></style>
+<style>
+  .row {
+    width: 97%;
+  }
+  .title {
+    font-size: 18px;
+    text-align:left;
+    margin: 8px 0px;
+  }
+  .date {
+    color: grey;
+    font-size: 13px;
+    text-align: left;
+    margin: 0;
+  }
+</style>

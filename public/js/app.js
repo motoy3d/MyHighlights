@@ -9077,8 +9077,11 @@ if (false) {
 //
 //
 //
+//
+//
+//
+//
 
-var blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
 /* harmony default export */ __webpack_exports__["a"] = ({
   beforeCreate: function beforeCreate() {
     var _this = this;
@@ -9151,14 +9154,9 @@ var blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
     //   });
 
 
-    this.$http.get(blogRssUrl).then(function (response) {
-      alert(response.data);
-      // $(response.data).find("item").each(function () {
-      //   var el = $(this);
-      //   console.log(el.find("link").text());
-      //   console.log(el.find("title").text());
-      //
-      // });
+    this.$http.get('api/blog').then(function (response) {
+      console.log(response.data);
+      _this.entries = response.data;
     }).catch(function (error) {
       _this.errored = true;
       console.log(error);
@@ -9174,7 +9172,11 @@ var blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
     };
   },
 
-  methods: {}
+  methods: {
+    openEntry: function openEntry(link) {
+      location.href = link;
+    }
+  }
 });
 
 /***/ }),
@@ -9271,7 +9273,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n.row {\n  width: 97%;\n}\n.title {\n  font-size: 18px;\n  text-align:left;\n  margin: 8px 0px;\n}\n.date {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0;\n}\n", ""]);
 
 // exports
 
@@ -9346,14 +9348,34 @@ var render = function() {
                           [
                             _c(
                               "v-ons-list",
-                              [
-                                _c(
+                              _vm._l(_vm.entries, function(entry, index) {
+                                return _c(
                                   "v-ons-list-item",
-                                  { attrs: { modifier: "chevron" } },
-                                  [_c("div", [_vm._v("記事タイトル")])]
+                                  {
+                                    key: entry.link,
+                                    attrs: {
+                                      modifier: "chevron",
+                                      tappable: ""
+                                    },
+                                    on: {
+                                      click: function($event) {
+                                        _vm.openEntry(entry.link)
+                                      }
+                                    }
+                                  },
+                                  [
+                                    _c("div", { staticClass: "row" }, [
+                                      _c("p", { staticClass: "date" }, [
+                                        _vm._v(_vm._s(entry.date))
+                                      ]),
+                                      _vm._v(" "),
+                                      _c("p", { staticClass: "title" }, [
+                                        _vm._v(_vm._s(entry.title))
+                                      ])
+                                    ])
+                                  ]
                                 )
-                              ],
-                              1
+                              })
                             )
                           ],
                           1
