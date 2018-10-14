@@ -19,7 +19,8 @@ class BlogController extends Controller
    */
   public function index()
   {
-    $feed = FeedReader::read('http://rssblog.ameba.jp/tsubasa36th/rss20.xml');
+    $blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
+    $feed = FeedReader::read($blogRssUrl);
     $entries = [];
     foreach($feed->get_items() as $item) {
       $title = trim($item->get_title());

@@ -9273,7 +9273,7 @@ exports = module.exports = __webpack_require__(3)(false);
 
 
 // module
-exports.push([module.i, "\n.row {\n  width: 97%;\n}\n.title {\n  font-size: 18px;\n  text-align:left;\n  margin: 8px 0px;\n}\n.date {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0;\n}\n", ""]);
+exports.push([module.i, "\n.row {\n  width: 92%;\n}\n.title {\n  font-size: 18px;\n  text-align:left;\n  margin: 8px 0px;\n}\n.date {\n  color: grey;\n  font-size: 13px;\n  text-align: left;\n  margin: 0;\n}\n", ""]);
 
 // exports
 

@@ -137,7 +137,7 @@
 
 <style>
   .row {
-    width: 97%;
+    width: 92%;
   }
   .title {
     font-size: 18px;
