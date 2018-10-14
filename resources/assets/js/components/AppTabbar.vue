@@ -19,6 +19,7 @@
 <script>
 import Timeline from './Timeline.vue';
 import Calendar from './Calendar.vue';
+import Blog from './Blog.vue';
 import Members from './Members.vue';
 import Settings from './Settings.vue';
 
@@ -38,7 +39,7 @@ export default {
       tabs: [
         {
           label: 'タイムライン',
-          icon: 'fa-rss',
+          icon: 'fa-align-justify',
           page: Timeline,
           badge: 3
         },
@@ -46,6 +47,11 @@ export default {
           label: 'カレンダー',
           icon: 'fa-calendar',
           page: Calendar
+        },
+        {
+          label: 'ブログ',
+          icon: 'fa-rss',
+          page: Blog
         },
         {
           label: 'メンバー',

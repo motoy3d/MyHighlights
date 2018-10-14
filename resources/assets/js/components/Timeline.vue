@@ -21,7 +21,7 @@
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <v-ons-fab position="bottom right" v-if="!errored" ripple>
-      <v-ons-icon icon="fa-plus" @click="openPost();" ripple/>
+      <v-ons-icon icon="fa-plus" @click="openPost();" ripple></v-ons-icon>
     </v-ons-fab>
     <section v-if="errored">
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
