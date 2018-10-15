@@ -1520,6 +1520,11 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+//
+//
+//
 
 
 
@@ -1575,6 +1580,11 @@ if (false) {(function () {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Post_vue__ = __webpack_require__(150);
+//
+//
+//
+//
+//
 //
 //
 //
@@ -3613,6 +3623,7 @@ var vm = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
   beforeCreate: function beforeCreate() {
     // Shortcut for Material Design
     __WEBPACK_IMPORTED_MODULE_1_vue___default.a.prototype.md = this.$ons.platform.isAndroid();
+    __WEBPACK_IMPORTED_MODULE_1_vue___default.a.prototype.moment = moment;
 
     // Set iPhoneX flag based on URL
     if (window.location.search.match(/iphonex/i)) {
@@ -5643,7 +5654,7 @@ var render = function() {
                                   _vm._s(
                                     _vm._f("moment")(
                                       _vm.post.updated_at,
-                                      "YYYY.M.D H:mm"
+                                      "Y.M.D(dd) H:mm"
                                     )
                                   ) +
                                   "\n              　" +
@@ -5661,20 +5672,19 @@ var render = function() {
                               _vm._l(_vm.post_attachments, function(att) {
                                 return [
                                   _vm.isImage(att.file_type)
-                                    ? _c("div", { staticClass: "pt-10" }, [
+                                    ? _c("div", { staticClass: "mt-20" }, [
+                                        _c("img", {
+                                          staticClass: "image_in_post",
+                                          attrs: { src: att.file_path }
+                                        }),
+                                        _vm._v(" "),
                                         _c(
                                           "a",
-                                          {
-                                            attrs: {
-                                              href: att.file_path,
-                                              target: "_blank"
-                                            }
-                                          },
+                                          { attrs: { href: att.file_path } },
                                           [
-                                            _c("img", {
-                                              staticClass: "image_in_post",
-                                              attrs: { src: att.file_path }
-                                            })
+                                            _vm._v(
+                                              _vm._s(att.original_file_name)
+                                            )
                                           ]
                                         )
                                       ])
@@ -5997,17 +6007,38 @@ var render = function() {
                                         "span",
                                         { staticClass: "updated_at" },
                                         [
-                                          _vm._v(
-                                            "\n                " +
-                                              _vm._s(
-                                                _vm._f("moment")(
-                                                  comment.created_at,
-                                                  "from"
+                                          _vm
+                                            .moment(new Date())
+                                            .diff(
+                                              _vm.moment(comment.created_at),
+                                              "days"
+                                            ) <= 2
+                                            ? [
+                                                _vm._v(
+                                                  "\n                  " +
+                                                    _vm._s(
+                                                      _vm._f("moment")(
+                                                        comment.created_at,
+                                                        "from"
+                                                      )
+                                                    ) +
+                                                    "　\n                "
                                                 )
-                                              ) +
-                                              "　\n              "
-                                          )
-                                        ]
+                                              ]
+                                            : [
+                                                _vm._v(
+                                                  "\n                  " +
+                                                    _vm._s(
+                                                      _vm._f("moment")(
+                                                        comment.created_at,
+                                                        "Y.M.D(dd) H:mm"
+                                                      )
+                                                    ) +
+                                                    "\n                "
+                                                )
+                                              ]
+                                        ],
+                                        2
                                       )
                                     ]),
                                     _vm._v(" "),
@@ -7051,19 +7082,47 @@ var render = function() {
                                     1
                                   ),
                                   _vm._v(" "),
-                                  _c("p", { staticClass: "updated_at" }, [
-                                    _vm._v(
-                                      "\n                " +
-                                        _vm._s(
-                                          _vm._f("moment")(
-                                            post.updated_at,
-                                            "from"
-                                          )
-                                        ) +
-                                        "　\n                " +
-                                        _vm._s(post.updated_name)
-                                    )
-                                  ])
+                                  _c(
+                                    "p",
+                                    { staticClass: "updated_at" },
+                                    [
+                                      _vm
+                                        .moment(new Date())
+                                        .diff(
+                                          _vm.moment(post.updated_at),
+                                          "days"
+                                        ) <= 2
+                                        ? [
+                                            _vm._v(
+                                              "\n                  " +
+                                                _vm._s(
+                                                  _vm._f("moment")(
+                                                    post.updated_at,
+                                                    "from"
+                                                  )
+                                                ) +
+                                                "　\n                "
+                                            )
+                                          ]
+                                        : [
+                                            _vm._v(
+                                              "\n                  " +
+                                                _vm._s(
+                                                  _vm._f("moment")(
+                                                    post.updated_at,
+                                                    "Y.M.D(dd) H:mm"
+                                                  )
+                                                ) +
+                                                "\n                "
+                                            )
+                                          ],
+                                      _vm._v(
+                                        "\n                " +
+                                          _vm._s(post.updated_name)
+                                      )
+                                    ],
+                                    2
+                                  )
                                 ]),
                                 _vm._v(" "),
                                 _c("div", { staticClass: "entry_content" }, [
@@ -7082,7 +7141,8 @@ var render = function() {
                                             ? _c(
                                                 "v-ons-icon",
                                                 {
-                                                  staticClass: "small gray",
+                                                  staticClass:
+                                                    "small gray mr-10",
                                                   attrs: {
                                                     icon: "fa-comment-o"
                                                   }
@@ -7107,8 +7167,7 @@ var render = function() {
                                             ? _c(
                                                 "v-ons-icon",
                                                 {
-                                                  staticClass:
-                                                    "small gray ml-10",
+                                                  staticClass: "small gray",
                                                   attrs: { icon: "fa-list-alt" }
                                                 },
                                                 [

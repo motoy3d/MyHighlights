@@ -92,6 +92,7 @@ var vm = new Vue({
   beforeCreate() {
     // Shortcut for Material Design
     Vue.prototype.md = this.$ons.platform.isAndroid();
+    Vue.prototype.moment = moment;
 
     // Set iPhoneX flag based on URL
     if (window.location.search.match(/iphonex/i)) {

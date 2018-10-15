@@ -44,17 +44,22 @@
                   v-if="!post.read_flg"></v-ons-icon>
                   {{ post.title }}</p>
                 <p class="updated_at">
-                  {{ post.updated_at | moment("from") }}　
+                  <template v-if="moment(new Date()).diff(moment(post.updated_at), 'days') <= 2">
+                    {{ post.updated_at | moment("from") }}　
+                  </template>
+                  <template v-else>
+                    {{ post.updated_at | moment('Y.M.D(dd) H:mm') }}
+                  </template>
                   {{ post.updated_name }}</p>
               </div>
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
                 <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
-                  <v-ons-icon icon="fa-comment-o" class="small gray"
+                  <v-ons-icon icon="fa-comment-o" class="small gray mr-10"
                     v-if="post.comment_count">
                     <span class="ml-5">{{ post.comment_count }}</span>
                   </v-ons-icon>
-                  <v-ons-icon icon="fa-list-alt" class="small gray ml-10"
+                  <v-ons-icon icon="fa-list-alt" class="small gray"
                     v-if="post.questionnaire_id">
                     <span>アンケート</span>
                   </v-ons-icon>

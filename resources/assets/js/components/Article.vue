@@ -29,14 +29,14 @@
             <div class="entry_title_row">
               <p class="entry_title">{{ post.title }}</p>
               <p class="updated_at">
-                {{ post.updated_at | moment('YYYY.M.D H:mm') }}
+                {{ post.updated_at | moment('Y.M.D(dd) H:mm') }}
                 　{{ post.updated_name }}</p>
             </div>
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
-                <div v-if="isImage(att.file_type)" class="pt-10">
-                  <a :href="att.file_path" target="_blank">
-                    <img :src="att.file_path" class="image_in_post"></a>
+                <div v-if="isImage(att.file_type)" class="mt-20">
+                  <img :src="att.file_path" class="image_in_post">
+                  <a :href="att.file_path">{{ att.original_file_name }}</a>
                 </div>
                 <div v-else class="pt-10">
                   <a :href="att.file_path">{{ att.original_file_name }}</a>
@@ -120,7 +120,12 @@
                   {{ comment.name }}
                 </span>
                 <span class="updated_at">
-                  {{ comment.created_at | moment("from")}}　
+                  <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
+                    {{ comment.created_at | moment("from")}}　
+                  </template>
+                  <template v-else>
+                    {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
+                  </template>
                 </span>
               </div>
               <div>
