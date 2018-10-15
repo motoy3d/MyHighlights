@@ -43,15 +43,19 @@ class PostController extends Controller
         $join->on('posts.id', '=', 'post_responses.post_id');
         $join->where('post_responses.user_id', '=', Auth::id());
       })
-      ->leftJoin('users', function (JoinClause $join) {
-        $join->on('posts.updated_id', '=', 'users.id');
+      ->leftJoin('users as create_user', function (JoinClause $join) {
+        $join->on('posts.created_id', '=', 'create_user.id');
+      })
+      ->leftJoin('users as update_user', function (JoinClause $join) {
+        $join->on('posts.updated_id', '=', 'update_user.id');
       })
       ->select([
         'posts.*',
         'post_responses.read_flg',
         'post_responses.like_flg',
         'post_responses.star_flg',
-        'users.name as updated_name'])
+        'create_user.name as created_name',
+        'update_user.name as updated_name'])
       ->where('posts.team_id', Auth::user()->team_id)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
@@ -140,8 +144,11 @@ class PostController extends Controller
   {
     // 投稿
     $post = DB::table('posts')
-      ->leftJoin('users', 'posts.updated_id', '=', 'users.id')
-      ->select(['posts.*', 'users.name as updated_name'])
+      ->leftJoin('users as create_user',
+        'posts.created_id', '=', 'create_user.id')
+      ->leftJoin('users as update_user',
+        'posts.updated_id', '=', 'update_user.id')
+      ->select(['posts.*', 'create_user.name as created_name', 'update_user.name as updated_name'])
       ->where('posts.id',$id)
       ->where('posts.team_id',Auth::user()->team_id)
       ->first();

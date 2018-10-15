@@ -1538,9 +1538,9 @@ if (false) {(function () {
     loadMore: function loadMore(done) {
       this.$store.dispatch('timeline/loadMore', { 'http': this.$http, 'done': done });
     },
-    openArticle: function openArticle(post_id) {
-      // console.log("post_id=" + post_id);
-      this.$store.commit('article/setPostId', post_id);
+    openArticle: function openArticle(post) {
+      post.read_flg = true;
+      this.$store.commit('article/setPostId', post.id);
       this.$store.commit('navigator/push', {
         extends: __WEBPACK_IMPORTED_MODULE_0__Article_vue__["a" /* default */],
         onsNavigatorOptions: { animation: 'slide' }
@@ -5653,12 +5653,12 @@ var render = function() {
                                 "\n              " +
                                   _vm._s(
                                     _vm._f("moment")(
-                                      _vm.post.updated_at,
+                                      _vm.post.created_at,
                                       "Y.M.D(dd) H:mm"
                                     )
                                   ) +
                                   "\n              　" +
-                                  _vm._s(_vm.post.updated_name)
+                                  _vm._s(_vm.post.created_name)
                               )
                             ])
                           ]),
@@ -7055,7 +7055,7 @@ var render = function() {
                                 attrs: { tappable: "", modifier: "chevron" },
                                 on: {
                                   click: function($event) {
-                                    _vm.openArticle(post.id)
+                                    _vm.openArticle(post)
                                   }
                                 }
                               },

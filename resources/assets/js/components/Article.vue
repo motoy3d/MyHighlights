@@ -29,8 +29,8 @@
             <div class="entry_title_row">
               <p class="entry_title">{{ post.title }}</p>
               <p class="updated_at">
-                {{ post.updated_at | moment('Y.M.D(dd) H:mm') }}
-                　{{ post.updated_name }}</p>
+                {{ post.created_at | moment('Y.M.D(dd) H:mm') }}
+                　{{ post.created_name }}</p>
             </div>
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
