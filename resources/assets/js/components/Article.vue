@@ -200,7 +200,7 @@
     },
     methods: {
       load() {
-        console.log('start load');
+        // console.log('start load');
         this.loading = true;
         let post_id = this.$store.state.article.post_id;
         this.$http.get('/api/posts/' + post_id)
@@ -238,7 +238,7 @@
         }
         this.$http.post('/api/post_comments/' + post_id, formData)
           .then((response)=>{
-            console.log(response.data);
+            // console.log(response.data);
             self.comment_text = '';
             self.comment_files = [];
             self.load();
@@ -260,12 +260,12 @@
           });
       },
       deleteComment(comment_id) {
-        console.log("コメントID=" + comment_id);
+        // console.log("コメントID=" + comment_id);
         let post_id = this.$store.state.article.post_id;
         let self = this;
         self.$http.delete('/api/post_comments/' + post_id + '/' + comment_id)
           .then((response)=>{
-            console.log(response.data);
+            // console.log(response.data);
             self.load();
           })
           .catch(error => {
@@ -339,7 +339,7 @@
           form.append('answer', selections[answer]);
           self.$http.post('/api/questionnaires/answer', form)
             .then((response)=>{
-              console.log(response.data);
+              // console.log(response.data);
               self.load();
             })
             .catch(error => {
@@ -359,7 +359,7 @@
       },
       // ファイルが選択された時
       onFileSet(event) {
-        console.log("onFileSet.");
+        // console.log("onFileSet.");
         this.comment_files = event.target.files;
       },
       fitTextarea() {

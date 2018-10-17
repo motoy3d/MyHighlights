@@ -44,7 +44,7 @@
       let self = this;
       this.$http.get('api/blog')
         .then((response)=> {
-          console.log(response.data);
+          // console.log(response.data);
           this.entries = response.data;
         })
         .catch(error => {

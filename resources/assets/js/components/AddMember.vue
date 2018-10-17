@@ -77,11 +77,11 @@
         }
         this.$http.post('/api/members', this.$data)
           .then(response => {
-            console.log(response.data);
+            // console.log(response.data);
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status == 401) {
+            if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
           })

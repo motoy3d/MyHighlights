@@ -73,12 +73,12 @@ class ScheduleController extends Controller
       "team_id" => Auth::user()->team_id,
       "schedule_date" => $request->schedule_date,
       "title" => $request->title,
-      "allday_flg" => $request->allday_flg,
+      "allday_flg" => $request->allday_flg == 'true'? true : false,
       "time_from" => $request->time_from,
       "time_to" => $request->time_to,
       "category_id" => $request->category_id,
       "content" => $request->contents,
-      "notification_flg" => $request->notification_flg,
+      "notification_flg" => $request->notification_flg == 'true'? true : false,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
@@ -105,12 +105,12 @@ class ScheduleController extends Controller
 
     $schedule->schedule_date = $request->schedule_date;
     $schedule->title = $request->title;
-    $schedule->allday_flg = $request->allday_flg;
+    $schedule->allday_flg = $request->allday_flg == 'true'? true : false;
     $schedule->time_from = $request->time_from;
     $schedule->time_to = $request->time_to;
     $schedule->category_id = $request->category_id;
     $schedule->content = $request->contents;
-    $schedule->notification_flg = $request->notification_flg;
+    $schedule->notification_flg = $request->notification_flg == 'true'? true : false;
     $schedule->updated_id = Auth::id();
     $schedule = $schedule->save();
     return Response::json($schedule);

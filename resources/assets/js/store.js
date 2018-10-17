@@ -137,6 +137,43 @@ export default {
           state.loading = isLoading;
         }
       }
+    },
+
+    // カレンダー画面
+    calendar: {
+      strict: true,
+      namespaced: true,
+      state: {
+        loading: false,
+        schedules: null
+      },
+      mutations: {
+        set(state, schedules) {
+          state.schedules = schedules;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      },
+      actions: {
+        load(context, $http) {
+          console.log('calendar/load');
+          context.commit('setLoading', true);
+          var yearMonth = window.fn.dateFormat.format(new Date(), 'yyyyMM');
+          $http.get('/api/schedules?month=' + yearMonth)
+            .then((response)=>{
+              context.commit('set', response.data);
+            })
+            .catch(error => {
+              console.log(error);
+              if (error.response.status === 401) {
+                window.location.href = "/login";
+              }
+            })
+            .finally(() => context.commit('setLoading', false))
+          ;
+        }
+      }
     }
   }
 };

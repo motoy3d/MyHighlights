@@ -1,5 +1,5 @@
 <template>
-  <v-ons-page>
+  <v-ons-page @reload="load()">
     <v-ons-toolbar class="navbar">
       <div class="left">
         <img src="/img/appicon2.png" class="logo">
@@ -23,16 +23,6 @@
       <form id="calendarForm" action="#" method="POST">
         <div class="center">
           <table class="calendar-table calendar">
-            <!--<caption>-->
-              <!--<div>-->
-                <!--<a href="#" class="prev" @click="goPrevMonth()">-->
-                  <!--<i class="fa fa-caret-left"></i> {{ prevMonthText }}-->
-                <!--</a>-->
-                <!--<a href="#" class="next" @click="goNextMonth()">{{ nextMonthText }}-->
-                  <!--<i class="fa fa-caret-right"></i>-->
-                <!--</a>-->
-              <!--</div>-->
-            <!--</caption>-->
             <tbody @click="selectDate()">
               <tr>
                 <th class="day-head day0">日</th>
@@ -45,42 +35,48 @@
               </tr>
               <tr>
                 <td v-bind:data-date="days[n-1].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[n-1].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' ' +
+                    (days[n-1].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[n-1].text"></span>
                 </td>
               </tr>
               <tr>
                 <td v-bind:data-date="days[(n-1)+7].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[(n-1)+7].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (days[(n-1)+7].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[(n-1)+7].text"></span>
                 </td>
               </tr>
               <tr>
                 <td v-bind:data-date="days[(n-1)+14].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[(n-1)+14].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (days[(n-1)+14].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[(n-1)+14].text"></span>
                 </td>
               </tr>
               <tr>
                 <td v-bind:data-date="days[(n-1)+21].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[(n-1)+21].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (days[(n-1)+21].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[(n-1)+21].text"></span>
                 </td>
               </tr>
               <tr>
                 <td v-bind:data-date="days[(n-1)+28].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[(n-1)+28].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (days[(n-1)+28].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[(n-1)+28].text"></span>
                 </td>
               </tr>
               <tr>
                 <td v-bind:data-date="days[(n-1)+35].date"
-                    v-bind:class="'day' + (n-1) + ' ' + (days[(n-1)+35].date == selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7">
                   <span v-html="days[(n-1)+35].text"></span>
                 </td>
@@ -118,7 +114,7 @@
             </div>
           </ons-list-item>
         </template>
-        <v-ons-list-item v-if="selectedDate && selectedDateSchedules.length == 0">
+        <v-ons-list-item v-if="selectedDate && selectedDateSchedules.length === 0">
           <div class="top list-item__top">
             予定はありません。
           </div>
@@ -131,38 +127,50 @@
 <script>
   import AddSchedule from './AddSchedule.vue';
   export default {
-    beforeCreate() {
-      // console.log('>>>>> Calendar#beforeCreate');
-    },
     data() {
       // console.log(">>>>> Calendar#data()");
       var today = new Date();
       return {
-        schedules: {},
-        selectedDate: window.fn.dateFormat.format(today, 'yyyy-MM-dd'),
-        selectedDateSchedules: [],
+        errored: false,
+        selectedDate: this.moment(today).format('YYYY-MM-DD'),
         currentYear: today.getFullYear(),
         currentMonth: today.getMonth()
       }
     },
     beforeMount() {
-      // console.log('>>>>> Calendar#beforeMount');
-      this.load();
+      // APIからデータ取得(AddSchedule.vueからも呼ばれるのでVuexで処理)
+      this.$store.dispatch('calendar/load', this.$http);
     },
     computed: {
+      schedules : {
+        get() { return this.$store.state.calendar.schedules; }
+      },
       currentYearMonthText: {
         get() { return this.currentYear + '年' + (this.currentMonth + 1) + '月'; }
       },
       prevMonthText: {
-        get() { return (this.currentMonth == 0 ? 12 : this.currentMonth) + '月'; }
+        get() { return (this.currentMonth === 0 ? 12 : this.currentMonth) + '月'; }
       },
       nextMonthText: {
-        get() { return (this.currentMonth == 11 ? 1 : this.currentMonth + 2) + '月'; }
+        get() { return (this.currentMonth === 11 ? 1 : this.currentMonth + 2) + '月'; }
       },
       selectedDateText: {
         get() {
           return this.selectedDate?
             window.fn.dateFormat.format(new Date(this.selectedDate), "yyyy年M月d日(w)") : ""; }
+      },
+      selectedDateSchedules: {
+        get() {
+          let selectedDateSchedules = [];
+          if (this.schedules) {
+            for (var s=0; s<this.schedules.length; s++) {
+              if (this.selectedDate === this.schedules[s].schedule_date) {
+                selectedDateSchedules.push(this.schedules[s]);
+              }
+            }
+          }
+          return selectedDateSchedules;
+        }
       },
       days: { //スケジュールが入った日毎の配列
         get() {
@@ -178,8 +186,10 @@
             dayArray[dayArrayIdx + d] = { date: dateText, text: d + 1 };
             if (this.schedules) {
               for (var s=0; s<this.schedules.length; s++) {
-                if (dateText == this.schedules[s].schedule_date) {
-                  dayArray[dayArrayIdx + d].text += '<br>' + this.schedules[s].title;
+                let sche = this.schedules[s];
+                if (dateText === sche.schedule_date) {
+                  let time = sche.allday_flg? '' : this.formatTime(sche.time_from) + ' ';
+                  dayArray[dayArrayIdx + d].text += '<br>' + time + sche.title;
                 }
               }
             }
@@ -189,28 +199,8 @@
       }
     },
     methods: {
-      /**
-       * APIをコールしてスケジュールデータを取得する
-       */
-      load() {
-        // console.log(">>>>> Calendar#load()");
-        var yearMonth = window.fn.dateFormat.format(new Date(), 'yyyyMM');
-        this.$http.get('/api/schedules?month=' + yearMonth)
-          .then((response)=>{
-            this.schedules = response.data
-            console.log(this.schedules);
-          })
-          .catch(error => {
-            console.log(error);
-            this.errored = true;
-            if (error.response.status == 401) {
-              window.location.href = "/login"; return;
-            }
-          })
-          .finally(() => this.loading = false);
-      },
       goPrevMonth() {
-        if(this.currentMonth == 0) {
+        if(this.currentMonth === 0) {
           this.currentYear--;
           this.currentMonth = 11;
         } else {
@@ -219,7 +209,7 @@
         this.selectedDate = null;
       },
       goNextMonth() {
-        if(this.currentMonth == 11) {
+        if(this.currentMonth === 11) {
           this.currentYear++;
           this.currentMonth = 0;
         } else {
@@ -234,7 +224,7 @@
       selectDate(e) {
         var evt = e || window.event;
         var target = $(evt.target || evt.srcElement);
-        if (target.prop('tagName') == 'SPAN') {
+        if (target.prop('tagName') === 'SPAN') {
           target = target.parent(); //タップする場所によってSPANかTDになるがTDで処理するため。
         }
         // jQueryのdata()メソッドはキャッシュしてしまうので使わない。
@@ -244,14 +234,6 @@
           return;
         }
         this.selectedDate = td.getAttribute('data-date');
-        this.selectedDateSchedules = [];
-        if (this.schedules) {
-          for (var s=0; s<this.schedules.length; s++) {
-            if (this.selectedDate == this.schedules[s].schedule_date) {
-              this.selectedDateSchedules.push(this.schedules[s]);
-            }
-          }
-        }
       },
       openAddSchedule() {
         this.$store.commit('navigator/push', {
@@ -260,7 +242,8 @@
         });
       },
       formatTime(time) {
-        return time.substring(0, 5);
+        if (!time) return '';
+        return this.moment(time, 'HH:mm:ss').format('H:mm');
       }
     }
   }

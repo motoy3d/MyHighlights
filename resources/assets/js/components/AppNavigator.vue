@@ -13,7 +13,7 @@
   import AppTabbar from './AppTabbar.vue';
   export default {
     beforeCreate() {
-      console.log("AppNavigator#beforeCreate");
+      // console.log("AppNavigator#beforeCreate");
       this.$store.commit('navigator/push', AppTabbar);
     },
     data() {

@@ -57,7 +57,7 @@
     computed: {
       isOpen: {
         get() {
-          console.log("isOpen.get");
+          // console.log("isOpen.get");
           return this.$store.state.splitter.open;
         },
         set(newValue) {
@@ -68,15 +68,15 @@
     },
     methods: {
       loadView(pageName) {
-        if (pageName == 'Timeline') {
+        if (pageName === 'Timeline') {
           this.currentPage = Timeline;
-        } else if (pageName == 'Notifications') {
+        } else if (pageName === 'Notifications') {
           this.currentPage = Notifications;
-        } else if (pageName == 'Members') {
+        } else if (pageName === 'Members') {
           this.currentPage = Members;
-        } else if (pageName == 'Settings') {
+        } else if (pageName === 'Settings') {
           this.currentPage = Settings;
-        } else if (pageName == 'Contact') {
+        } else if (pageName === 'Contact') {
           this.currentPage = Contact;
         }
         this.$store.commit('splitter/toggle');

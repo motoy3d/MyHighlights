@@ -138,8 +138,8 @@
         .catch(error => {
           console.log(error);
           this.errored = true;
-          if (error.response.status == 401) {
-            window.location.href = "/login"; return;
+          if (error.response.status === 401) {
+            window.location.href = "/login";
           }
         })
         .finally(() => this.loading = false);
@@ -147,6 +147,7 @@
     data() {
       return {
         loading: false,
+        errored: false,
         posting: false,
         categories: null,
         title: "",
@@ -194,7 +195,7 @@
         // 送信
         this.$http.post('/api/posts', formData)
           .then(response => {
-            console.log(response.data);
+            // console.log(response.data);
             this.$ons.notification.alert('投稿しました', {title: ''})
               .then(function(){
                 self.afterPost();
@@ -202,8 +203,8 @@
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status == 401) {
-              window.location.href = "/login"; return;
+            if (error.response.status === 401) {
+              window.location.href = "/login";
             }
           })
           .finally(() => {this.loading = false; this.posting = false;});
@@ -214,13 +215,13 @@
       },
       // ファイルが選択された時
       onFileSet(event) {
-        console.log("onFileSet.");
+        // console.log("onFileSet.");
         this.files = event.target.files;
         this.fileNames = [];
         for (let i=0; i<this.files.length; i++) {
           this.fileNames.push(this.files[i].name);
         }
-        console.log(this.files);
+        // console.log(this.files);
       },
       showQuestionnaireModal() {
         this.questionnaire_title_tmp = this.questionnaire_title;

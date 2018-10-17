@@ -19,10 +19,10 @@
                     <input id="dateForAdd" class="text-input text-input--border js__datepicker" 
                     name="dateForAdd" type="text" value="2018/03/31"/>-->
             <v-ons-input id="dateForAdd" class="text-input text-input--border"
-                       name="dateForAdd" type="date" value="2018/05/31"></v-ons-input>
+                       name="dateForAdd" type="date" v-model="schedule_date"></v-ons-input>
           </v-ons-col>
           <v-ons-col>
-            <v-ons-switch id="allday_switch" value="1"></v-ons-switch>
+            <v-ons-switch id="allday_switch" v-model="allday_flg"></v-ons-switch>
             <label for="allday_switch" class="ml-5 mt-10">終日</label>
           </v-ons-col>
         </v-ons-row>
@@ -35,24 +35,33 @@
                  〜 
                 <input id="endTimeForAdd" class="text-input text-input--border js__timepicker" name="endTimeForAdd" type="text" value=""/>
                 -->
-          <v-ons-input class="time_input" modifier="border" type="time" id="startTimeForAdd"></v-ons-input>
+          <v-ons-input class="time_input" modifier="border" type="time"
+                       v-model="time_from" :disabled="allday_flg"></v-ons-input>
           <div class="plr-10 pt-10">〜</div>
-          <v-ons-input class="time_input" modifier="border" type="time" id="endTimeForAdd"></v-ons-input>
+          <v-ons-input class="time_input" modifier="border" type="time"
+                       v-model="time_to" :disabled="allday_flg"></v-ons-input>
         </v-ons-row>
         <v-ons-row class="space">
-          <v-ons-input modifier="border" name="title" type="text" class="w-100p" placeholder="件名"></v-ons-input>
+          <v-ons-input modifier="border" name="title" type="text" class="w-100p"
+                       placeholder="件名" v-model="title"></v-ons-input>
         </v-ons-row>
         <div class="space">
-          <select id="category" name="category" class="select-input select-input--underbar">
-            <option>練習</option>
-            <option>練習試合</option>
-            <option>公式試合</option>
-            <option>イベント</option>
-            <option>その他</option>
-          </select>
+          <v-ons-select v-model="selected_category">
+            <option v-for="cate in categories" :value="cate.id">
+              {{ cate.name }}
+            </option>
+          </v-ons-select>
         </div>
         <div class="space">
-          <textarea class="textarea w-100p" rows="7" placeholder="詳細"></textarea>
+          <textarea class="textarea w-100p" rows="7" placeholder="詳細"
+                    v-model="contents"></textarea>
+        </div>
+        <div class="mb-10" v-if="0 < fileNames.length">
+          <ul>
+            <li v-for="(file, index) in fileNames" class="mtb-10 break">
+              {{ file }}
+            </li>
+          </ul>
         </div>
         <div class="space">
           <div class="upload-btn-wrapper">
@@ -61,11 +70,14 @@
           </div>
         </div>
         <div class="space">
-          みんなに通知 <v-ons-switch checked></v-ons-switch>
+          みんなに通知 <v-ons-switch v-model="notification_flg"></v-ons-switch>
         </div>
         <div class="space">
-          <v-ons-button class="mtb-20" modifier="large"
-                        @click="$store.commit('navigator/pop');">登録</v-ons-button>
+          <v-ons-button id="postBtn" class="mtb-20" modifier="large"
+                        @click="addSchedule()" :disabled="posting">
+            <v-ons-icon icon="fa-spinner" spin v-if="posting"></v-ons-icon>
+            投稿
+          </v-ons-button>
         </div>
       </form>
     </div>
@@ -75,10 +87,96 @@
 <script>
   export default {
     beforeCreate() {
+      this.$http.get('/api/schedules/create')
+        .then((response)=>{
+          this.categories = response.data.categories
+        })
+        .catch(error => {
+          console.log(error);
+          this.errored = true;
+          if (error.response.status === 401) {
+            window.location.href = "/login";
+          }
+        })
+        .finally(() => this.loading = false);
       // $('#dateForAdd').pickadate();
       // $('#startHourForAdd').pickatime({format:'H時', interval:60});
       // $('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
       // $('#endTimeForAdd').pickatime();
+    },
+    data() {
+      return {
+        loading: false,
+        errored: false,
+        posting: false,
+        schedule_date: null,
+        allday_flg: false,
+        time_from: '',
+        time_to: '',
+        title: '',
+        categories: [],
+        selected_category: null,
+        category_id: null,
+        contents: '',
+        files: [],
+        fileNames: [],
+        notification_flg: false
+      };
+    },
+    methods: {
+      // ファイルが選択された時
+      onFileSet(event) {
+        // console.log("onFileSet.");
+        this.files = event.target.files;
+        this.fileNames = [];
+        for (let i=0; i<this.files.length; i++) {
+          this.fileNames.push(this.files[i].name);
+        }
+        // console.log(this.files);
+      },
+      addSchedule() {
+        //TODO validate
+        if (this.posting) {
+          return;
+        }
+        if (!this.title) {this.$ons.notification.alert('タイトルを入れてください', {title: ''});return;}
+        this.posting = true;
+        this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
+        let self = this;
+        // 送信フォームデータ準備
+        let formData = new FormData();
+        formData.append('title', this.title);
+        formData.append('schedule_date', this.schedule_date);
+        formData.append('allday_flg', this.allday_flg);
+        formData.append('time_from', this.time_from);
+        formData.append('time_to', this.time_to);
+        formData.append('contents', this.contents);
+        formData.append('category_id', this.category_id);
+        formData.append('notification_flg', this.notification_flg);
+        for(let i = 0; i < this.files.length; i++) {
+          formData.append('files[]', this.files[i]);
+        }
+        // console.log('送信フォーム');
+        // console.log(this.$data);
+        // 送信
+        this.$http.post('/api/schedules', formData)
+          .then(response => {
+            // console.log(response.data);
+            // TODO toastの方がよいか
+            this.$ons.notification.alert('登録しました', {title: ''})
+              .then(function(){
+                self.$store.dispatch('calendar/load', self.$http);
+                self.$store.commit('navigator/pop');
+              });
+          })
+          .catch(error => {
+            console.log(error.response);
+            if (error.response.status === 401) {
+              window.location.href = "/login";
+            }
+          })
+          .finally(() => {this.loading = false; this.posting = false;});
+      }
     }
   };
 </script>
