@@ -5,14 +5,14 @@
     <v-ons-toolbar class="navbar">
       <div class="left ml-5">
         <v-ons-toolbar-button @click="$store.commit('navigator/pop');">
-          <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
+          <v-ons-icon icon="fa-angle-left" class="white" size="32px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
-      <!--<div class="right mr-5">-->
-        <!--<v-ons-toolbar-button>-->
-          <!--<v-ons-icon icon="fa-pencil" class="white" size="24px"></v-ons-icon>-->
-        <!--</v-ons-toolbar-button>-->
-      <!--</div>-->
+      <div class="right mr-5">
+        <v-ons-toolbar-button>
+          <v-ons-icon icon="fa-pen" class="white" size="20px"></v-ons-icon>
+        </v-ons-toolbar-button>
+      </div>
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
@@ -50,11 +50,6 @@
           <v-ons-col>
             <p class="bold mb-0"><v-ons-icon icon="fa-list-alt" class="black"></v-ons-icon>
               {{ questionnaire.title }}</p>
-            <!-- ActionSheetで入力するので不要
-                  <div class="mt-5">
-                    <v-ons-button class="smallBtn" modifier="outline" onclick="showQuestionnaireModal();">
-                      アンケートに回答する</v-ons-button>
-                  </div>-->
             <div>
               <table class="questionnaire_table">
                 <tr><th></th><th>◯</th><th>△</th><th>✕</th><th></th></tr>

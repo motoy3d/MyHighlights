@@ -3,7 +3,7 @@
     <v-ons-toolbar class="navbar">
       <div class="left ml-5">
         <v-ons-toolbar-button @click="$store.commit('navigator/pop');">
-          <v-ons-icon icon="fa-chevron-left" class="white" size="24px"></v-ons-icon>
+          <v-ons-icon icon="fa-angle-left" class="white" size="32px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
       <div class="center navbartitle">

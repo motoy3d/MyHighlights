@@ -24,6 +24,9 @@
 <body class="bg-white">
   <ons-page id="login_page">
     <ons-toolbar class="navbar" class="bg-white">
+      <div class="left">
+        <img src="/img/appicon2.png" class="logo">
+      </div>
       <div class="center">
         <span class="white">横浜SCつばさ　ログイン</span>
       </div>
@@ -33,9 +36,6 @@
         @csrf
         <div class="col bg-white center" style="padding: 30% 0 0 0">
           <div class="space">
-            {{--<ons-input modifier="border" placeholder="メールアドレス" id="login_id"--}}
-                       {{--class="login_field mt-20"></ons-input>--}}
-
             <ons-input id="email" type="email" modifier="border" placeholder="メールアドレス"
                        class="w-80p form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
                        name="email" value="{{ old('email') }}" required autofocus>
@@ -47,8 +47,6 @@
             @endif
           </div>
           <div class="space">
-            {{--<ons-input modifier="border" placeholder="パスワード" id="password"--}}
-                       {{--class="login_field"></ons-input>--}}
             <ons-input id="password" type="password" modifier="border" placeholder="パスワード"
                        class="w-80p form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
                        name="password" required>
