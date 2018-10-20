@@ -8951,7 +8951,11 @@ var render = function() {
             [
               _c(
                 "v-ons-alert-dialog-button",
-                { attrs: { onclick: "location.href='login'" } },
+                {
+                  attrs: {
+                    onclick: "document.getElementById('logout-form').submit();"
+                  }
+                },
                 [_vm._v("OK")]
               ),
               _vm._v(" "),

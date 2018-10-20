@@ -23,6 +23,9 @@
 </head>
 <body>
   <div id="app"></div>
+  <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+    @csrf
+  </form>
   <script src="{{ mix('js/manifest.js') }}"></script>
   <script src="{{ mix('js/vendor.js') }}"></script>
   <script src="{{ mix('js/app.js') }}"></script>
