@@ -37,7 +37,7 @@
         <div class="col bg-white center" style="padding: 30% 0 0 0">
           <div class="space">
             <ons-input id="email" type="email" modifier="border" placeholder="メールアドレス"
-                       class="w-80p form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
+                       class="login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
                        name="email" value="{{ old('email') }}" required autofocus>
             </ons-input>
             @if ($errors->has('email'))
@@ -48,7 +48,7 @@
           </div>
           <div class="space">
             <ons-input id="password" type="password" modifier="border" placeholder="パスワード"
-                       class="w-80p form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
+                       class="login_field form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
                        name="password" required>
             </ons-input>
             @if ($errors->has('password'))

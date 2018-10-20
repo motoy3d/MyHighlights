@@ -364,6 +364,12 @@ textarea {
   height: 40px;
   padding: 5px; }
 
+.text-input--border:invalid {
+  border: 1px lightgray solid;
+  border-radius: 4px;
+  height: 40px;
+  padding: 5px; }
+
 .logo {
   width: 38px;
   margin: 1px 0 1px 1px; }
