@@ -6,6 +6,7 @@ use App\Category;
 use App\Config;
 use App\Post;
 use App\PostAttachment;
+use App\PostComment;
 use App\PostCommentAttachment;
 use App\PostResponse;
 use App\Questionnaire;
@@ -302,8 +303,25 @@ class PostController extends Controller
     if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
-    $count = Post::destroy($id);
-    $result = ["deleted_count" => $count];
-    return Response::json($result);
+    // TODO 削除権限どうするか。投稿者＋管理者？
+    DB::transaction(function () use ($post) {
+      $count = Post::destroy($post->id);
+      $result = ["deleted_count" => $count];
+      // 関連テーブルデータ削除
+      DB::table('post_attachments')->where('post_id', $post->id)->delete();
+      DB::table('post_comments')->where('post_id', $post->id)->delete();
+//TODO      DB::table('post_comment_attachments')->where('post_id', $post->id)->delete();
+      DB::table('post_responses')->where('post_id', $post->id)->delete();
+      if ($post->questionnaire_id != 0) {
+        $questionnaire = Questionnaire::findOrFail($post->questionnaire_id);
+        DB::table('questionnaire_answers')->where('questionnaire_id', $questionnaire->id)->delete();
+        $questionnaire->delete();
+      }
+
+      //TODO post_attachmentsの添付ファイル実体削除
+      //TODO post_comment_attachmentsの添付ファイル実体削除
+
+      return Response::json($result);
+    });
   }
 }

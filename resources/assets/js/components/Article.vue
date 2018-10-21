@@ -8,11 +8,12 @@
           <v-ons-icon icon="fa-angle-left" class="white" size="32px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
-      <div class="right mr-5">
-        <v-ons-toolbar-button>
-          <v-ons-icon icon="fa-pen" class="white" size="20px"></v-ons-icon>
-        </v-ons-toolbar-button>
-      </div>
+      <!-- 実装あとで -->
+      <!--<div class="right mr-5">-->
+        <!--<v-ons-toolbar-button>-->
+          <!--<v-ons-icon icon="fa-pen" class="white" size="20px" @click="openEditPost()"></v-ons-icon>-->
+        <!--</v-ons-toolbar-button>-->
+      <!--</div>-->
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
@@ -72,7 +73,7 @@
         <v-ons-row class="space">
           <v-ons-col class="bordertop">
             <div class="mt-10 ml-5">
-              <v-ons-icon :icon="isHeartOn? 'fa-heart' : 'fa-heart-o'" class="heart"
+              <v-ons-icon icon="fa-heart" class="heart" :style="isHeartOn? '' : 'font-weight:400'"
                           @click="toggleHeart();">
                 <span class="heart_text">いいね</span>
                 <span class="heart-count" v-if="heartCount">{{ heartCount }}</span>
@@ -126,8 +127,8 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id === user.id">
-                    <v-ons-icon icon="fa-trash-o" class="delete_comment_icon"
+                  <span v-if="comment.user_id == user.id">
+                    <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
                   <p v-for="att in comment.attachments">
@@ -147,13 +148,22 @@
             </div>
           </v-ons-col>
         </v-ons-row>
+        <v-ons-row v-if="post.created_id == user.id">
+          <v-ons-col class="space">
+            <v-ons-button class="mtb-20 red" modifier="large--quiet"
+                          @click="confirmDeletePost()" :disabled="deleting">
+              <v-ons-icon icon="fa-spinner" spin v-if="deleting" class="gray"></v-ons-icon>
+              この投稿を削除
+            </v-ons-button>
+          </v-ons-col>
+        </v-ons-row>
       </template>
     </section>
   </v-ons-page>
 </template>
 
 <script>
-  import Post from './Post.vue';
+  import EditPost from './EditPost.vue';
   export default {
     mounted() {
       this.load();
@@ -172,12 +182,13 @@
         likes: [],
         user: {},
         loading: false,
+        deleting: false,
         errored: false
       }
     },
     computed: {
       isHeartOn: {
-        get() {return this.post_responses.like_flg;},
+        get() {console.log('isHeartOn='+this.post_responses.like_flg);return this.post_responses.like_flg;},
         set(like_flg) {this.post_responses.like_flg = like_flg;}
       },
       heartCount: {
@@ -191,7 +202,7 @@
       starCount: {
         get() {return this.post.star_count;},
         set(star_count) {this.post.star_count = star_count;}
-      },
+      }
     },
     methods: {
       load() {
@@ -265,17 +276,16 @@
           })
           .catch(error => {
             console.log(error);
-            errored = true;
+            self.errored = true;
             if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
           })
           .finally(() => self.loading = false);
       },
-      openPost() {
-        this.$store.commit('post/setPostId', post_id);
+      openEditPost() {
         this.$store.commit('navigator/push', {
-          extends: Post,
+          extends: EditPost,
           onsNavigatorOptions: {animation: 'lift'}
         });
       },
@@ -364,6 +374,40 @@
         } else {
           event.srcElement.rows = 3;
         }
+      },
+      confirmDeletePost() {
+        let self = this;
+        this.$ons.notification.confirm("この投稿を削除しますか？", {title: ''})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.deletePost(self.$store.state.article.post_id);
+          });
+      },
+      deletePost() {
+        this.deleting = true;
+        let post_id = this.$store.state.article.post_id;
+        let self = this;
+        self.$http.delete('/api/posts/' + post_id)
+          .then((response)=>{
+            // console.log(response.data);
+            this.$ons.notification.alert('削除しました', {title: ''})
+              .then(function(){
+                self.afterDelete();
+              });
+          })
+          .catch(error => {
+            console.log(error);
+            self.errored = true;
+            if (error.response.status === 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          .finally(() => self.loading = false);
+      },
+      afterDelete() {
+        this.deleting = false;
+        this.$store.commit('navigator/pop');
+        this.$store.dispatch('timeline/load', this.$http);
       }
     }
   };

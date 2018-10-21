@@ -10,7 +10,7 @@
       </div>
       <div class="right mr-5">
         <v-ons-toolbar-button @click="$store.dispatch('timeline/load', $http)">
-          <v-ons-icon icon="fa-refresh" size="24px" class="white"></v-ons-icon>
+          <v-ons-icon icon="fa-refresh" size="20px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
@@ -55,8 +55,8 @@
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
                 <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
-                  <v-ons-icon icon="fa-comment-o" class="small gray mr-10"
-                    v-if="post.comment_count">
+                  <v-ons-icon icon="fa-comment" class="small gray mr-10"
+                    v-if="post.comment_count" style="font-weight:400">
                     <span class="ml-5">{{ post.comment_count }}</span>
                   </v-ons-icon>
                   <v-ons-icon icon="fa-list-alt" class="small gray"

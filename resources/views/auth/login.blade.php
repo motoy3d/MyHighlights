@@ -62,7 +62,7 @@
                         onclick="document.getElementById('login_form').submit()">ログイン</ons-button>
           </div>
           <div class="center mt-20">
-            <a href="#" class="gray small">パスワードを忘れた場合はこちら</a>
+            <a href="password/reset" class="gray small">パスワードを忘れた場合はこちら</a>
           </div>
         </div>
         {{--<hr class="login_hr">--}}

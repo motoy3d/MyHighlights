@@ -131,9 +131,33 @@
 <script>
   export default {
     beforeCreate() {
+      this.loading = true;
       this.$http.get('/api/posts/create')
         .then((response)=>{
           this.categories = response.data.categories
+        })
+        .catch(error => {
+          console.log(error);
+          this.errored = true;
+          if (error.response.status === 401) {
+            window.location.href = "/login";
+          }
+        })
+        .finally(() => this.loading = false);
+      console.log('start load');
+
+      let post_id = this.$store.state.article.post_id;
+      this.$http.get('/api/posts/' + post_id)
+        .then((response)=>{
+          let post = response.data.post;
+          console.log(post);
+          this.title = post.title;
+          this.contents = post.content;
+          this.notification_flg = post.notification_flg === 1;
+          this.post_attachments = response.data.post_attachments;
+          this.questionnaire = response.data.questionnaire;
+          this.user = response.data.user;
+          this.loading = false;
         })
         .catch(error => {
           console.log(error);
@@ -161,6 +185,11 @@
         questionnaire_title: null,
         questionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
         questionnaire_selections: [{text:''}, {text:''}, {text:''}]
+      }
+    },
+    computed: {
+      postBtnColor: {
+        get() {return this.posting? "white" : "";}
       }
     },
     methods: {
