@@ -37,10 +37,19 @@
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-20">
                   <img :src="att.file_path" class="image_in_post">
-                  <a :href="att.file_path">{{ att.original_file_name }}</a>
+                  <div>
+                    <a :href="att.file_path" :download="att.original_file_name">
+                      <v-ons-icon icon="fa-download" class="fl-right lightgray"
+                                  size="22px"></v-ons-icon>
+                    </a>
+                  </div>
                 </div>
                 <div v-else class="pt-10">
-                  <a :href="att.file_path">{{ att.original_file_name }}</a>
+                  <span>{{ att.original_file_name }}</span>
+                  <a :href="att.file_path">
+                    <v-ons-icon icon="fa-download" class="fl-right lightgray"
+                              size="22px"></v-ons-icon>
+                  </a>
                 </div>
               </template>
             </div>
