@@ -6,18 +6,18 @@
       </div>
       <div class="center navbartitle">
         <span class="month_text mr-20" @click="goPrevMonth()">
-          <v-ons-icon icon="fa-caret-left" size="24px"/>
+          <v-ons-icon icon="fa-caret-left" size="24px"></v-ons-icon>
           {{ prevMonthText }}
         </span>
         <span class="current_year_month">{{ currentYearMonthText }}</span>
         <span class="month_text ml-20" @click="goNextMonth()">
           {{ nextMonthText }}
-          <v-ons-icon icon="fa-caret-right" size="24px"/>
+          <v-ons-icon icon="fa-caret-right" size="24px"></v-ons-icon>
         </span>
       </div>
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
-      <v-ons-icon icon="fa-plus" @click="openAddSchedule();"/>
+      <v-ons-icon icon="fa-plus" @click="openAddSchedule();"></v-ons-icon>
     </v-ons-fab>
     <div>
       <form id="calendarForm" action="#" method="POST">
@@ -121,6 +121,7 @@
         </v-ons-list-item>
       </v-ons-list>
     </div>
+    <div class="lastspace"></div>
   </v-ons-page>
 </template>
 
@@ -175,17 +176,17 @@
       days: { //スケジュールが入った日毎の配列
         get() {
           // console.log(">>>>> Calendar#computed");
-          var dayArray = new Array(42); //6週分
+          let dayArray = new Array(42); //6週分
           dayArray.fill({ date: '', text: '' });
-          var firstDay = new Date(this.currentYear, this.currentMonth, 1);
-          var dayArrayIdx = firstDay.getDay(); //1日の曜日
-          var lastDate = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
-          for (var d=0; d<lastDate; d++) {
-            var dateText = this.currentYear + '-' + (('0' + (this.currentMonth + 1)).slice(-2))
+          let firstDay = new Date(this.currentYear, this.currentMonth, 1);
+          let dayArrayIdx = firstDay.getDay(); //1日の曜日
+          let lastDate = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+          for (let d=0; d<lastDate; d++) {
+            let dateText = this.currentYear + '-' + (('0' + (this.currentMonth + 1)).slice(-2))
               + '-' + (('0' + (d + 1)).slice(-2));
             dayArray[dayArrayIdx + d] = { date: dateText, text: d + 1 };
             if (this.schedules) {
-              for (var s=0; s<this.schedules.length; s++) {
+              for (let s=0; s<this.schedules.length; s++) {
                 let sche = this.schedules[s];
                 if (dateText === sche.schedule_date) {
                   let time = sche.allday_flg? '' : this.formatTime(sche.time_from) + ' ';
@@ -222,14 +223,14 @@
        * @param e
        */
       selectDate(e) {
-        var evt = e || window.event;
-        var target = $(evt.target || evt.srcElement);
+        let evt = e || window.event;
+        let target = $(evt.target || evt.srcElement);
         if (target.prop('tagName') === 'SPAN') {
           target = target.parent(); //タップする場所によってSPANかTDになるがTDで処理するため。
         }
         // jQueryのdata()メソッドはキャッシュしてしまうので使わない。
         // jQueryオブジェクト内の元のDOMオブジェクトのgetAttributeを使う。(キャッシュしないので)
-        var td = target[0]; //jQueryオブジェクト内の元のDOMオブジェクト
+        let td = target[0]; //jQueryオブジェクト内の元のDOMオブジェクト
         if (!td.getAttribute('data-date')) {
           return;
         }
@@ -249,4 +250,110 @@
   }
 </script>
 
-<style></style>
+<style>
+  table.calendar-table {
+    margin:1px auto 0 auto;
+    padding:0;
+    width:100%;
+    border-top:solid 1px #a3a3a3;
+    border-left:solid 1px #a3a3a3;
+    border-collapse: collapse;
+  }
+  table.calendar-table caption{
+    text-align:left;
+    background:#eee;
+  }
+  table.calendar-table caption div{
+    position:relative;
+    padding: 13px;
+    font-size: 16px;
+    height: 24px;
+    font-weight: bold;
+  }
+  table.calendar-table caption span{
+    display:block;
+    padding:3px;
+    text-align:center;
+  }
+  table.calendar-table caption a{
+    display:inline-block;
+    position:absolute;
+    background:#eee;
+    text-decoration:none;
+    font-weight:bold;
+    padding:3px;
+    top:0;
+  }
+  table.calendar-table caption a:link,
+  table.calendar-table caption a:visited{
+    color:#666;
+  }
+  table.calendar-table caption a:hover{
+    color:#f0f;
+  }
+  table.calendar-table caption a.next{
+    top: 10px;
+    right:30px;
+  }
+  table.calendar-table caption a.prev{
+    top: 10px;
+    left:30px;
+  }
+  table.calendar-table tr th{
+    padding:0;
+    text-align:center;
+    background-color:#c7d8ef;
+    border-right:solid 1px #a3a3a3;
+    border-bottom:solid 1px #a3a3a3;
+  }
+  table.calendar-table tr th.day0{
+    background-color:#ef9595;
+  }
+  table.calendar-table tr th.day6{
+    background-color:#a6c0e4;
+  }
+  table.calendar-table tr td{
+    padding:0 1px 0 1px;
+    vertical-align: top;
+    text-align: left;
+    background-color:#ffffff;
+    border-right:solid 1px #a3a3a3;
+    border-bottom:solid 1px #a3a3a3;
+    font-size:12px;
+    height: 60px;
+    width:30px;
+  }
+  table.calendar-table tr td#day1 {
+    border-right:none;
+    background-color:#eeeeee;
+  }
+  table.calendar-table tr td#calLeft {
+    border-right:none;
+    background-color:#eeeeee;
+  }
+  table.calendar-table tr td#calRight {
+    background-color:#eeeeee;
+  }
+  table.calendar-table tr td.day0{
+    background-color:#ffcccc;
+  }
+  table.calendar-table tr td.day6{
+    width:31px;
+    background-color:#e9f2ff;
+  }
+  table.calendar-table tr td.holiday{
+    background-color:#ff0000;
+    color:#ffffff;
+  }
+  table.calendar-table tr td.selectedDate{
+    background-color:#fff090;
+    border: 2px #808080 solid;
+  }
+  table.calendar-table tr td span{
+    font-size:9px;
+    line-height:0.7;
+  }
+  .lastspace {
+    margin-bottom: 80px;
+  }
+</style>

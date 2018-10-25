@@ -30,11 +30,13 @@
           <v-ons-input modifier="border" type="date" class="w-100p"
                        v-model="birthday"></v-ons-input>
         </div>
-        <div class="ml-15 mt-10"><small class="gray">背番号</small></div>
-        <div class="ml-15">
-          <v-ons-input modifier="border" class="backno_input" type="number"
-                       v-model="backno"></v-ons-input>
-        </div>
+        <template v-if="memberType === 0">
+          <div class="ml-15 mt-10"><small class="gray">背番号</small></div>
+          <div class="ml-15">
+            <v-ons-input modifier="border" class="backno_input" type="number"
+                         v-model="backno"></v-ons-input>
+          </div>
+        </template>
         <div class="space">
           このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
         </div>
@@ -82,7 +84,7 @@
           .catch(error => {
             console.log(error.response);
             if (error.response.status === 401) {
-              window.location.href = "/login"; return;
+              window.location.href = "/login";
             }
           })
           .finally(() => this.loading = false);
