@@ -92,6 +92,7 @@ class PostController extends Controller
   {
     //TODO validate
     // アンケート
+    $questionnaire = null;
     Log::info("questionnaire_selections:" . $request->questionnaire_selections);
     if ($request->questionnaire_title && $request->questionnaire_selections) {
       $questionnaire = Questionnaire::create([
@@ -100,9 +101,9 @@ class PostController extends Controller
         "created_id" => Auth::id(),
         "updated_id" => Auth::id()
       ]);
+      Log::info('アンケート');
+      Log::info($questionnaire);
     }
-    Log::info('アンケート');
-    Log::info($questionnaire);
     $post = Post::create([
       "team_id" => Auth::user()->team_id,
       "title" => $request->title,

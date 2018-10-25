@@ -35,7 +35,7 @@
             </div>
             <div class="entry_content"><span>{{ post.content }}</span>
               <template v-for="att in post_attachments">
-                <div v-if="isImage(att.file_type)" class="mt-20">
+                <div v-if="isImage(att.file_type)" class="mt-30">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
                     <a :href="att.file_path" :download="att.original_file_name" target="_blank">
