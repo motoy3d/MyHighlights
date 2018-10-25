@@ -38,7 +38,7 @@
                 <div v-if="isImage(att.file_type)" class="mt-20">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
-                    <a :href="att.file_path" :download="att.original_file_name">
+                    <a :href="att.file_path" :download="att.original_file_name" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
                     </a>
