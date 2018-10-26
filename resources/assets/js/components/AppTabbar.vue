@@ -46,7 +46,6 @@ export default {
         {
           label: 'カレンダー',
           icon: 'fa-calendar-alt',
-          class: 'far',
           page: Calendar
         },
         {

@@ -2,7 +2,8 @@
   <v-ons-page id="post">
     <v-ons-toolbar class="navbar">
       <div class="center navbartitle">
-        <v-ons-icon icon="fa-calendar" class="white" size="20px"></v-ons-icon>
+        <v-ons-icon icon="fa-calendar" class="white" size="20px"
+                    style="font-weight:400"></v-ons-icon>
         <span>予定登録</span>
       </div>
       <div class="right mr-5">

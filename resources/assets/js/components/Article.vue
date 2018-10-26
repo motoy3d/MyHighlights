@@ -411,7 +411,7 @@
               window.location.href = "/login"; return;
             }
           })
-          .finally(() => self.loading = false);
+          .finally(() => self.deleting = false);
       },
       afterDelete() {
         this.deleting = false;

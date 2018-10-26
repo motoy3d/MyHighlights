@@ -100,16 +100,20 @@
               {{ schedule.title }}
             </div>
             <div class="expandable-content">
-              <p>{{ schedule.content }}</p>
+              <p class="mb-20">{{ schedule.content }}</p>
               <v-ons-button class="button smallBtn" modifier="outline"
                             @click="openAddSchedule();">
                 <v-ons-icon icon="fa-pencil" class="schedule_edit_icon"></v-ons-icon>
-                編集
+                &nbsp;編集&nbsp;
               </v-ons-button>
-              <v-ons-button class="button smallBtn" modifier="outline"
+              <v-ons-button class="button smallBtn ml-10" modifier="outline"
                             @click="alert('TODO');">
                 <v-ons-icon icon="fa-copy" class="schedule_edit_icon"></v-ons-icon>
                 コピー
+              </v-ons-button>
+              <v-ons-button class="button smallBtn fl-right gray" modifier="quiet"
+                            @click="confirmDeleteSchedule(index)">
+                <v-ons-icon icon="fa-trash" class="gray"></v-ons-icon>
               </v-ons-button>
             </div>
           </ons-list-item>
@@ -133,6 +137,7 @@
       var today = new Date();
       return {
         errored: false,
+        deleting: false,
         selectedDate: this.moment(today).format('YYYY-MM-DD'),
         currentYear: today.getFullYear(),
         currentMonth: today.getMonth()
@@ -245,6 +250,41 @@
       formatTime(time) {
         if (!time) return '';
         return this.moment(time, 'HH:mm:ss').format('H:mm');
+      },
+      confirmDeleteSchedule(index) {
+        let self = this;
+        this.$ons.notification.confirm("この予定を削除しますか？", {title: ''})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.deleteSchedule(index);
+          });
+      },
+      deleteSchedule(index) {
+        this.deleting = true;
+        let schedule_id = this.selectedDateSchedules[index].id;
+        let self = this;
+        self.$http.delete('/api/schedules/' + schedule_id)
+          .then((response)=>{
+            // console.log(response.data);
+            this.$store.dispatch('calendar/load', this.$http);
+            this.$ons.notification.alert('削除しました', {title: ''})
+              .then(function(){
+                self.afterDelete();
+              });
+          })
+          .catch(error => {
+            console.log(error);
+            self.errored = true;
+            if (error.response.status === 401) {
+              window.location.href = "/login"; return;
+            }
+          })
+          // .finally(() => self.deleting = false);
+      },
+      afterDelete() {
+        this.deleting = false;
+        //TODO 画面から削除
+        // this.$store.commit('navigator/pop');
       }
     }
   }
@@ -352,6 +392,16 @@
   table.calendar-table tr td span{
     font-size:9px;
     line-height:0.7;
+  }
+  .schedule_edit_icon {
+    color: #2266ff;
+  }
+  .current_year_month {
+    vertical-align: top;
+  }
+  .month_text {
+    font-size: 12px;
+    vertical-align: top;
   }
   .lastspace {
     margin-bottom: 80px;
