@@ -174,6 +174,24 @@ export default {
           ;
         }
       }
+    },
+
+    // 予定編集画面
+    edit_schedule: {
+      strict: true,
+      namespaced: true,
+      state: {
+        schedule: null,
+        loading: false
+      },
+      mutations: {
+        setSchedule(state, schedule) {
+          state.schedule = schedule;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      }
     }
   }
 };

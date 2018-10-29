@@ -102,7 +102,7 @@
             <div class="expandable-content">
               <p class="mb-20">{{ schedule.content }}</p>
               <v-ons-button class="button smallBtn" modifier="outline"
-                            @click="openAddSchedule();">
+                            @click="openEditSchedule(schedule);">
                 <v-ons-icon icon="fa-pencil" class="schedule_edit_icon"></v-ons-icon>
                 &nbsp;編集&nbsp;
               </v-ons-button>
@@ -131,6 +131,7 @@
 
 <script>
   import AddSchedule from './AddSchedule.vue';
+  import EditSchedule from './EditSchedule.vue';
   export default {
     data() {
       // console.log(">>>>> Calendar#data()");
@@ -244,6 +245,13 @@
       openAddSchedule() {
         this.$store.commit('navigator/push', {
           extends: AddSchedule,
+          onsNavigatorOptions: {animation: 'lift'}
+        });
+      },
+      openEditSchedule(schedule) {
+        this.$store.commit('edit_schedule/setSchedule', schedule);
+        this.$store.commit('navigator/push', {
+          extends: EditSchedule,
           onsNavigatorOptions: {animation: 'lift'}
         });
       },

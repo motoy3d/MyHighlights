@@ -82,6 +82,7 @@ class ScheduleController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+    //TODO 添付ファイル
     return Response::json($schedule);
   }
 
@@ -95,6 +96,8 @@ class ScheduleController extends Controller
   public function update(Request $request, $id)
   {
     //TODO validate
+    Log::info('ScheduleController#update');
+    Log::info('title=' . $request->title);
     $schedule = Schedule::findOrFail($id);
     if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
       // ヒットしない場合は404
@@ -113,6 +116,8 @@ class ScheduleController extends Controller
     $schedule->notification_flg = $request->notification_flg == 'true'? true : false;
     $schedule->updated_id = Auth::id();
     $schedule = $schedule->save();
+
+    //TODO 添付ファイル
     return Response::json($schedule);
   }
 

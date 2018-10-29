@@ -13,7 +13,7 @@
       </div>
     </v-ons-toolbar>
     <div class="bg-white space">
-      <form id="addScheduleForm" action="#" method="POST">
+      <form action="#" method="POST">
         <v-ons-row class="space">
           <v-ons-col width="70%">
             <!-- pickadate
@@ -75,9 +75,9 @@
         </div>
         <div class="space">
           <v-ons-button id="postBtn" class="mtb-20" modifier="large"
-                        @click="addSchedule()" :disabled="posting">
+                        @click="save()" :disabled="posting">
             <v-ons-icon icon="fa-spinner" spin v-if="posting"></v-ons-icon>
-            投稿
+            保存
           </v-ons-button>
         </div>
       </form>
@@ -87,7 +87,7 @@
 
 <script>
   export default {
-    beforeCreate() {
+    beforeMount() {
       this.$http.get('/api/schedules/create')
         .then((response)=>{
           this.categories = response.data.categories
@@ -104,6 +104,21 @@
       // $('#startHourForAdd').pickatime({format:'H時', interval:60});
       // $('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
       // $('#endTimeForAdd').pickatime();
+      let schedule = this.$store.state.edit_schedule.schedule;
+      this.schedule_date = schedule.schedule_date;
+      this.allday_flg = schedule.allday_flg === 1;
+      this.time_from = schedule.allday_flg === 1? '' : schedule.time_from;
+      this.time_to = schedule.allday_flg === 1? '' : schedule.time_to;
+      this.title = schedule.title;
+      this.category_id = schedule.category_id;
+      this.contents = schedule.content;
+      if (schedule.files) {
+        this.files = schedule.files;
+        this.fileNames = [];
+        for (let i = 0; i < this.files.length; i++) {
+          this.fileNames.push(this.files[i].name);
+        }
+      }
     },
     data() {
       return {
@@ -135,7 +150,7 @@
         }
         // console.log(this.files);
       },
-      addSchedule() {
+      save() {
         //TODO validate
         if (this.posting) {
           return;
@@ -157,14 +172,22 @@
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
         }
-        // console.log('送信フォーム');
-        // console.log(this.$data);
+        // PUTメソッドではFormDataが通常送れない仕様のためワークアラウンド　https://qiita.com/komatzz/items/21b58c92e14d2868ac8e
+        let config = {
+          headers: {
+            'content-type': 'multipart/form-data',
+          },
+        };
+        // PUT で上書く
+        config.headers['X-HTTP-Method-Override'] = 'PUT';
+
         // 送信
-        this.$http.post('/api/schedules', formData)
+        let schedule = this.$store.state.edit_schedule.schedule;
+        this.$http.post('/api/schedules/' + schedule.id, formData, config)
           .then(response => {
             // console.log(response.data);
             // TODO toastの方がよいか
-            this.$ons.notification.alert('登録しました', {title: ''})
+            this.$ons.notification.alert('保存しました', {title: ''})
               .then(function(){
                 self.$store.dispatch('calendar/load', self.$http);
                 self.$store.commit('navigator/pop');
