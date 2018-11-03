@@ -47,11 +47,13 @@
                        placeholder="件名" v-model="title"></v-ons-input>
         </v-ons-row>
         <div class="space">
-          <v-ons-select v-model="selected_category">
+          <!-- v-ons-selectだと画面表示時にselected_category_idがプルダウンに反映されない。OnsenUIのバグ？ -->
+          <select v-model="selected_category_id" class="select-input">
+            <!-- ↓だと画面表示時にselected_category_idがプルダウンに反映されない -->
             <option v-for="cate in categories" :value="cate.id">
               {{ cate.name }}
             </option>
-          </v-ons-select>
+          </select>
         </div>
         <div class="space">
           <textarea class="textarea w-100p" rows="7" placeholder="詳細"
@@ -87,10 +89,26 @@
 
 <script>
   export default {
-    beforeMount() {
+    created() {
+      let schedule = this.$store.state.edit_schedule.schedule;
       this.$http.get('/api/schedules/create')
         .then((response)=>{
-          this.categories = response.data.categories
+          this.categories = response.data.categories;
+          this.schedule_date = schedule.schedule_date;
+          this.allday_flg = schedule.allday_flg === 1;
+          this.time_from = schedule.allday_flg === 1? '' : schedule.time_from;
+          this.time_to = schedule.allday_flg === 1? '' : schedule.time_to;
+          this.title = schedule.title;
+          this.category_id = schedule.category_id;
+          this.selected_category_id = schedule.category_id;
+          this.contents = schedule.content;
+          if (schedule.files) {
+            this.files = schedule.files;
+            this.fileNames = [];
+            for (let i = 0; i < this.files.length; i++) {
+              this.fileNames.push(this.files[i].name);
+            }
+          }
         })
         .catch(error => {
           console.log(error);
@@ -104,21 +122,6 @@
       // $('#startHourForAdd').pickatime({format:'H時', interval:60});
       // $('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
       // $('#endTimeForAdd').pickatime();
-      let schedule = this.$store.state.edit_schedule.schedule;
-      this.schedule_date = schedule.schedule_date;
-      this.allday_flg = schedule.allday_flg === 1;
-      this.time_from = schedule.allday_flg === 1? '' : schedule.time_from;
-      this.time_to = schedule.allday_flg === 1? '' : schedule.time_to;
-      this.title = schedule.title;
-      this.category_id = schedule.category_id;
-      this.contents = schedule.content;
-      if (schedule.files) {
-        this.files = schedule.files;
-        this.fileNames = [];
-        for (let i = 0; i < this.files.length; i++) {
-          this.fileNames.push(this.files[i].name);
-        }
-      }
     },
     data() {
       return {
@@ -131,7 +134,8 @@
         time_to: '',
         title: '',
         categories: [],
-        selected_category: null,
+        categories2: [{text:"練習1",value:1},{text:"試合1",value:"3"}],
+        selected_category_id: "3",
         category_id: null,
         contents: '',
         files: [],
@@ -157,7 +161,7 @@
         }
         if (!this.title) {this.$ons.notification.alert('タイトルを入れてください', {title: ''});return;}
         this.posting = true;
-        this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
+        this.category_id = this.selected_category_id? this.selected_category_id : this.categories[0].id;
         let self = this;
         // 送信フォームデータ準備
         let formData = new FormData();
