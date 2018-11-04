@@ -65,9 +65,15 @@
                 <tr><th></th><th>◯</th><th>△</th><th>✕</th><th></th></tr>
                 <tr v-for="(q, index) in questionnaire.items">
                   <td>{{ q.text }}</td>
-                  <td class="answer">{{ q['◯'] || 0 }}</td>
-                  <td class="answer">{{ q['△'] || 0 }}</td>
-                  <td class="answer">{{ q['✕'] || 0 }}</td>
+                  <td class="answer">
+                    <a href="#" @click="showAnswerModal()">{{ q['◯'] || 0 }}</a>
+                  </td>
+                  <td class="answer">
+                    <a href="#" @click="showAnswerPopover($event)">{{ q['△'] || 0 }}</a>
+                  </td>
+                  <td class="answer">
+                    <a href="#" @click="showAnswerPopover($event)">{{ q['✕'] || 0 }}</a>
+                  </td>
                   <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn" modifier="quiet"
                                   @click="showQuestionnaireActionSheet(q.text, index);">
@@ -136,7 +142,7 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id == user.id">
+                  <span v-if="comment.user_id === user.id">
                     <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
@@ -157,7 +163,7 @@
             </div>
           </v-ons-col>
         </v-ons-row>
-        <v-ons-row v-if="post.created_id == user.id">
+        <v-ons-row v-if="post.created_id === user.id">
           <v-ons-col class="space">
             <v-ons-button class="mtb-20 red" modifier="large--quiet"
                           @click="confirmDeletePost()" :disabled="deleting">
@@ -168,6 +174,89 @@
         </v-ons-row>
       </template>
     </section>
+
+    <!-- アンケート回答者一覧Modal -->
+    <!--<v-ons-popover cancelable-->
+                   <!--:visible.sync="popover_visible"-->
+                   <!--:target="popover_target"-->
+                   <!--direction="up"-->
+                   <!--cover-target="true"-->
+    <!--&gt;-->
+      <!--<ul>-->
+        <!--<li>田中　康介</li>-->
+        <!--<li>山の　康介</li>-->
+        <!--<li>川田　康介</li>-->
+        <!--<li>中村　康介</li>-->
+        <!--<li>島村　康介</li>-->
+        <!--<li>一ノ瀬　康介</li>-->
+        <!--<li>滋賀　康介</li>-->
+        <!--<li>気密　康介</li>-->
+        <!--<li>田村　康介</li>-->
+        <!--<li>気密　康介</li>-->
+        <!--<li>時の　康介</li>-->
+      <!--</ul>-->
+    <!--</v-ons-popover>-->
+    <v-ons-modal>
+      <div class="answer_container p-10">
+        <div class="row">
+          <div class="col space">
+            <div class="right">
+              <v-ons-icon icon="fa-close" size="24px" class="gray"
+                          @click="hideAnswerModal();"></v-ons-icon>
+            </div>
+            <div class="scroller">
+              <ul>
+                <li>田中　康介</li>
+                <li>山の　康介</li>
+                <li>川田　康介</li>
+                <li>中村　康介</li>
+                <li>島村　康介</li>
+                <li>一ノ瀬　康介</li>
+                <li>滋賀　康介</li>
+                <li>気密　康介</li>
+                <li>田村　康介</li>
+                <li>川田　康介</li>
+                <li>中村　康介</li>
+                <li>島村　康介</li>
+                <li>一ノ瀬　康介</li>
+                <li>滋賀　康介</li>
+                <li>気密　康介</li>
+                <li>田村　康介</li>
+                <li>気密　康介</li>
+                <li>時の　康介</li>
+                <li>田中　康介</li>
+                <li>山の　康介</li>
+                <li>川田　康介</li>
+                <li>中村　康介</li>
+                <li>島村　康介</li>
+                <li>一ノ瀬　康介</li>
+                <li>滋賀　康介</li>
+                <li>気密　康介</li>
+                <li>田村　康介</li>
+                <li>気密　康介</li>
+                <li>時の　康介</li>
+                <li>気密　康介</li>
+                <li>時の　康介</li>
+                <li>田中　康介</li>
+                <li>山の　康介</li>
+                <li>川田　康介</li>
+                <li>中村　康介</li>
+                <li>島村　康介</li>
+                <li>一ノ瀬　康介</li>
+                <li>滋賀　康介</li>
+                <li>気密　康介</li>
+                <li>田村　康介</li>
+                <li>気密　康介</li>
+                <li>時の　康介</li>
+              </ul>
+              <!--<ul>-->
+                <!--<li v-for="name in answer_user_names">{{ name }}</li>-->
+              <!--</ul>-->
+            </div>
+          </div>
+        </div>
+      </div>
+    </v-ons-modal>
   </v-ons-page>
 </template>
 
@@ -184,6 +273,9 @@
         post_attachments: {},
         questionnaire: {},
         questionnaire_answers: [],
+        answer_user_names: [],
+        popover_target: null,
+        popover_visible: false,
         comments: {},
         comment_text: "",
         comment_files: [],
@@ -328,18 +420,20 @@
       },
       toggleLike(likeIcon) {
       },
-      showQuestionnaireModal() {
-        var modal = document.querySelector('ons-modal');
-        modal.show();
+      showAnswerModal() {
+        document.querySelector('ons-modal').show();
       },
-      hideQuestionnaireModal() {
-        var modal = document.querySelector('ons-modal');
-        modal.hide();
+      showAnswerPopover(event) {
+        this.popover_target = event;
+        this.popover_visible = true;
+      },
+      hideAnswerModal() {
+        document.querySelector('ons-modal').hide();
       },
       showQuestionnaireActionSheet(question, index) {
-        var selections = ['◯', '△', '✕', 'キャンセル'];
-        var self = this;
-        var answer = this.$ons.openActionSheet({
+        let selections = ['◯', '△', '✕', 'キャンセル'];
+        let self = this;
+        let answer = this.$ons.openActionSheet({
           title: question,
           cancelable: true,
           buttons: selections
@@ -571,5 +665,20 @@
   }
   .messageBtn {
     width: 20px;
+  }
+  .answer_container {
+    color: black;
+    background-color: white;
+    width: 95%;
+    margin: 20px auto 20px auto;
+  }
+  .scroller {
+    display: block;
+    width: 80%;
+    height: 460px;
+    overflow: scroll;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    -ms-scroll-snap-type: mandatory;
   }
 </style>
