@@ -68,10 +68,10 @@
                   <td class="answer" @click="showAnswerModal(q, '◯')">
                     <a href="#"> {{ q.answerCounts['◯'] || 0 }} </a>
                   </td>
-                  <td class="answer"@click="showAnswerModal()">
+                  <td class="answer"@click="showAnswerModal(q, '△')">
                     <a href="#"> {{ q.answerCounts['△'] || 0 }} </a>
                   </td>
-                  <td class="answer"@click="showAnswerModal()">
+                  <td class="answer"@click="showAnswerModal(q, '✕')">
                     <a href="#"> {{ q.answerCounts['✕'] || 0 }} </a>
                   </td>
                   <td class="questionnaire_btn">
@@ -188,10 +188,8 @@
             <div class="center">
               {{ modal.question }} - {{ modal.answer }} {{ modal.count }}件
             </div>
-            <div class="scroller">
-              <ol>
-                <li v-for="user in modal.users">{{ user.name }}</li>
-              </ol>
+            <div class="scroller mt-15">
+                <div v-for="user in modal.users">{{ user.name }}</div>
             </div>
           </div>
         </div>
@@ -622,8 +620,7 @@
     color: black;
     background-color: white;
     width: 70%;
-    /*margin: 20px auto 20px auto;*/
-    margin: 20px;
+    margin: 20px auto 20px auto;
   }
   .scroller {
     display: block;
