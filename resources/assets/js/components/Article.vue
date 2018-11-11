@@ -65,14 +65,14 @@
                 <tr><th></th><th>◯</th><th>△</th><th>✕</th><th></th></tr>
                 <tr v-for="(q, index) in questionnaire.items">
                   <td>{{ q.text }}</td>
-                  <td class="answer">
-                    <a href="#" @click="showAnswerModal()">{{ q['◯'] || 0 }}</a>
+                  <td class="answer" @click="showAnswerModal(q, '◯')">
+                    <a href="#"> {{ q.answerCounts['◯'] || 0 }} </a>
                   </td>
-                  <td class="answer">
-                    <a href="#" @click="showAnswerPopover($event)">{{ q['△'] || 0 }}</a>
+                  <td class="answer"@click="showAnswerModal()">
+                    <a href="#"> {{ q.answerCounts['△'] || 0 }} </a>
                   </td>
-                  <td class="answer">
-                    <a href="#" @click="showAnswerPopover($event)">{{ q['✕'] || 0 }}</a>
+                  <td class="answer"@click="showAnswerModal()">
+                    <a href="#"> {{ q.answerCounts['✕'] || 0 }} </a>
                   </td>
                   <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn" modifier="quiet"
@@ -99,7 +99,7 @@
                 <!--<span class="star-count" v-if="starCount">{{ starCount }}</span>-->
               <!--</v-ons-icon>-->
             </div>
-            <!-- コメント -->
+            <!-- コメント入力 -->
             <v-ons-row class="mt-30">
               <v-ons-col width="30px" vertical-align="bottom" class="left">
                 <div class="upload-btn-wrapper">
@@ -122,6 +122,7 @@
             </v-ons-row>
           </v-ons-col>
         </v-ons-row>
+        <!-- コメント -->
         <v-ons-row class="space lastspace" v-if="comments">
           <v-ons-col>
             <div class="mt-10 ml-15" v-for="(comment, index) in comments" :key="comment.id">
@@ -176,82 +177,21 @@
     </section>
 
     <!-- アンケート回答者一覧Modal -->
-    <!--<v-ons-popover cancelable-->
-                   <!--:visible.sync="popover_visible"-->
-                   <!--:target="popover_target"-->
-                   <!--direction="up"-->
-                   <!--cover-target="true"-->
-    <!--&gt;-->
-      <!--<ul>-->
-        <!--<li>田中　康介</li>-->
-        <!--<li>山の　康介</li>-->
-        <!--<li>川田　康介</li>-->
-        <!--<li>中村　康介</li>-->
-        <!--<li>島村　康介</li>-->
-        <!--<li>一ノ瀬　康介</li>-->
-        <!--<li>滋賀　康介</li>-->
-        <!--<li>気密　康介</li>-->
-        <!--<li>田村　康介</li>-->
-        <!--<li>気密　康介</li>-->
-        <!--<li>時の　康介</li>-->
-      <!--</ul>-->
-    <!--</v-ons-popover>-->
     <v-ons-modal>
       <div class="answer_container p-10">
         <div class="row">
           <div class="col space">
-            <div class="right">
+            <div class="fl-right">
               <v-ons-icon icon="fa-close" size="24px" class="gray"
                           @click="hideAnswerModal();"></v-ons-icon>
             </div>
+            <div class="center">
+              {{ modal.question }} - {{ modal.answer }} {{ modal.count }}件
+            </div>
             <div class="scroller">
-              <ul>
-                <li>田中　康介</li>
-                <li>山の　康介</li>
-                <li>川田　康介</li>
-                <li>中村　康介</li>
-                <li>島村　康介</li>
-                <li>一ノ瀬　康介</li>
-                <li>滋賀　康介</li>
-                <li>気密　康介</li>
-                <li>田村　康介</li>
-                <li>川田　康介</li>
-                <li>中村　康介</li>
-                <li>島村　康介</li>
-                <li>一ノ瀬　康介</li>
-                <li>滋賀　康介</li>
-                <li>気密　康介</li>
-                <li>田村　康介</li>
-                <li>気密　康介</li>
-                <li>時の　康介</li>
-                <li>田中　康介</li>
-                <li>山の　康介</li>
-                <li>川田　康介</li>
-                <li>中村　康介</li>
-                <li>島村　康介</li>
-                <li>一ノ瀬　康介</li>
-                <li>滋賀　康介</li>
-                <li>気密　康介</li>
-                <li>田村　康介</li>
-                <li>気密　康介</li>
-                <li>時の　康介</li>
-                <li>気密　康介</li>
-                <li>時の　康介</li>
-                <li>田中　康介</li>
-                <li>山の　康介</li>
-                <li>川田　康介</li>
-                <li>中村　康介</li>
-                <li>島村　康介</li>
-                <li>一ノ瀬　康介</li>
-                <li>滋賀　康介</li>
-                <li>気密　康介</li>
-                <li>田村　康介</li>
-                <li>気密　康介</li>
-                <li>時の　康介</li>
-              </ul>
-              <!--<ul>-->
-                <!--<li v-for="name in answer_user_names">{{ name }}</li>-->
-              <!--</ul>-->
+              <ol>
+                <li v-for="user in modal.users">{{ user.name }}</li>
+              </ol>
             </div>
           </div>
         </div>
@@ -282,6 +222,12 @@
         likes_count: 0,
         likes: [],
         user: {},
+        modal: {
+          question: null,
+          answer: null,
+          count: null,
+          users: null
+        },
         loading: false,
         deleting: false,
         errored: false
@@ -420,7 +366,13 @@
       },
       toggleLike(likeIcon) {
       },
-      showAnswerModal() {
+      showAnswerModal(question, answer) {
+        this.modal.question = question.text;
+        this.modal.answer = answer;
+        this.modal.count = question.answerCounts[answer];
+        this.modal.users = question.usersAnswers.filter(function(data) {
+          return data.answer === answer;
+        });
         document.querySelector('ons-modal').show();
       },
       showAnswerPopover(event) {
@@ -669,8 +621,9 @@
   .answer_container {
     color: black;
     background-color: white;
-    width: 95%;
-    margin: 20px auto 20px auto;
+    width: 70%;
+    /*margin: 20px auto 20px auto;*/
+    margin: 20px;
   }
   .scroller {
     display: block;

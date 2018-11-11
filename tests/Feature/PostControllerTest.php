@@ -148,7 +148,7 @@ class PostControllerTest extends TestCase {
    */
   public function testShow1(){
     $response = $this->actingAs(User::findOrFail(1), 'api')
-      ->get('http://localhost:8000/api/posts/3');
+      ->get('http://localhost:8000/api/posts/53');
     $response->assertStatus(200);
     echo $this->json_enc($response->json());
   }

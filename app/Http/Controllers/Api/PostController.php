@@ -210,25 +210,34 @@ class PostController extends Controller
           ->orderBy('question_no')
           ->get();
 
+        // $questionnaire->itemsは設問(選択肢)リスト
         for ($i=0; $i<count($questionnaire->items); $i++) {
           // 回答集計
-          $answerCounts = DB::table('questionnaire_answers')
-            ->select(DB::raw('count(*) as answer_count, answer'))
+          $answers = DB::table('questionnaire_answers')
+            ->leftJoin('users',
+              'questionnaire_answers.user_id', '=', 'users.id')
+            ->select([
+              'questionnaire_answers.answer',
+              'users.name'
+            ])
             ->where('questionnaire_id', $post->questionnaire_id)
             ->where('question_no', $i)
-            ->groupBy('answer')
+            ->orderBy('answer')->orderBy('questionnaire_answers.created_at')
             ->get();
           Log::info('回答');
-          Log::info(json_encode($answerCounts));
+          Log::info(json_encode($answers));
           $question = $questionnaire->items[$i];
-          foreach ($answerCounts as $answerCount) {
-            $answer = $answerCount->answer;
-            $question->$answer = $answerCount->answer_count;
+          $answerCounts = ['◯' => 0, '△' => 0, '✕' => 0];
+          foreach ($answers as $answer) {
+            $answerCounts[$answer->answer] = $answerCounts[$answer->answer] + 1;
           }
+          $question->usersAnswers = $answers;
+          $question->answerCounts = $answerCounts;
           foreach ($myAnswers as $a) {
             if ($i == $a->question_no){
-              $question->myAnswer = $a->answer;break;
-            };
+              $question->myAnswer = $a->answer;
+              break;
+            }
           }
         }
       }
