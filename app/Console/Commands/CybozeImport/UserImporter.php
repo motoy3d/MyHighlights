@@ -43,15 +43,7 @@
     public function handle()
     {
       $filepath = fopen(storage_path('app/') . 'user.csv', 'r');
-//      $column_names = [];
-      $headers = fgetcsv($filepath);
-//      // CSVヘッダ確認
-//      foreach ($headers as $header) {
-//        $result = User::retrieveTestColumnsByValue($header, 'SJIS-win');
-//        $column_names[] = $result;
-//      }
-
-      DB::transaction(function() use ($filepath) {
+      DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {
           $this->info($row[0] . $row[1]);
           $member = Member::create([
@@ -72,7 +64,7 @@
             "team_id" => 100,
             "member_id" => $member->id,
             "password" => Hash::make($row[4]),
-//        "status" => 'invited',
+            //        "status" => 'invited',
             "created_id" => 0,
             "updated_id" => 0
           ]);
