@@ -43,11 +43,11 @@
                 <span v-if="member.type == 1">{{ member.backno }}.</span>
                 {{ member.name }}
               </p>
-              <div class="mr-30">
-                <v-ons-button class="highlight_btn">
-                  <v-ons-icon icon="fa-play"></v-ons-icon>
-                  ハイライト (12)</v-ons-button>
-              </div>
+              <!--<div class="mr-30">-->
+                <!--<v-ons-button class="highlight_btn">-->
+                  <!--<v-ons-icon icon="fa-play"></v-ons-icon>-->
+                  <!--ハイライト (12)</v-ons-button>-->
+              <!--</div>-->
             </div>
           </v-ons-list-item>
         </v-ons-list>

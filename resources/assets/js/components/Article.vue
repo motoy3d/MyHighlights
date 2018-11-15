@@ -66,13 +66,16 @@
                 <tr v-for="(q, index) in questionnaire.items">
                   <td>{{ q.text }}</td>
                   <td class="answer" @click="showAnswerModal(q, '◯')">
-                    <a href="#"> {{ q.answerCounts['◯'] || 0 }} </a>
+                    <a href="#" v-if="q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </a>
+                    <span v-else>0</span>
                   </td>
-                  <td class="answer"@click="showAnswerModal(q, '△')">
-                    <a href="#"> {{ q.answerCounts['△'] || 0 }} </a>
+                  <td class="answer" @click="showAnswerModal(q, '△')">
+                    <a href="#" v-if="q.answerCounts['△']"> {{ q.answerCounts['△'] }} </a>
+                    <span v-else>0</span>
                   </td>
-                  <td class="answer"@click="showAnswerModal(q, '✕')">
-                    <a href="#"> {{ q.answerCounts['✕'] || 0 }} </a>
+                  <td class="answer" @click="showAnswerModal(q, '✕')">
+                    <a href="#" v-if="q.answerCounts['✕']"> {{ q.answerCounts['✕'] }} </a>
+                    <span v-else>0</span>
                   </td>
                   <td class="questionnaire_btn">
                     <v-ons-button class="smallBtn" modifier="quiet"
@@ -143,7 +146,7 @@
               <div>
                 <div class="speech-bubble">
                   <span class="comment">{{ comment.comment_text }}</span>
-                  <span v-if="comment.user_id === user.id">
+                  <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
                     <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
@@ -365,6 +368,9 @@
       toggleLike(likeIcon) {
       },
       showAnswerModal(question, answer) {
+        if (!question.answerCounts[answer]) {
+          return;
+        }
         this.modal.question = question.text;
         this.modal.answer = answer;
         this.modal.count = question.answerCounts[answer];
