@@ -84,7 +84,7 @@ class MemberController extends Controller
         "email" => $request->email,
         "team_id" => Auth::user()->team_id,
         "member_id" => $member->id,
-        "password" => $password,
+        "password" => Hash::make($password),
 //        "status" => 'invited',
         "created_id" => Auth::id(),
         "updated_id" => Auth::id()
