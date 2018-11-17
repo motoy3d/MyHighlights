@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-      Commands\CybozeImport\UserImporter::class
+      Commands\CybozeImport\UserImporter::class,
+      Commands\CybozeImport\PostImporter::class,
     ];
 
     /**
