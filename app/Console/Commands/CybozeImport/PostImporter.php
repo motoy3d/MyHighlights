@@ -53,7 +53,8 @@
         $created_at = str_replace('/', '-', $row[4]) . ':00';
         $update_username = $row[5];
         $updated_at = str_replace('/', '-', $row[6]) . ':00';
-        $comment = $row[7];
+        $comment = str_replace('--------------------------------------------------',
+          '----------------------------------------', $row[7]);
         $this->info($created_at . ' ' . $title);
 
         // 作成・更新ユーザー名からユーザーIDを取得

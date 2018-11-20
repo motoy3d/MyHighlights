@@ -43,6 +43,7 @@
     public function handle()
     {
       $filepath = fopen(storage_path('app/') . 'user.csv', 'r');
+      fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {
           $this->info($row[0] . $row[1]);
