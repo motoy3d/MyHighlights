@@ -14,7 +14,7 @@
           <v-ons-list-item modifier="chevron">
             <div style="margin-right:auto;">片岡　基</div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
+          <v-ons-list-item modifier="chevron" @click="openChangeEmail()">
             メールアドレス <div class="right">motoy3d@gmail.com</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangePass()">
@@ -26,12 +26,12 @@
           <v-ons-list-item modifier="chevron">
             テーマカラー <div class="right">スカイブルー</div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
-            プラン確認/変更 <div class="right">フリー</div>
-          </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
-            利用規約 <div class="right"></div>
-          </v-ons-list-item>
+          <!--<v-ons-list-item modifier="chevron">-->
+            <!--プラン確認/変更 <div class="right">フリー</div>-->
+          <!--</v-ons-list-item>-->
+          <!--<v-ons-list-item modifier="chevron">-->
+            <!--利用規約 <div class="right"></div>-->
+          <!--</v-ons-list-item>-->
           <v-ons-list-item>
             バージョン <div class="right">0.1 (2018.5.23)</div>
           </v-ons-list-item>
@@ -56,14 +56,27 @@
 <script>
   export default {
     methods: {
+      openChangeEmail() {
+        let self = this;
+        this.$ons.notification.prompt("新しいメールアドレス", {title: ''})
+          .then(function(newEmail) {
+            self.$ons.notification.confirm(
+              newEmail, {title: 'このアドレスでいいですか？'})
+              .then(function(answer){
+                alert(answer);
+                //TODO API
+              });
+          });
+      },
       openChangePass() {
         let self = this;
-        this.$ons.notification.prompt("新しいパスワードを入れてください", {title: ''})
+        this.$ons.notification.prompt("新しいパスワード", {title: ''})
           .then(function(newpass) {
             self.$ons.notification.confirm(
               newpass, {title: 'このパスワードでいいですか？'})
               .then(function(answer){
                 alert(answer);
+                //TODO API
               });
           });
       }
