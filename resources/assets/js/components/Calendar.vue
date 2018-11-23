@@ -106,11 +106,12 @@
                 <v-ons-icon icon="fa-pencil" class="schedule_edit_icon"></v-ons-icon>
                 &nbsp;編集&nbsp;
               </v-ons-button>
-              <v-ons-button class="button smallBtn ml-10" modifier="outline"
-                            @click="alert('TODO');">
-                <v-ons-icon icon="fa-copy" class="schedule_edit_icon"></v-ons-icon>
-                コピー
-              </v-ons-button>
+              <!-- TODO 予定コピー -->
+              <!--<v-ons-button class="button smallBtn ml-10" modifier="outline"-->
+                            <!--@click="alert('TODO');">-->
+                <!--<v-ons-icon icon="fa-copy" class="schedule_edit_icon"></v-ons-icon>-->
+                <!--コピー-->
+              <!--</v-ons-button>-->
               <v-ons-button class="button smallBtn fl-right gray pt-10" modifier="quiet"
                             @click="confirmDeleteSchedule(index)">
                 <v-ons-icon icon="fa-trash" class="gray"></v-ons-icon>
@@ -196,13 +197,12 @@
                 let sche = this.schedules[s];
                 if (dateText === sche.schedule_date) {
                   let time = sche.allday_flg? '' : this.formatTime(sche.time_from) + ' ';
-                  dayArray[dayArrayIdx + d].text += '<br>' + time + sche.title;
+                  dayArray[dayArrayIdx + d].text +=
+                    '<br><ons-icon icon="caret-right"></ons-icon> ' + time + sche.title;
                 }
               }
             }
           }
-          console.log('dayArray is..');
-          console.log(dayArray);
           return dayArray;
         }
       }

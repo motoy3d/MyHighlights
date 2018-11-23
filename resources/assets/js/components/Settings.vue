@@ -21,11 +21,11 @@
             パスワード変更
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron">
-            チーム名 <div class="right">横浜SCつばさ</div>
+            チーム名 <div class="right">横浜SCつばさ 36th</div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
-            テーマカラー <div class="right">スカイブルー</div>
-          </v-ons-list-item>
+          <!--<v-ons-list-item modifier="chevron">-->
+            <!--テーマカラー <div class="right">スカイブルー</div>-->
+          <!--</v-ons-list-item>-->
           <!--<v-ons-list-item modifier="chevron">-->
             <!--プラン確認/変更 <div class="right">フリー</div>-->
           <!--</v-ons-list-item>-->

@@ -72,9 +72,9 @@
             <!--<input type="file" name="myfile" />-->
           <!--</div>-->
         <!--</div>-->
-        <div class="space">
-          みんなに通知 <v-ons-switch v-model="notification_flg"></v-ons-switch>
-        </div>
+        <!--<div class="space">-->
+          <!--みんなに通知 <v-ons-switch v-model="notification_flg"></v-ons-switch>-->
+        <!--</div>-->
         <div class="space">
           <v-ons-button id="postBtn" class="mtb-20" modifier="large"
                         @click="save()" :disabled="posting">
