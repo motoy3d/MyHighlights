@@ -5,6 +5,7 @@
   use App\Category;
   use App\Schedule;
   use App\User;
+  use Carbon\Carbon;
   use Illuminate\Console\Command;
   use Illuminate\Support\Facades\DB;
 
@@ -44,8 +45,13 @@
       $filepath = fopen(storage_path('app/') . 'schedule.csv', 'r');
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
+        $week = array( "日", "月", "火", "水", "木", "金", "土" );
         while ($row = fgetcsv($filepath)) {
-          $this->info($row[0] . ' ' . $row[5]);
+          $shcedule_date = $row[0];
+          $date = Carbon::parse($shcedule_date);
+          $date2 = $date->format('n/j') . '（' . $week[$date->dayOfWeek] . '）';
+          $title = str_replace($date2, '', $row[5]);
+          $this->info($row[0] . ' ' . $title);
           // カテゴリ
           $category = Category::where('name', $row[4])->first();
           // 作成・更新ユーザー名からユーザーIDを取得
@@ -56,8 +62,8 @@
 
           $member = Schedule::create([
             "team_id" => 100,
-            "schedule_date" => $row[0],
-            "title" => $row[5],
+            "schedule_date" => $shcedule_date,
+            "title" => $title,
             "allday_flg" => 0,
             "time_from" => $row[1],
             "time_to" => $row[3],
