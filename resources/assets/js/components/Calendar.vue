@@ -73,7 +73,7 @@
                   <span v-html="days[(n-1)+28].text"></span>
                 </td>
               </tr>
-              <tr>
+              <tr v-if="days[35].text">
                 <td v-bind:data-date="days[(n-1)+35].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')"
@@ -111,7 +111,7 @@
                 <v-ons-icon icon="fa-copy" class="schedule_edit_icon"></v-ons-icon>
                 コピー
               </v-ons-button>
-              <v-ons-button class="button smallBtn fl-right gray" modifier="quiet"
+              <v-ons-button class="button smallBtn fl-right gray pt-10" modifier="quiet"
                             @click="confirmDeleteSchedule(index)">
                 <v-ons-icon icon="fa-trash" class="gray"></v-ons-icon>
               </v-ons-button>
@@ -201,6 +201,8 @@
               }
             }
           }
+          console.log('dayArray is..');
+          console.log(dayArray);
           return dayArray;
         }
       }
@@ -356,9 +358,11 @@
   }
   table.calendar-table tr th.day0{
     background-color:#ef9595;
+    width: 60px;
   }
   table.calendar-table tr th.day6{
     background-color:#a6c0e4;
+    width: 60px;
   }
   table.calendar-table tr td{
     padding:0 1px 0 1px;
@@ -369,7 +373,7 @@
     border-bottom:solid 1px #a3a3a3;
     font-size:12px;
     height: 60px;
-    width:30px;
+    width: 25px;
   }
   table.calendar-table tr td#day1 {
     border-right:none;
