@@ -101,6 +101,7 @@
           extends: Post,
           onsNavigatorOptions: {animation: 'lift'}
         });
+        // this.$store.commit('tabbar/setTimelineBadge', this.$store.state.timeline.posts-1);
       },
       openCalendar() {
         this.$store.commit('navigator/push', {

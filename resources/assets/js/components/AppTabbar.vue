@@ -41,7 +41,7 @@ export default {
           label: 'タイムライン',
           icon: 'fa-align-justify',
           page: Timeline,
-          badge: 3
+          // badge: this.$store.state.tabbar.timeline_badge
         },
         {
           label: 'カレンダー',

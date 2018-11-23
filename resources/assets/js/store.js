@@ -33,11 +33,15 @@ export default {
       strict: true,
       namespaced: true,
       state: {
-        index: 0
+        index: 0,
+        timeline_badge: 0
       },
       mutations: {
         set(state, index) {
           state.index = index;
+        },
+        setTimelineBadge(state, count) {
+          state.timeline_badge = count;
         }
       }
     },
