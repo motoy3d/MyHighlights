@@ -2,7 +2,11 @@
 
   namespace App\Console\Commands\CybozeImport;
 
+  use App\Category;
+  use App\Schedule;
+  use App\User;
   use Illuminate\Console\Command;
+  use Illuminate\Support\Facades\DB;
 
   class ScheduleImporter extends Command
   {
@@ -41,17 +45,27 @@
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {
-          $this->info($row[0] . $row[1]);
-          $member = Member::create([
+          $this->info($row[0] . ' ' . $row[5]);
+          // カテゴリ
+          $category = Category::where('name', $row[4])->first();
+          // 作成・更新ユーザー名からユーザーIDを取得
+          $create_username = $row[7];
+          $create_user = User::where(
+            'name', str_replace_first(' ', '', $create_username))->first();
+          $created_id = $create_user? $create_user->id : -1;  //-1は退会者
+
+          $member = Schedule::create([
             "team_id" => 100,
-            "name" => $row[0] . $row[1],
-            "name_kana" => $row[2] . $row[3],
-            "type" => 3,
-            "birthday" => null,
-            "backno" => 0,
-            "prof_img_filename" => 'boy.png',
-            "created_id" => 0,
-            "updated_id" => 0
+            "schedule_date" => $row[0],
+            "title" => $row[5],
+            "allday_flg" => 0,
+            "time_from" => $row[1],
+            "time_to" => $row[3],
+            "category_id" => $category? $category->id : 0,
+            "content" => $row[6],
+            "notification_flg" => 0,
+            "created_id" => $created_id,
+            "updated_id" => $created_id
           ]);
         }
       });
