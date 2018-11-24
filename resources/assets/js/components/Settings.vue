@@ -12,10 +12,10 @@
       <v-ons-col>
         <v-ons-list id="settings_list">
           <v-ons-list-item modifier="chevron">
-            <div style="margin-right:auto;">片岡　基</div>
+            <div style="margin-right:auto;">{{ $store.state.navigator.user.name }}</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangeEmail()">
-            メールアドレス <div class="right">motoy3d@gmail.com</div>
+            メールアドレス <div class="right">{{ $store.state.navigator.user.email }}</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangePass()">
             パスワード変更
@@ -33,7 +33,7 @@
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
           <v-ons-list-item>
-            バージョン <div class="right">0.1 (2018.5.23)</div>
+            バージョン <div class="right">2018.11.25</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
             ログアウト

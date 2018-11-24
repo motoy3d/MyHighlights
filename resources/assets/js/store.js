@@ -5,7 +5,8 @@ export default {
       namespaced: true,
       state: {
         stack: [],
-        options: {}
+        options: {},
+        user: {}
       },
       mutations: {
         push(state, page) {
@@ -25,6 +26,9 @@ export default {
         },
         options(state, newOptions = {}) {
           state.options = newOptions;
+        },
+        setUser(state, user) {
+          state.user = user;
         }
       }
     },

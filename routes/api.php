@@ -20,6 +20,7 @@
     Route::delete('post_comments/{post_id}/{comment_id}', 'Api\PostCommentController@destroy');
     Route::resource('schedules', 'Api\ScheduleController');
     Route::get('teams', 'Api\TeamController@show');
+    Route::get('me', 'Api\UserController@getMe');
     Route::put('users/updateName', 'Api\UserController@updateName');
     Route::put('users/updateEmail', 'Api\UserController@updateEmail');
     Route::put('users/updatePassword', 'Api\UserController@updatePassword');

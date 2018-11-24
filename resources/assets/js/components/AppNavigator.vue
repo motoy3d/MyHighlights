@@ -14,6 +14,20 @@
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
+      // ユーザー情報取得
+      const self = this;
+      this.$http.get('/api/me')
+        .then((response)=>{
+          // globalにユーザー情報セット
+          console.log('⭐me=' + response.data);
+          self.$store.commit('navigator/setUser', response.data);
+        })
+        .catch(error => {
+          // console.log(error);
+          if (error.response.status == 401) {window.location.href = "/login";}
+        })
+        .finally(() => this.loading = false);
+      // navigatorにTabbarをpush
       this.$store.commit('navigator/push', AppTabbar);
     },
     data() {

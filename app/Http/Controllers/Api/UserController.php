@@ -18,6 +18,14 @@ use Illuminate\Support\Facades\Response;
 class UserController extends Controller
 {
   /**
+   * ユーザーセッション情報を返す。
+   * @param Request $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function getMe(Request $request) {
+    return Response::json(Auth::user());
+  }
+  /**
    * ユーザー名の更新。
    *
    * @param  \Illuminate\Http\Request  $request
