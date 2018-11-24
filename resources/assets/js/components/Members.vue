@@ -115,4 +115,18 @@
   };
 </script>
 
-<style></style>
+<style>
+  #member_list ons-list-item {
+    padding: 0px 15px;
+  }
+  .prof_img {
+    width: 64px;
+    height: 64px;
+  }
+  .highlight_btn {
+    font-size: 13px;
+    border-radius: 20px;
+    padding: 1px 20px;
+    width: 150px;
+  }
+</style>
