@@ -33,7 +33,7 @@
                 {{ post.created_at | moment('Y.M.D(dd) H:mm') }}
                 　{{ post.created_name }}</p>
             </div>
-            <div class="entry_content"><span>{{ post.content }}</span>
+            <div class="entry_content"><span v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30">
                   <img :src="att.file_path" class="image_in_post">
@@ -145,7 +145,7 @@
               </div>
               <div>
                 <div class="speech-bubble">
-                  <span class="comment">{{ comment.comment_text }}</span>
+                  <span class="comment" v-html="replaceATag(comment.comment_text)"></span>
                   <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
                     <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
@@ -467,6 +467,9 @@
         this.deleting = false;
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/load', this.$http);
+      },
+      replaceATag(text) {
+        return window.fn.replaceATag(text);
       }
     }
   };

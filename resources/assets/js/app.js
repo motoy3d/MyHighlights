@@ -31,14 +31,6 @@ if (token) {
 
 // require('./calendar');
 window.fn = {};
-// スライドメニューのカレントアイコン設定
-$('.menulist').on('click', function(event) {
-  $('.menulist').find(".current_menu_icon").each(function(index, icon) {
-    $(icon).addClass("hidden");
-  });
-  var onsIcon = event.target.firstElementChild;
-  $(onsIcon).removeClass("hidden");
-});
 
 window.fn.dateFormat =
   {
@@ -57,6 +49,14 @@ window.fn.dateFormat =
       return this._priority.reduce(
         (res, fmt) => res.replace(fmt, this._fmt[fmt](date)), format)
     }
+  };
+
+// text内のURLをaタグに変換して返す。
+window.fn.replaceATag =
+  function(text) {
+    const exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    const span = $('<span />').text(text);
+    return span.text().replace(exp, "<a href='$1' target='_blank'>$1</a>");
   };
 
 import Vue from 'vue';
@@ -83,7 +83,6 @@ Vue.filter('truncate', function(value, length, omission) {
   }
 });
 
-
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
   el: '#app',
@@ -101,25 +100,3 @@ var vm = new Vue({
     }
   }
 });
-
-//Enterでサブミットしない。class="allow_submit"の場合はサブミットする。のはずだが動作しない。
-/*
-$(function() {
-  $(document).on("keypress", "input:not(.allow_submit)", function(event) {
-    return event.which !== 13;
-  });
-  $('.menulist').on('click', function(event) {
-    $('.menulist').find(".current_menu_icon").each(function(index, icon) {
-      $(icon).addClass("hidden");
-    });
-    var onsIcon = event.target.firstElementChild;
-    $(onsIcon).removeClass("hidden");
-  });
-});
-document.addEventListener('init', function(event) {
-  var page = event.target;
-  if (page.id == "calendar") {
-    new TnCalendar('tnCalendar').create();
-  }
-});
-*/
