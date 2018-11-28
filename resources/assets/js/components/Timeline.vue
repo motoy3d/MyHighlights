@@ -5,7 +5,7 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
-        <span class="white">横浜SCつばさ</span>
+        <span class="white">Delicious Tsubasa Life</span>
       </div>
       <!-- TODO タイムライン検索 -->
       <!--<div class="center">-->
