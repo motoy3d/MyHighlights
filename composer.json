@@ -1,6 +1,6 @@
 {
     "name": "laravel/laravel",
-    "description": "The Laravel Framework.",
+    "description": "MyHighlight",
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "type": "project",
@@ -15,6 +15,7 @@
         "vedmant/laravel-feed-reader": "^1.2"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.2",
         "filp/whoops": "^2.0",
         "fzaninotto/faker": "^1.4",
         "mockery/mockery": "^1.0",

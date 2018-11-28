@@ -116,6 +116,30 @@
                             @click="confirmDeleteSchedule(index)">
                 <v-ons-icon icon="fa-trash" class="gray"></v-ons-icon>
               </v-ons-button>
+
+              <!-- コメント入力 -->
+              <v-ons-row class="mt-30">
+                <v-ons-col width="30px" vertical-align="bottom" class="left">
+                  <div class="upload-btn-wrapper">
+                  <span class="notification" v-if="0 < comment_files.length">
+                    {{ comment_files.length }}</span>
+                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"
+                    ></v-ons-icon>
+                    <input type="file" multiple @change="onFileSet"/>
+                  </div>
+                </v-ons-col>
+                <v-ons-col vertical-align="bottom">
+                <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
+                          v-model="comment_text" @keyup="fitTextarea()"></textarea>
+                </v-ons-col>
+                <v-ons-col width="50px" vertical-align="bottom" class="center">
+                  <v-ons-button class="ml-5 mt-10 center" ripple
+                                @click="postComment()">
+                    <v-ons-icon icon="fa-paper-plane" class="messageBtn"></v-ons-icon></v-ons-button>
+                </v-ons-col>
+              </v-ons-row>
+
+
             </div>
           </ons-list-item>
         </template>
@@ -142,7 +166,9 @@
         deleting: false,
         selectedDate: this.moment(today).format('YYYY-MM-DD'),
         currentYear: today.getFullYear(),
-        currentMonth: today.getMonth()
+        currentMonth: today.getMonth(),
+        comment_text: "",
+        comment_files: [],
       }
     },
     beforeMount() {
@@ -295,7 +321,20 @@
         this.deleting = false;
         //TODO 画面から削除
         // this.$store.commit('navigator/pop');
-      }
+      },
+      // ファイルが選択された時
+      onFileSet(event) {
+        // console.log("onFileSet.");
+        this.comment_files = event.target.files;
+      },
+      fitTextarea() {
+        let num = event.srcElement.value.match(/\r\n|\n/g);
+        if (num != null && 3 < num.length) {
+          event.srcElement.rows = num.length > 8 ? 8 : num.length + 1;
+        } else {
+          event.srcElement.rows = 3;
+        }
+      },
     }
   }
 </script>
@@ -417,5 +456,11 @@
   }
   .lastspace {
     margin-bottom: 80px;
+  }
+  .comment_textarea {
+    width: 100%;
+  }
+  .messageBtn {
+    width: 20px;
   }
 </style>
