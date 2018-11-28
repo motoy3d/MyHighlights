@@ -5,6 +5,6 @@
 以下のリンクをクリックしてログインしてください。<br><br>
 
 <a href="{{ $site_link }}">{{ $site_link }}</a><br><br>
-<br><br>
-ログインID(メールアドレス)：{{ $email }}<br>
+
+ログインID：{{ $email }}<br>
 パスワード：{{ $password }}<br>

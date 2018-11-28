@@ -40,8 +40,7 @@ class UserInvitation extends Mailable
     Log::info('build. name=' . $this->fromUser->name);
     return $this
       ->subject($this->fromUser->name .
-        'さんから横浜SCつばさのグループウェア、DTL(Delicious Tsubasa Life)へ招待されました。\n' .
-        'メールアドレスと以下のパスワードでログインしてください。')
+        'さんから横浜SCつばさ用アプリへ招待されました')
       ->view('emails.user_invitation')
       ->with([
         'name' => $this->newUser->name,
