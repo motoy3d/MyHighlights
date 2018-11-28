@@ -36,7 +36,7 @@ class UserInvitation extends Mailable
    */
   public function build()
   {
-    $url = 'https://tsubasa.smartj.mobi/';
+    $url = 'https://tsubasa.smartj.mobi';
     Log::info('build. name=' . $this->fromUser->name);
     return $this
       ->subject($this->fromUser->name .
@@ -46,7 +46,7 @@ class UserInvitation extends Mailable
       ->with([
         'name' => $this->newUser->name,
         'team_name' => '横浜SCつばさ',
-        'invitation_link' => $url,
+        'site_link' => $url,
         'email' => $this->fromUser->email,
         'password' => $this->password
       ]);
