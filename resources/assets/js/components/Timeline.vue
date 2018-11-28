@@ -4,6 +4,9 @@
       <div class="left">
         <img src="/img/appicon2.png" class="logo">
       </div>
+      <div class="center">
+        <span class="white">横浜SCつばさ</span>
+      </div>
       <!-- TODO タイムライン検索 -->
       <!--<div class="center">-->
         <!--<v-ons-search-input placeholder="検索" class="timeline_search2">-->
