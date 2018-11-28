@@ -4,10 +4,11 @@
       <div class="left">
         <img src="/img/appicon2.png" class="logo">
       </div>
-      <div class="center">
-        <v-ons-search-input placeholder="検索" class="timeline_search2">
-        </v-ons-search-input>
-      </div>
+      <!-- TODO タイムライン検索 -->
+      <!--<div class="center">-->
+        <!--<v-ons-search-input placeholder="検索" class="timeline_search2">-->
+        <!--</v-ons-search-input>-->
+      <!--</div>-->
       <div class="right mr-5">
         <v-ons-toolbar-button @click="$store.dispatch('timeline/load', $http)">
           <v-ons-icon icon="fa-refresh" size="20px" class="white"></v-ons-icon>
