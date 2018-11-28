@@ -41,9 +41,9 @@
                        name="email" value="{{ old('email') }}" required autofocus>
             </ons-input>
             @if ($errors->has('email'))
-              <span class="invalid-feedback" role="alert">
+              <p class="invalid-feedback" role="alert">
                 <strong>{{ $errors->first('email') }}</strong>
-              </span>
+              </p>
             @endif
           </div>
           <div class="space">
@@ -52,9 +52,9 @@
                        name="password" required>
             </ons-input>
             @if ($errors->has('password'))
-              <span class="invalid-feedback" role="alert">
+              <p class="invalid-feedback" role="alert">
                 <strong>{{ $errors->first('password') }}</strong>
-              </span>
+              </p>
             @endif
           </div>
           <div class="center space mt-20">
