@@ -46,7 +46,7 @@ class UserInvitation extends Mailable
         'name' => $this->newUser->name,
         'team_name' => '横浜SCつばさ',
         'site_link' => $url,
-        'email' => $this->fromUser->email,
+        'email' => $this->newUser->email,
         'password' => $this->password
       ]);
   }
