@@ -87,7 +87,8 @@ export default {
             //     window.location.href = "/login"; return;
             //   }
             // })
-            .finally(() => context.commit('setLoading', false))
+            // .finally(() => context.commit('setLoading', false))
+            .finally(function() {return context.commit('setLoading', false);})
             ;
         },
         loadMore(context, param) {
