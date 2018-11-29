@@ -22,11 +22,11 @@
           console.log('⭐me=' + response.data);
           self.$store.commit('navigator/setUser', response.data);
         })
-        .catch(error => {
-          // console.log(error);
-          if (error.response.status == 401) {window.location.href = "/login";}
-        })
-        .finally(() => this.loading = false);
+        // .catch(error => {
+        //   // console.log(error);
+        //   if (error.response.status == 401) {window.location.href = "/login";}
+        // })
+      ;
       // navigatorにTabbarをpush
       this.$store.commit('navigator/push', AppTabbar);
     },
