@@ -86,7 +86,12 @@
   import Calendar from './Calendar.vue';
   export default {
     mounted() {
-      this.$store.dispatch('timeline/load', this.$http);
+      try {
+        this.$store.dispatch('timeline/load', this.$http);
+      } catch($ex) {
+        console.log('####################');
+        console.log($ex);
+      }
     },
     methods: {
       loadMore(done) {
