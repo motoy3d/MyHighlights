@@ -82,12 +82,13 @@ export default {
               context.commit('setNextPageUrl', response.data.next_page_url);
               context.commit('setLoading', false);
             })
-            // .catch(error => {
-            //   console.log(error);
-            //   if (error.response.status == 401) {
-            //     window.location.href = "/login"; return;
-            //   }
-            // })
+            .catch(error => {
+              console.log(error);
+              if (error.response.status == 401) {
+                window.location.href = "/login"; return;
+              }
+            })
+            //iOS10以下?でfinallyの付近でundefinedエラーになる
             // .finally(() => context.commit('setLoading', false))
             // .finally(function() {return context.commit('setLoading', false);})
             ;
