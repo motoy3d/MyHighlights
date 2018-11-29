@@ -46,12 +46,14 @@
         .then((response)=> {
           // console.log(response.data);
           this.entries = response.data;
+          this.loading = false;
         })
         .catch(error => {
           this.errored = true;
           console.log(error);
+          this.loading = false;
         })
-        .finally(() => this.loading = false)
+        // .finally(() => this.loading = false)
       ;
     },
     data() {

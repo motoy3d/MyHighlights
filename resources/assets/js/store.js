@@ -87,6 +87,7 @@ export default {
               if (error.response.status == 401) {
                 window.location.href = "/login"; return;
               }
+              context.commit('setLoading', false);
             })
             //iOS10以下?でfinallyの付近でundefinedエラーになる
             // .finally(() => context.commit('setLoading', false))
@@ -101,14 +102,16 @@ export default {
             .then((response)=>{
               context.commit('add', response.data.data);
               context.commit('setNextPageUrl', response.data.next_page_url);
+              param.done();
             })
             .catch(error => {
               console.log(error);
               if (error.response.status == 401) {
                 window.location.href = "/login"; return;
               }
+              param.done();
             })
-            .finally(() => param.done())
+            // .finally(() => param.done())
           ;
         }
       }
@@ -174,14 +177,16 @@ export default {
           $http.get('/api/schedules?month=' + yearMonth)
             .then((response)=>{
               context.commit('set', response.data);
+              context.commit('setLoading', false)
             })
             .catch(error => {
               console.log(error);
               if (error.response.status === 401) {
                 window.location.href = "/login";
               }
+              context.commit('setLoading', false);
             })
-            .finally(() => context.commit('setLoading', false))
+            // .finally(() => context.commit('setLoading', false))
           ;
         }
       }

@@ -80,14 +80,17 @@
         this.$http.post('/api/members', this.$data)
           .then(response => {
             // console.log(response.data);
+            this.loading = false;
           })
           .catch(error => {
             console.log(error.response);
             if (error.response.status === 401) {
               window.location.href = "/login";
             }
+            this.loading = false;
           })
-          .finally(() => this.loading = false);
+          // .finally(() => this.loading = false)
+        ;
         this.$store.commit('navigator/pop');
       }
     }

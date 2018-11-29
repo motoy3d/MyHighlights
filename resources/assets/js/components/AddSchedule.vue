@@ -90,7 +90,8 @@
     beforeCreate() {
       this.$http.get('/api/schedules/create')
         .then((response)=>{
-          this.categories = response.data.categories
+          this.categories = response.data.categories;
+          this.loading = false;
         })
         .catch(error => {
           console.log(error);
@@ -98,8 +99,10 @@
           if (error.response.status === 401) {
             window.location.href = "/login";
           }
+          this.loading = false;
         })
-        .finally(() => this.loading = false);
+        // .finally(() => this.loading = false)
+      ;
       // $('#dateForAdd').pickadate();
       // $('#startHourForAdd').pickatime({format:'H時', interval:60});
       // $('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
@@ -169,14 +172,17 @@
                 self.$store.dispatch('calendar/load', self.$http);
                 self.$store.commit('navigator/pop');
               });
+            this.loading = false; this.posting = false;
           })
           .catch(error => {
             console.log(error.response);
             if (error.response.status === 401) {
               window.location.href = "/login";
             }
+            this.loading = false; this.posting = false;
           })
-          .finally(() => {this.loading = false; this.posting = false;});
+          // .finally(() => {this.loading = false; this.posting = false;})
+        ;
       }
     }
   };

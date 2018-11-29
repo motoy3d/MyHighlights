@@ -275,8 +275,10 @@
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
             }
+            this.loading = false;
           })
-          .finally(() => this.loading = false);
+          // .finally(() => this.loading = false)
+        ;
       },
       postComment() {
         if (!this.comment_text) {
@@ -296,14 +298,17 @@
             self.comment_text = '';
             self.comment_files = [];
             self.load();
+            this.loading = false;
           })
           .catch(error => {
             this.errored = true;
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
             }
+            this.loading = false;
           })
-          .finally(() => this.loading = false);
+          // .finally(() => this.loading = false)
+        ;
       },
       confirmDeleteComment(comment_id) {
         let self = this;
@@ -321,6 +326,7 @@
           .then((response)=>{
             // console.log(response.data);
             self.load();
+            self.loading = false;
           })
           .catch(error => {
             console.log(error);
@@ -328,8 +334,10 @@
             if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
+            self.loading = false;
           })
-          .finally(() => self.loading = false);
+          // .finally(() => self.loading = false)
+        ;
       },
       openEditPost() {
         this.$store.commit('navigator/push', {
@@ -405,14 +413,17 @@
             .then((response)=>{
               // console.log(response.data);
               self.load();
+              self.loading = false;
             })
             .catch(error => {
               self.errored = true;
               if (error.response.status === 401) {
                 window.location.href = "/login"; return;
               }
+              self.loading = false;
             })
-            .finally(() => self.loading = false);
+            // .finally(() => self.loading = false)
+          ;
         });
       },
       isImage(fileExtension) {
@@ -453,6 +464,7 @@
               .then(function(){
                 self.afterDelete();
               });
+            self.deleting = false;
           })
           .catch(error => {
             console.log(error);
@@ -460,8 +472,10 @@
             if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
+            self.deleting = false;
           })
-          .finally(() => self.deleting = false);
+          // .finally(() => self.deleting = false)
+        ;
       },
       afterDelete() {
         this.deleting = false;

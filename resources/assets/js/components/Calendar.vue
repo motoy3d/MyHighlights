@@ -314,8 +314,7 @@
             if (error.response.status === 401) {
               window.location.href = "/login"; return;
             }
-          })
-          // .finally(() => self.deleting = false);
+          });
       },
       afterDelete() {
         this.deleting = false;

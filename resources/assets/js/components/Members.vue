@@ -63,7 +63,8 @@
     beforeCreate() {
       this.$http.get('/api/members')
         .then((response)=>{
-          this.allMembers = response.data
+          this.allMembers = response.data;
+          this.loading = false;
         })
         .catch(error => {
           console.log(error);
@@ -71,8 +72,9 @@
           if (error.response.status == 401) {
             window.location.href = "/login"; return;
           }
-        })
-        .finally(() => this.loading = false);
+          this.loading = false;
+        });
+        // .finally(() => this.loading = false);
     },
     data() {
       return {

@@ -134,7 +134,8 @@
       this.loading = true;
       this.$http.get('/api/posts/create')
         .then((response)=>{
-          this.categories = response.data.categories
+          this.categories = response.data.categories;
+          this.loading = false;
         })
         .catch(error => {
           console.log(error);
@@ -142,8 +143,10 @@
           if (error.response.status === 401) {
             window.location.href = "/login";
           }
+          this.loading = false;
         })
-        .finally(() => this.loading = false);
+        // .finally(() => this.loading = false)
+      ;
       console.log('start load');
 
       let post_id = this.$store.state.article.post_id;
@@ -165,8 +168,10 @@
           if (error.response.status === 401) {
             window.location.href = "/login";
           }
+          this.loading = false;
         })
-        .finally(() => this.loading = false);
+        // .finally(() => this.loading = false);
+      ;
     },
     data() {
       return {
@@ -224,14 +229,17 @@
               .then(function(){
                 self.afterPost();
               });
+            this.loading = false; this.posting = false;
           })
           .catch(error => {
             console.log(error.response);
             if (error.response.status === 401) {
               window.location.href = "/login";
             }
+            this.loading = false; this.posting = false;
           })
-          .finally(() => {this.loading = false; this.posting = false;});
+          // .finally(() => {this.loading = false; this.posting = false;})
+        ;
       },
       afterPost() {
         this.$store.commit('navigator/pop');
