@@ -81,12 +81,12 @@ export default {
               context.commit('set', response.data.data);
               context.commit('setNextPageUrl', response.data.next_page_url);
             })
-            .catch(error => {
-              console.log(error);
-              if (error.response.status == 401) {
-                window.location.href = "/login"; return;
-              }
-            })
+            // .catch(error => {
+            //   console.log(error);
+            //   if (error.response.status == 401) {
+            //     window.location.href = "/login"; return;
+            //   }
+            // })
             .finally(() => context.commit('setLoading', false))
             ;
         },
