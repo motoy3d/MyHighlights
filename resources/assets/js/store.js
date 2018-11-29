@@ -80,6 +80,7 @@ export default {
             .then((response)=>{
               context.commit('set', response.data.data);
               context.commit('setNextPageUrl', response.data.next_page_url);
+              context.commit('setLoading', false);
             })
             // .catch(error => {
             //   console.log(error);
@@ -88,7 +89,7 @@ export default {
             //   }
             // })
             // .finally(() => context.commit('setLoading', false))
-            .finally(function() {return context.commit('setLoading', false);})
+            // .finally(function() {return context.commit('setLoading', false);})
             ;
         },
         loadMore(context, param) {
