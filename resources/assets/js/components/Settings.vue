@@ -10,6 +10,9 @@
     </v-ons-toolbar>
     <v-ons-row>
       <v-ons-col>
+        <div v-if="loading" class="progress-div">
+          <v-ons-progress-circular indeterminate class="progress-circular"></v-ons-progress-circular>
+        </div>
         <v-ons-list id="settings_list">
           <v-ons-list-item modifier="chevron">
             <div style="margin-right:auto;">{{ $store.state.navigator.user.name }}</div>
@@ -33,7 +36,7 @@
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
           <v-ons-list-item>
-            バージョン <div class="right">2018.11.25</div>
+            バージョン <div class="right">2018.12.1</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
             ログアウト
@@ -46,8 +49,10 @@
         ログアウトしますか？
       </div>
       <div class="alert-dialog-footer">
-        <v-ons-alert-dialog-button onclick="document.getElementById('logout-form').submit();">OK</v-ons-alert-dialog-button>
-        <v-ons-alert-dialog-button onclick="$('#logout_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
+        <v-ons-alert-dialog-button
+          onclick="document.getElementById('logout-form').submit();">OK</v-ons-alert-dialog-button>
+        <v-ons-alert-dialog-button
+          onclick="$('#logout_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
       </div>
     </v-ons-alert-dialog>
   </v-ons-page>
@@ -55,6 +60,13 @@
 
 <script>
   export default {
+    data() {
+      return {
+        loading: false,
+        errored: false,
+        posting: false,
+      }
+    },
     methods: {
       openChangeEmail() {
         let self = this;
@@ -70,13 +82,41 @@
       },
       openChangePass() {
         let self = this;
-        this.$ons.notification.prompt("新しいパスワード", {title: ''})
+        this.$ons.notification.prompt("新しいパスワード(6文字以上)",
+          {title: '', inputType: 'password', buttonLabels:['キャンセル', 'OK']})
           .then(function(newpass) {
+            if (!newpass) {
+              return;
+            }
+            if (newpass.length < 6) {
+              self.$ons.notification.alert('6文字以上で入力してください', {title: ''});
+              return;
+            }
             self.$ons.notification.confirm(
               newpass, {title: 'このパスワードでいいですか？'})
               .then(function(answer){
-                alert(answer);
-                //TODO API
+                if (self.posting) {
+                  return;
+                }
+                if (answer === 1) {
+                  self.loading = true;
+                  let formData = new FormData();
+                  formData.append('new_password', newpass);
+                  self.$http.put('/api/users/updatePassword', formData)
+                    .then(response => {
+                      console.log(response.data);
+                      self.$ons.notification.alert('変更されました', {title: ''});
+                      self.loading = false; self.posting = false;
+                    })
+                    .catch(error => {
+                      console.log(error);
+                      if (error.response.status === 401) {
+                        window.location.href = "/login";
+                      }
+                      self.loading = false; self.posting = false;
+                    })
+                  // .finally(() => {this.loading = false; this.posting = false;})
+                }
               });
           });
       }

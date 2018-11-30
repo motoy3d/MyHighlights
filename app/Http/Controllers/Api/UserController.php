@@ -75,19 +75,19 @@ class UserController extends Controller
   {
     //TODO validate
     $user = Auth::user();
-    Log::debug('password = ' . Auth::user()->password);
+//    Log::debug('password = ' . Auth::user()->password);
     // 現在のパスワードのチェック
-    if (Hash::check($request->current_password, Auth::user()->password)) {
+//    if (Hash::check($request->current_password, Auth::user()->password)) {
       $user->fill([
         'password' => Hash::make($request->new_password),
         'updated_id' => Auth::id()
       ]);
       $user = $user->save();
       return Response::json($user);
-    } else {
-      // TODO メッセージリソース化
-      return response()->json('現在のパスワードが違います', 400);
-    }
+//    } else {
+//      // TODO メッセージリソース化
+//      return response()->json('現在のパスワードが違います', 400);
+//    }
   }
 
 }
