@@ -36,10 +36,10 @@
         @csrf
         <div class="col bg-white center" style="padding: 30% 0 0 0">
           <div class="space">
-            <ons-input id="email" type="email" modifier="border" placeholder="メールアドレス"
-                       class="login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
+            <input id="email" type="email" modifier="border" placeholder="メールアドレス"
+                       class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
                        name="email" value="{{ old('email') }}" required autofocus>
-            </ons-input>
+            </input>
             @if ($errors->has('email'))
               <p class="invalid-feedback" role="alert">
                 <strong>{{ $errors->first('email') }}</strong>
@@ -47,10 +47,10 @@
             @endif
           </div>
           <div class="space">
-            <ons-input id="password" type="password" modifier="border" placeholder="パスワード"
-                       class="login_field form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
+            <input id="password" type="password" modifier="border" placeholder="パスワード"
+                       class="text-input text-input--border login_field form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
                        name="password" required>
-            </ons-input>
+            </input>
             @if ($errors->has('password'))
               <p class="invalid-feedback" role="alert">
                 <strong>{{ $errors->first('password') }}</strong>
@@ -88,8 +88,5 @@
     </div>
   </ons-page>
   <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
-  {{--<script src="{{ mix('js/manifest.js') }}"></script>--}}
-  {{--<script src="{{ mix('js/vendor.js') }}"></script>--}}
-  {{--<script src="{{ mix('js/app.js') }}"></script>--}}
 </body>
 </html>

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\User;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Str;
 
 /**
  * Class UserController
@@ -78,12 +80,23 @@ class UserController extends Controller
 //    Log::debug('password = ' . Auth::user()->password);
     // 現在のパスワードのチェック
 //    if (Hash::check($request->current_password, Auth::user()->password)) {
-      $user->fill([
-        'password' => Hash::make($request->new_password),
-        'updated_id' => Auth::id()
-      ]);
-      $user = $user->save();
-      return Response::json($user);
+//      $user->fill([
+//        'password' => Hash::make($request->new_password),
+//        'updated_id' => Auth::id()
+//      ]);
+//      $user = $user->save();
+
+    $user->password = Hash::make($request->new_password);
+
+    $user->setRememberToken(Str::random(60));
+
+    $user->save();
+
+    event(new PasswordReset($user));
+
+    Auth::guard()->login($user);
+
+    return Response::json($user);
 //    } else {
 //      // TODO メッセージリソース化
 //      return response()->json('現在のパスワードが違います', 400);

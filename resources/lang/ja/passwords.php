@@ -13,10 +13,14 @@
     |
     */
 
-    'password' => 'Passwords must be at least six characters and match the confirmation.',
-    'reset' => 'Your password has been reset!',
-    'sent' => 'We have e-mailed your password reset link!',
-    'token' => 'This password reset token is invalid.',
-    'user' => "We can't find a user with that e-mail address.",
+    'password' => 'パスワードは6文字以上で入力してください。',
+    'reset' => 'パスワードが再設定されました。',
+    'sent' => 'パスワード再設定用リンクをメールしました。',
+    'token' => 'パスワードリセットトークンが無効です。',
+    'user' => "該当するメールアドレスが存在しません。",
+//別ファイルに設定しないとNGの模様↓
+    'Reset Password' => 'パスワード再設定',
+    'Send Password Reset Link' => 'パスワード再設定メール送信',
+    'Reset Password Notification' => 'パスワード再設定',
 
   ];

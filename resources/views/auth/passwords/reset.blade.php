@@ -8,78 +8,89 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="つばさ">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <!--Monaca用？  <script src="components/loader.js"></script>-->
-  <!--Monaca用？  <link rel="stylesheet" href="components/loader.css">-->
-  <!--  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">-->
-  <link rel="apple-touch-icon" sizes="192x192" href="appicon.png">
-  <link rel="shortcut icon" href="https://smartj.mobi/appicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/appicon.png">
+  <link rel="apple-touch-startup-image" href="/img/launch-1242x2208.png">
+  <link rel="apple-touch-startup-image" href="/img/launch-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/img/launch-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="shortcut icon" href="https://tsubasa.smartj.mobi/appicon.png">
 </head>
-<body>
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header">{{ __('Reset Password') }}</div>
+<body class="bg-white">
+<ons-page id="login_page">
+  <ons-toolbar class="navbar" class="bg-white">
+    <div class="left">
+      <img src="/img/appicon2.png" class="logo">
+    </div>
+    <div class="center">
+      <span class="white">パスワード再設定</span>
+    </div>
+  </ons-toolbar>
+  <div class="row bg-white h-100p">
+    <div class="col bg-white center" style="padding: 30px 0 0 0">
 
-          <div class="card-body">
-            <form method="POST" action="{{ route('password.request') }}" aria-label="{{ __('Reset Password') }}">
-              @csrf
+    <form method="POST" action="{{ route('password.request') }}" aria-label="{{ __('Reset Password') }}">
+        @csrf
 
-              <input type="hidden" name="token" value="{{ $token }}">
+        <input type="hidden" name="token" value="{{ $token }}">
 
-              <div class="form-group row">
-                <label for="email" class="col-md-4 col-form-label text-md-right">{{ __('E-Mail Address') }}</label>
+        <div class="form-group row">
+          <label for="email" class="col-md-4 col-form-label text-md-right">
+            メールアドレス</label>
 
-                <div class="col-md-6">
-                  <input id="email" type="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
-                         name="email" value="{{ $email ?? old('email') }}" required autofocus>
+          <div class="col-md-6">
+            <input id="email" type="email"
+                   class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
+                   name="email" value="{{ $email ?? old('email') }}" required autofocus>
 
-                  @if ($errors->has('email'))
-                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('email') }}</strong>
-                                    </span>
-                  @endif
-                </div>
-              </div>
-
-              <div class="form-group row">
-                <label for="password" class="col-md-4 col-form-label text-md-right">{{ __('Password') }}</label>
-
-                <div class="col-md-6">
-                  <input id="password" type="password"
-                         class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password"
-                         required>
-
-                  @if ($errors->has('password'))
-                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('password') }}</strong>
-                                    </span>
-                  @endif
-                </div>
-              </div>
-
-              <div class="form-group row">
-                <label for="password-confirm"
-                       class="col-md-4 col-form-label text-md-right">{{ __('Confirm Password') }}</label>
-
-                <div class="col-md-6">
-                  <input id="password-confirm" type="password" class="form-control" name="password_confirmation"
-                         required>
-                </div>
-              </div>
-
-              <div class="form-group row mb-0">
-                <div class="col-md-6 offset-md-4">
-                  <button type="submit" class="btn btn-primary">
-                    {{ __('Reset Password') }}
-                  </button>
-                </div>
-              </div>
-            </form>
+            @if ($errors->has('email'))
+              <span class="invalid-feedback" role="alert">
+                                  <strong>{{ $errors->first('email') }}</strong>
+                              </span>
+            @endif
           </div>
         </div>
-      </div>
+
+        <div class="form-group row mt-10">
+          <label for="password" class="col-md-4 col-form-label text-md-right">
+            新パスワード(6文字以上)</label>
+
+          <div class="col-md-6">
+            <input id="password" type="password"
+                   class="text-input text-input--border login_field form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password"
+                   required>
+
+            @if ($errors->has('password'))
+              <span class="invalid-feedback" role="alert">
+                                  <strong>{{ $errors->first('password') }}</strong>
+                              </span>
+            @endif
+          </div>
+        </div>
+
+        <div class="form-group row mt-10">
+          <label for="password-confirm"
+                 class="col-md-4 col-form-label text-md-right">
+            新パスワード確認(6文字以上)</label>
+
+          <div class="col-md-6">
+            <input id="password-confirm" type="password"
+                   class="text-input text-input--border login_field form-control" name="password_confirmation"
+                   required>
+          </div>
+        </div>
+
+        <div class="form-group row mt-30 mb-0">
+          <div class="col-md-6 offset-md-4">
+            <button type="submit" class="button">
+              パスワード保存
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
+</ons-page>
+<script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
 </body>
 </html>
