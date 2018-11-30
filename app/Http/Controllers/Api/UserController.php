@@ -77,7 +77,7 @@ class UserController extends Controller
   {
     //TODO validate
     $user = Auth::user();
-//    Log::debug('password = ' . Auth::user()->password);
+//    Log::debug('new_password = ' . $request->new_password);
     // 現在のパスワードのチェック
 //    if (Hash::check($request->current_password, Auth::user()->password)) {
 //      $user->fill([
@@ -94,7 +94,7 @@ class UserController extends Controller
 
     event(new PasswordReset($user));
 
-    Auth::guard()->login($user);
+//必要かも？    Auth::guard()->login($user);
 
     return Response::json($user);
 //    } else {

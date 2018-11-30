@@ -25,7 +25,7 @@
     Route::get('me', 'Api\UserController@getMe');
     Route::put('users/updateName', 'Api\UserController@updateName');
     Route::put('users/updateEmail', 'Api\UserController@updateEmail');
-    Route::put('users/updatePassword', 'Api\UserController@updatePassword');
+    Route::post('users/updatePassword', 'Api\UserController@updatePassword');
     Route::resource('members', 'Api\MemberController');
     Route::post('questionnaires/answer', 'Api\QuestionnaireController@store');
     Route::get('blog', 'Api\BlogController@index');

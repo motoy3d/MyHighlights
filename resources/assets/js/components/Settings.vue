@@ -92,6 +92,7 @@
               self.$ons.notification.alert('6文字以上で入力してください', {title: ''});
               return;
             }
+            const newpass2 = newpass;
             self.$ons.notification.confirm(
               newpass, {title: 'このパスワードでいいですか？'})
               .then(function(answer){
@@ -101,8 +102,8 @@
                 if (answer === 1) {
                   self.loading = true;
                   let formData = new FormData();
-                  formData.append('new_password', newpass);
-                  self.$http.put('/api/users/updatePassword', formData)
+                  formData.append('new_password', newpass2);
+                  self.$http.post('/api/users/updatePassword', formData)
                     .then(response => {
                       console.log(response.data);
                       self.$ons.notification.alert('変更されました', {title: ''});
