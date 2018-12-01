@@ -33,7 +33,7 @@
                 {{ post.created_at | moment('Y.M.D(dd) H:mm') }}
                 　{{ post.created_name }}</p>
             </div>
-            <div class="entry_content"><span v-html="replaceATag(post.content)"></span>
+            <div class="entry_content"><span class="entry_text" v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30">
                   <img :src="att.file_path" class="image_in_post">
@@ -507,8 +507,13 @@
     font-size: 16px;
     text-align:left;
     margin: 5px 0 0 5px;
+  }
+  .entry_text {
     white-space: pre-wrap;
     user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
   }
   .updated_at {
     color: grey;
@@ -592,6 +597,8 @@
     white-space: pre-wrap;
     user-select: text;
     -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
   }
   .comment_card {
     background-color: #81ff4f;
