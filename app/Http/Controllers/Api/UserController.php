@@ -80,11 +80,6 @@ class UserController extends Controller
 //    Log::debug('new_password = ' . $request->new_password);
     // 現在のパスワードのチェック
 //    if (Hash::check($request->current_password, Auth::user()->password)) {
-//      $user->fill([
-//        'password' => Hash::make($request->new_password),
-//        'updated_id' => Auth::id()
-//      ]);
-//      $user = $user->save();
 
     $user->password = Hash::make($request->new_password);
 
@@ -93,8 +88,6 @@ class UserController extends Controller
     $user->save();
 
     event(new PasswordReset($user));
-
-//必要かも？    Auth::guard()->login($user);
 
     return Response::json($user);
 //    } else {

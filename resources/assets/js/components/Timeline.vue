@@ -36,6 +36,17 @@
       </div>
       <template v-else>
         <v-ons-page :infinite-scroll="loadMore">
+          <v-ons-pull-hook
+            :action="load"
+            @changestate="state = $event.state"
+          >
+            <span v-show="state === 'initial'"><v-ons-icon icon="arrow-down"></v-ons-icon></span>
+            <span v-show="state === 'preaction'"><v-ons-icon icon="arrow-down"></v-ons-icon></span>
+            <span v-show="state === 'action'">
+              <v-ons-progress-circular indeterminate class="progress-circular"
+                                       style="width:20px;height:20px"></v-ons-progress-circular>
+            </span>
+          </v-ons-pull-hook>
           <v-ons-list id="timeline_list">
             <v-ons-list-item
               v-for="post in posts"
@@ -87,13 +98,18 @@
   export default {
     mounted() {
       try {
-        this.$store.dispatch('timeline/load', this.$http);
+        this.load();
       } catch($ex) {
-        console.log('####################');
         console.log($ex);
       }
     },
     methods: {
+      load(done) {
+        setTimeout(() => {
+          this.$store.dispatch('timeline/load', this.$http);
+          if (done) done(); //pull to refreshの時のみ使用
+        }, 400);
+      },
       loadMore(done) {
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
       },
@@ -126,6 +142,7 @@
     },
     data() {
       return {
+        state: 'initial',
         loading: true,
         errored: false
       }
