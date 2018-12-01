@@ -591,6 +591,7 @@
     margin: 0;
     white-space: pre-wrap;
     user-select: text;
+    -webkit-user-select: text;
   }
   .comment_card {
     background-color: #81ff4f;
