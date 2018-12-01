@@ -43,8 +43,7 @@
             <span v-show="state === 'initial'"><v-ons-icon icon="arrow-down"></v-ons-icon></span>
             <span v-show="state === 'preaction'"><v-ons-icon icon="arrow-down"></v-ons-icon></span>
             <span v-show="state === 'action'">
-              <v-ons-progress-circular indeterminate class="progress-circular"
-                                       style="width:20px;height:20px"></v-ons-progress-circular>
+              <v-ons-icon icon="fa-spinner" size="26px" spin></v-ons-icon>
             </span>
           </v-ons-pull-hook>
           <v-ons-list id="timeline_list">
