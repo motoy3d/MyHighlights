@@ -508,6 +508,7 @@
     text-align:left;
     margin: 5px 0 0 5px;
     white-space: pre-wrap;
+    user-select: text;
   }
   .updated_at {
     color: grey;
@@ -589,6 +590,7 @@
     font-size: 14px;
     margin: 0;
     white-space: pre-wrap;
+    user-select: text;
   }
   .comment_card {
     background-color: #81ff4f;
