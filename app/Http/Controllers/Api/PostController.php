@@ -334,4 +334,14 @@ class PostController extends Controller
       return Response::json($result);
     });
   }
+
+  /**
+   * 投稿検索画面を表示するときに必要なデータを返す。
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function searchInit() {
+    $categories = Category::all()->sortBy('order_no');
+    return Response::json(["categories" => $categories]);
+  }
+
 }

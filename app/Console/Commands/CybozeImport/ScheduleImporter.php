@@ -42,7 +42,7 @@
      */
     public function handle()
     {
-      $filepath = fopen(storage_path('app/') . 'schedule.csv', 'r');
+      $filepath = fopen(storage_path('app/') . 'cybozu/schedule.csv', 'r');
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         $week = array( "日", "月", "火", "水", "木", "金", "土" );

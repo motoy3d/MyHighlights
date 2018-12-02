@@ -41,7 +41,7 @@
      */
     public function handle()
     {
-      $filepath = fopen(storage_path('app/') . 'post.csv', 'r');
+      $filepath = fopen(storage_path('app/') . 'cybozu/post.csv', 'r');
       $posts = [];
       $comments = [];
       fgetcsv($filepath); //ヘッダ行

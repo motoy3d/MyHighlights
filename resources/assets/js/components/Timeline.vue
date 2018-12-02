@@ -7,14 +7,9 @@
       <div class="center">
         <span class="white">横浜SCつばさ</span>
       </div>
-      <!-- TODO タイムライン検索 -->
-      <!--<div class="center">-->
-        <!--<v-ons-search-input placeholder="検索" class="timeline_search2">-->
-        <!--</v-ons-search-input>-->
-      <!--</div>-->
       <div class="right mr-5">
-        <v-ons-toolbar-button @click="$store.dispatch('timeline/load', $http)">
-          <v-ons-icon icon="fa-refresh" size="20px" class="white"></v-ons-icon>
+        <v-ons-toolbar-button @click="showSearch($event);">
+          <v-ons-icon icon="fa-search" size="20px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
         <!-- TODO いずれ動画アップ機能追加
               <v-ons-toolbar-button onclick="alert('動画アップロード画面')">
@@ -23,7 +18,34 @@
         -->
       </div>
     </v-ons-toolbar>
-    <!-- メインコンテンツ -->
+    <!-- ★★★検索popover -->
+    <v-ons-popover cancelable direction="down" cover-target="true"
+                   class="search_popover"
+                   :visible.sync="searchPopoverVisible"
+                   :target="searchPopoverTarget"
+    >
+      <div class="center space">
+        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>
+        <v-ons-list class="search_category_list center mt-15">
+          <v-ons-list-item v-for="(cate, $index) in categories" :key="cate.id" tappable>
+            <label class="left">
+              <v-ons-checkbox
+                :input-id="'checkbox-' + $index"
+                :value="cate.id"
+                v-model="selectedCategories"
+              >
+              </v-ons-checkbox>
+            </label>
+            <label class="center" :for="'checkbox-' + $index">
+              {{ cate.name }}
+            </label>
+          </v-ons-list-item>
+        </v-ons-list>
+        <v-ons-button class="mt-10 plr-40" @click="">検索</v-ons-button>
+      </div>
+    </v-ons-popover>
+
+    <!-- ★★★メインコンテンツ -->
     <v-ons-fab position="bottom right" v-if="!errored" ripple>
       <v-ons-icon icon="fa-plus" @click="openPost();" ripple></v-ons-icon>
     </v-ons-fab>
@@ -98,6 +120,7 @@
     mounted() {
       try {
         this.load();
+        this.loadCategories();
       } catch($ex) {
         console.log($ex);
       }
@@ -127,11 +150,19 @@
         });
         // this.$store.commit('tabbar/setTimelineBadge', this.$store.state.timeline.posts-1);
       },
-      openCalendar() {
-        this.$store.commit('navigator/push', {
-          extends: Calendar,
-          onsNavigatorOptions: {animation: 'slide'}
-        });
+      loadCategories() {
+        this.$http.get('/api/posts/search_init')
+          .then((response)=>{
+            this.categories = response.data.categories;
+          })
+          .catch(error => {
+            console.log(error);
+            if (error.response.status === 401) {window.location.href = "/login";}
+          });
+      },
+      showSearch(event) {
+        this.searchPopoverTarget = event;
+        this.searchPopoverVisible = true;
       }
     },
     computed: {
@@ -143,20 +174,33 @@
       return {
         state: 'initial',
         loading: true,
-        errored: false
+        errored: false,
+        showSearchDialog: false,
+        searchPopoverTarget: null,
+        searchPopoverVisible: false,
+        categories: null,
+        selectedCategories: []
       }
     }
   };
 </script>
 
 <style>
-  .timeline_search {
-    margin: auto;
-    width: 50%;
+  .popover__content {
+    width: 300px;
+    max-width: 400px;
   }
-  .timeline_search2 {
+  .search_popover {
+    width: 300px;
+    max-width: 400px;
+  }
+  .keyword {
     margin: 8px 0 8px 0;
-    width: 90%;
+    width: 250px;
+  }
+  .search_category_list {
+    margin: 8px 0 8px 8px;
+    width: 250px;
   }
   .timeline_item_read {
     background-color: #f2f2f2;
