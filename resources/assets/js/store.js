@@ -57,7 +57,8 @@ export default {
       state: {
         posts: [],
         nextPageUrl: null,
-        loading: false
+        loading: false,
+        searchKeyword: null
       },
       mutations: {
         set(state, posts) {
@@ -71,15 +72,28 @@ export default {
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
+        },
+        setSearchKeyword(state, keyword) {
+          state.searchKeyword = keyword;
         }
       },
       actions: {
         load(context, $http) {
           context.commit('setLoading', true);
-          $http.get('/api/posts')
+          let api = '/api/posts';
+          if (context.state.searchKeyword) {
+            api += '?keyword=' + context.state.searchKeyword;
+          }
+          console.log('posts URL=' + api);
+          $http.get(api)
             .then((response)=>{
+              console.log('nextPageUrl=' + response.data.next_page_url);
+              let nextUrl = response.data.next_page_url;
+              if (nextUrl && context.state.searchKeyword) {
+                nextUrl += '&keyword=' + context.state.searchKeyword;
+              }
               context.commit('set', response.data.data);
-              context.commit('setNextPageUrl', response.data.next_page_url);
+              context.commit('setNextPageUrl', nextUrl);
               context.commit('setLoading', false);
             })
             .catch(error => {
@@ -100,8 +114,12 @@ export default {
           }
           param.http.get(context.state.nextPageUrl)
             .then((response)=>{
+              let nextUrl = response.data.next_page_url;
+              if (nextUrl && context.state.searchKeyword) {
+                nextUrl += '&keyword=' + context.state.searchKeyword;
+              }
               context.commit('add', response.data.data);
-              context.commit('setNextPageUrl', response.data.next_page_url);
+              context.commit('setNextPageUrl', nextUrl);
               param.done();
             })
             .catch(error => {

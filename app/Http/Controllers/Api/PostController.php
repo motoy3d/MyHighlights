@@ -37,6 +37,7 @@ class PostController extends Controller
   {
     Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
     $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
+    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
     Log::info("PostController#index");
     Log::info("team_id=" . Auth::user());
     $posts = DB::table('posts')
@@ -60,6 +61,7 @@ class PostController extends Controller
       ->where('posts.team_id', Auth::user()->team_id)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
+    Log::info('★キーワード:' . $keyword);
     if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する
       $posts = $posts
         ->where(function($query) use($keyword) {

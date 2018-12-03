@@ -22,26 +22,17 @@
     <v-ons-popover cancelable direction="down" cover-target="true"
                    class="search_popover"
                    :visible.sync="searchPopoverVisible"
-                   :target="searchPopoverTarget"
-    >
+                   :target="searchPopoverTarget">
       <div class="center space">
-        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>
-        <v-ons-list class="search_category_list center mt-15">
-          <v-ons-list-item v-for="(cate, $index) in categories" :key="cate.id" tappable>
-            <label class="left">
-              <v-ons-checkbox
-                :input-id="'checkbox-' + $index"
-                :value="cate.id"
-                v-model="selectedCategories"
-              >
-              </v-ons-checkbox>
-            </label>
-            <label class="center" :for="'checkbox-' + $index">
-              {{ cate.name }}
-            </label>
-          </v-ons-list-item>
-        </v-ons-list>
-        <v-ons-button class="mt-10 plr-40" @click="">検索</v-ons-button>
+        <!--<v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>-->
+        <v-ons-input placeholder="キーワード(複数可)"
+                     class="keyword" v-model="searchKeyword"></v-ons-input>
+        <v-ons-select v-model="selectedCategory" class="fl-left ml-5">
+          <option v-for="cate in categories" :value="cate.id">
+            {{ cate.name }}
+          </option>
+        </v-ons-select>
+        <v-ons-button class="mt-10 plr-40" @click="search()">検索</v-ons-button>
       </div>
     </v-ons-popover>
 
@@ -115,7 +106,6 @@
 <script>
   import Article from './Article.vue';
   import Post from './Post.vue';
-  import Calendar from './Calendar.vue';
   export default {
     mounted() {
       try {
@@ -127,10 +117,14 @@
     },
     methods: {
       load(done) {
-        setTimeout(() => {
+        if (done) {
+          setTimeout(() => {
+            this.$store.dispatch('timeline/load', this.$http);
+            done(); //pull to refreshの時のみ使用
+          }, 400);
+        } else {
           this.$store.dispatch('timeline/load', this.$http);
-          if (done) done(); //pull to refreshの時のみ使用
-        }, 400);
+        }
       },
       loadMore(done) {
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
@@ -153,7 +147,7 @@
       loadCategories() {
         this.$http.get('/api/posts/search_init')
           .then((response)=>{
-            this.categories = response.data.categories;
+            this.categories = [{id:null, name:'カテゴリー選択'}].concat(response.data.categories);
           })
           .catch(error => {
             console.log(error);
@@ -163,6 +157,12 @@
       showSearch(event) {
         this.searchPopoverTarget = event;
         this.searchPopoverVisible = true;
+      },
+      search() {
+        this.searchPopoverVisible = false;
+        this.loading = true;
+        this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
+        this.load(() => {this.loading = false;});
       }
     },
     computed: {
@@ -175,11 +175,11 @@
         state: 'initial',
         loading: true,
         errored: false,
-        showSearchDialog: false,
         searchPopoverTarget: null,
         searchPopoverVisible: false,
         categories: null,
-        selectedCategories: []
+        selectedCategory: null,
+        searchKeyword: null
       }
     }
   };
@@ -196,7 +196,10 @@
   }
   .keyword {
     margin: 8px 0 8px 0;
+    padding: 0 6px 0 6px;
     width: 250px;
+    font-size: 16px;
+    background-color: #F3F3F3;
   }
   .search_category_list {
     margin: 8px 0 8px 8px;
