@@ -81,6 +81,9 @@ input {
   height: 40px;
   line-height: 40px;
 }
+ons-input[type="text"] {
+  border-radius: 4px;
+}
 input[type="search"] {
   background-color: rgba(240,240,240,0.8);
 }
@@ -99,6 +102,31 @@ ons-switch {
 textarea {
 	width: 100%;
 }
+/* ------ 共通class(modifier) ------ */
+.text-input--border {
+  border: 1px lightgray solid;
+  border-radius: 4px;
+  height: 40px;
+  padding: 5px;
+}
+.text-input--border:invalid {
+  border: 1px lightgray solid;
+  border-radius: 4px;
+  height: 40px;
+  padding: 5px;
+}
+//.select-input--border {
+//  border: 1px lightgray solid;
+//  border-radius: 4px;
+//  //height: 40px;
+//  padding: 0 5px 0 5px;
+//}
+//.select-input--border:invalid {
+//  border: 1px lightgray solid;
+//  border-radius: 4px;
+//  //height: 40px;
+//  padding: 0 5px 0 5px;
+//}
 /* ------ 共通class(その他) ------ */
 .bold {
 	font-weight: bold;
@@ -188,18 +216,6 @@ textarea {
 .radius-4 {border-radius: 4px;}
 .radius-8 {border-radius: 8px;}
 .radius-16 {border-radius: 16px;}
-.text-input--border {
-	border: 1px lightgray solid;
-	border-radius: 4px;
-	height: 40px;
-	padding: 5px;
-}
-.text-input--border:invalid {
-  border: 1px lightgray solid;
-  border-radius: 4px;
-  height: 40px;
-  padding: 5px;
-}
 .logo {
   width: 38px;
   margin: 1px 0 1px 1px

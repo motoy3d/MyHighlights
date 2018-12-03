@@ -58,7 +58,8 @@ export default {
         posts: [],
         nextPageUrl: null,
         loading: false,
-        searchKeyword: null
+        searchKeyword: null,
+        searchCategoryId: null
       },
       mutations: {
         set(state, posts) {
@@ -75,14 +76,21 @@ export default {
         },
         setSearchKeyword(state, keyword) {
           state.searchKeyword = keyword;
+        },
+        setSearchCategoryId(state, categoryId) {
+          state.searchCategoryId = categoryId;
         }
       },
       actions: {
         load(context, $http) {
           context.commit('setLoading', true);
           let api = '/api/posts';
+          let paramFlg = false;
           if (context.state.searchKeyword) {
-            api += '?keyword=' + context.state.searchKeyword;
+            api += '?keyword=' + context.state.searchKeyword; paramFlg = true;
+          }
+          if (context.state.searchCategoryId) {
+            api += (paramFlg? '&' : '?') + 'category=' + context.state.searchCategoryId;
           }
           console.log('posts URL=' + api);
           $http.get(api)
@@ -117,6 +125,9 @@ export default {
               let nextUrl = response.data.next_page_url;
               if (nextUrl && context.state.searchKeyword) {
                 nextUrl += '&keyword=' + context.state.searchKeyword;
+              }
+              if (nextUrl && context.state.searchCategoryId) {
+                nextUrl += '&category=' + context.state.searchCategoryId;
               }
               context.commit('add', response.data.data);
               context.commit('setNextPageUrl', nextUrl);

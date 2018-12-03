@@ -70,7 +70,7 @@
           'team_id' => 100,
           'title' => $title,
           'content' => $content,
-          'category_id' => 6, // CSVにないので「その他」で登録
+          'category_id' => 8, // CSVにないので「その他」で登録
           'questionnaire_id' => 0,
           'notification_flg' => 0,
           'comment_count' => 0,

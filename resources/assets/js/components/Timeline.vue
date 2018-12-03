@@ -24,15 +24,17 @@
                    :visible.sync="searchPopoverVisible"
                    :target="searchPopoverTarget">
       <div class="center space">
-        <!--<v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>-->
-        <v-ons-input placeholder="キーワード(複数可)"
-                     class="keyword" v-model="searchKeyword"></v-ons-input>
-        <v-ons-select v-model="selectedCategory" class="fl-left ml-5">
+        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>
+        <!--<v-ons-input placeholder="キーワード(複数可)"-->
+                     <!--class="keyword" v-model="searchKeyword"></v-ons-input>-->
+        <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left mt-20 ml-10">
           <option v-for="cate in categories" :value="cate.id">
             {{ cate.name }}
           </option>
         </v-ons-select>
-        <v-ons-button class="mt-10 plr-40" @click="search()">検索</v-ons-button>
+        <div>
+          <v-ons-button class="mt-30 plr-40" @click="search()">検索</v-ons-button>
+        </div>
       </div>
     </v-ons-popover>
 
@@ -147,7 +149,7 @@
       loadCategories() {
         this.$http.get('/api/posts/search_init')
           .then((response)=>{
-            this.categories = [{id:null, name:'カテゴリー選択'}].concat(response.data.categories);
+            this.categories = [{id:null, name:'全カテゴリー'}].concat(response.data.categories);
           })
           .catch(error => {
             console.log(error);
@@ -162,6 +164,7 @@
         this.searchPopoverVisible = false;
         this.loading = true;
         this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
+        this.$store.commit('timeline/setSearchCategoryId', this.searchCategoryId);
         this.load(() => {this.loading = false;});
       }
     },
@@ -178,8 +181,8 @@
         searchPopoverTarget: null,
         searchPopoverVisible: false,
         categories: null,
-        selectedCategory: null,
-        searchKeyword: null
+        searchKeyword: null,
+        searchCategoryId: null
       }
     }
   };
@@ -201,9 +204,8 @@
     font-size: 16px;
     background-color: #F3F3F3;
   }
-  .search_category_list {
-    margin: 8px 0 8px 8px;
-    width: 250px;
+  .keyword > input {
+    font-size: 16px;
   }
   .timeline_item_read {
     background-color: #f2f2f2;

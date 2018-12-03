@@ -61,14 +61,20 @@ class PostController extends Controller
       ->where('posts.team_id', Auth::user()->team_id)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
-    Log::info('★キーワード:' . $keyword);
-    if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する
+//    Log::info('★キーワード:' . $keyword);
+    if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する //TODO コメントも検索
       $posts = $posts
         ->where(function($query) use($keyword) {
           $query->where('posts.title', 'LIKE', '%' . $keyword . '%')
             ->orWhere('posts.content', 'LIKE', '%' . $keyword . '%');
         });
     }
+    $categoryId = $request->category;
+    if ($categoryId) {
+      $posts = $posts
+        ->where('category_id', $categoryId);
+    }
+
     $posts = $posts->simplePaginate($perPageCount);
     return Response::json($posts);
   }
