@@ -24,7 +24,8 @@
                    :visible.sync="searchPopoverVisible"
                    :target="searchPopoverTarget">
       <div class="center space">
-        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"></v-ons-search-input>
+        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"
+                            v-model="searchKeyword"></v-ons-search-input>
         <!--<v-ons-input placeholder="キーワード(複数可)"-->
                      <!--class="keyword" v-model="searchKeyword"></v-ons-input>-->
         <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left mt-20 ml-10">

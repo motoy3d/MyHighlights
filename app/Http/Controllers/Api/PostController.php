@@ -61,7 +61,7 @@ class PostController extends Controller
       ->where('posts.team_id', Auth::user()->team_id)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
-//    Log::info('★キーワード:' . $keyword);
+    Log::info('★キーワード:' . $keyword);
     if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する //TODO コメントも検索
       $posts = $posts
         ->where(function($query) use($keyword) {
@@ -71,6 +71,7 @@ class PostController extends Controller
     }
     $categoryId = $request->category;
     if ($categoryId) {
+      Log::info('★カテゴリー=' . $categoryId);
       $posts = $posts
         ->where('category_id', $categoryId);
     }
