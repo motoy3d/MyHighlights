@@ -46,7 +46,7 @@
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {
-          $name = $row[0] . $row[1];
+          $name = $row[0] . '　' .  $row[1];
           $type = $row[5];
           $prof_img_filename = 'boy.png';
           if ($type == '2') {
@@ -59,7 +59,7 @@
           $member = Member::create([
             "team_id" => 100,
             "name" => $name,
-            "name_kana" => $row[2] . $row[3],
+            "name_kana" => $row[2] . '　' . $row[3],
             "type" => $type,
             "birthday" => null,
             "backno" => $type == '1' ? $row[4] : null,

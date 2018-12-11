@@ -96,7 +96,7 @@
               'user_id' => 0,
               'comment_text' => $comment,
               'created_id' => 0,
-              'updated_at' => $post->created_at,
+              'created_at' => $post->created_at,
               'updated_id' => 0,
               'updated_at' => $post->updated_at
             ]);
