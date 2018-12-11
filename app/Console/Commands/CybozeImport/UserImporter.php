@@ -47,6 +47,7 @@
       DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {
           $name = $row[0] . '　' .  $row[1];
+          $name_kana = $row[2] . '　' .  $row[3];
           $type = $row[5];
           $prof_img_filename = 'boy.png';
           if ($type == '2') {
@@ -59,7 +60,7 @@
           $member = Member::create([
             "team_id" => 100,
             "name" => $name,
-            "name_kana" => $row[2] . '　' . $row[3],
+            "name_kana" => $name_kana,
             "type" => $type,
             "birthday" => null,
             "backno" => $type == '1' ? $row[4] : null,
@@ -69,8 +70,8 @@
           ]);
           if ($type == '2' || $type == '3') { //スタッフOR家族
             $user = User::create([
-              "name" => $row[0] . $row[1],
-              "name_kana" => $row[2] . $row[3],
+              "name" => $name,
+              "name_kana" => $name_kana,
               "email" => $row[4],
               "team_id" => 100,
               "member_id" => $member->id,
