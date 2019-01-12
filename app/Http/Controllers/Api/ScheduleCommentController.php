@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Schedule;
 use App\ScheduleComment;
 use App\ScheduleCommentAttachment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,15 +15,36 @@ use Illuminate\Support\Facades\Response;
 
 class ScheduleCommentController extends Controller
 {
+
+  /**
+   * 指定スケジュールのコメントリストを返す
+   * @param $schedule_id
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function show($schedule_id) {
+    $schedule = Schedule::findOrFail($schedule_id);
+    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+      return response()->json(['message' => 'not found',], 404);
+    }
+    $scheduleComments = DB::table('schedule_comments')
+      ->leftJoin('users as create_user',
+        'schedule_comments.created_id', '=', 'create_user.id')
+      ->select(['schedule_comments.*', 'create_user.name as created_name'])
+      ->where('schedule_comments.schedule_id', $schedule_id)
+      ->orderBy('schedule_comments.created_at', 'desc')
+      ->get();
+    return Response::json($scheduleComments);
+  }
+
   /**
    * 予定に対するコメントをschedule_commentテーブルに保存する。
    *
    * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\JsonResponse
    */
-  public function store(Request $request)
+  public function store(Request $request, $schedule_id)
   {
-    $schedule = Schedule::findOrFail($request->schedule_id);
+    $schedule = Schedule::findOrFail($schedule_id);
     if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
@@ -55,9 +77,6 @@ class ScheduleCommentController extends Controller
         ]);
       }
     }
-
-    // コメント数の更新
-    $schedule->comment_count = $schedule->comment_count + 1;
     $schedule->save();
     return Response::json($scheduleCommentResult);
   }
@@ -65,28 +84,27 @@ class ScheduleCommentController extends Controller
   /**
    * 予定に対するコメントをschedule_commentテーブルから削除する。
    *
-   * @param  \Illuminate\Http\Request  $request
+   * @param $schedule_id
+   * @param $comment_id
    * @return \Illuminate\Http\JsonResponse
    */
-  public function destroy(Request $request)
+  public function destroy($schedule_id, $comment_id)
   {
-    $schedule = Schedule::findOrFail($request->schedule_id);
+    $schedule = Schedule::findOrFail($schedule_id);
     if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',
       ], 404);
     }
-    $scheduleComment = ScheduleComment::findOrFail($request->comment_id);
+    $scheduleComment = ScheduleComment::findOrFail($comment_id);
     if (!$scheduleComment || $scheduleComment->user_id != Auth::id()) { //コメントしたユーザーIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',
       ], 404);
     }
-    $count = ScheduleComment::destroy($request->comment_id);
-    $schedule->comment_count = $schedule->comment_count - 1;
-    $schedule->save();
+    $count = ScheduleComment::destroy($comment_id);
     return Response::json($count);
   }
 }

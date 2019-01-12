@@ -92,7 +92,7 @@
           {{ selectedDateText }}
         </v-ons-list-header>
         <template v-for="(schedule, index) in selectedDateSchedules">
-          <ons-list-item expandable><!-- v-ons-list-itemにするとexpandableが効かないのでons-list-item -->
+          <ons-list-item :id="'scheduleListItem' + index" expandable><!-- v-ons-list-itemにするとexpandableが効かないのでons-list-item -->
             <div class="left">
               <template v-if="!schedule.allday_flg">
                 {{ formatTime(schedule.time_from) }}-{{ formatTime(schedule.time_to) }}
@@ -119,26 +119,68 @@
 
               <!-- コメント入力 -->
               <v-ons-row class="mt-30">
-                <v-ons-col width="30px" vertical-align="bottom" class="left">
-                  <div class="upload-btn-wrapper">
-                  <span class="notification" v-if="0 < comment_files.length">
-                    {{ comment_files.length }}</span>
-                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"
-                    ></v-ons-icon>
-                    <input type="file" multiple @change="onFileSet"/>
-                  </div>
-                </v-ons-col>
+                <!--<v-ons-col width="30px" vertical-align="bottom" class="left">-->
+                  <!--<div class="upload-btn-wrapper">-->
+                  <!--<span class="notification" v-if="0 < comment_files.length">-->
+                    <!--{{ comment_files.length }}</span>-->
+                    <!--<v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"-->
+                    <!--&gt;</v-ons-icon>-->
+                    <!--<input type="file" multiple @change="onFileSet"/>-->
+                  <!--</div>-->
+                <!--</v-ons-col>-->
                 <v-ons-col vertical-align="bottom">
                 <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
                           v-model="comment_text" @keyup="fitTextarea()"></textarea>
                 </v-ons-col>
                 <v-ons-col width="50px" vertical-align="bottom" class="center">
                   <v-ons-button class="ml-5 mt-10 center" ripple
-                                @click="postComment()">
+                                @click="postComment(schedule.id)">
                     <v-ons-icon icon="fa-paper-plane" class="messageBtn"></v-ons-icon></v-ons-button>
                 </v-ons-col>
               </v-ons-row>
 
+              <!-- コメント一覧 -->
+              <v-ons-row class="space lastspace" v-if="schedule.comments">
+                <v-ons-col>
+                  <div class="mt-10 ml-15" v-for="(comment, index) in schedule.comments" :key="comment.id">
+                    <!--<hr class="mt-15">-->
+                    <div>
+                <span class="bold">
+                  {{ comment.created_name }}
+                </span>
+                      <span class="updated_at">
+                  <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
+                    {{ comment.created_at | moment("from") }}　
+                  </template>
+                  <template v-else>
+                    {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
+                  </template>
+                </span>
+                    </div>
+                    <div>
+                      <div class="speech-bubble">
+                        <span class="comment" v-html="replaceATag(comment.comment_text)"></span>
+                        <span v-if="comment.user_id == $store.state.navigator.user.id"><!-- 型が違うので==使用 -->
+                    <v-ons-icon icon="fa-trash" class="delete_comment_icon"
+                                @click="confirmDeleteComment(schedule.id, comment.id)"></v-ons-icon>
+                  </span>
+                        <p v-for="att in comment.attachments">
+                          <a :href="att.file_path">
+                            <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
+                            <span>{{ att.original_file_name }}</span>
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                    <!--<div class="right mr-10">-->
+                    <!--<v-ons-icon icon="fa-thumbs-up"-->
+                    <!--:class="isLike? 'like_on' : 'like_off'"-->
+                    <!--onclick="toggleLike(this)"></v-ons-icon>-->
+                    <!--<span class="like-count">{{ comment.like_user_ids.length }}</span>-->
+                    <!--</div>-->
+                  </div>
+                </v-ons-col>
+              </v-ons-row>
 
             </div>
           </ons-list-item>
@@ -164,7 +206,8 @@
       return {
         errored: false,
         deleting: false,
-        selectedDate: this.moment(today).format('YYYY-MM-DD'),
+        selectedDate: null,
+        selectedDateSchedules: [],
         currentYear: today.getFullYear(),
         currentMonth: today.getMonth(),
         comment_text: "",
@@ -192,19 +235,6 @@
         get() {
           return this.selectedDate?
             window.fn.dateFormat.format(new Date(this.selectedDate), "yyyy年M月d日(w)") : ""; }
-      },
-      selectedDateSchedules: {
-        get() {
-          let selectedDateSchedules = [];
-          if (this.schedules) {
-            for (var s=0; s<this.schedules.length; s++) {
-              if (this.selectedDate === this.schedules[s].schedule_date) {
-                selectedDateSchedules.push(this.schedules[s]);
-              }
-            }
-          }
-          return selectedDateSchedules;
-        }
       },
       days: { //スケジュールが入った日毎の配列
         get() {
@@ -269,6 +299,38 @@
           return;
         }
         this.selectedDate = td.getAttribute('data-date');
+        this.loadSchedules();
+
+        // let scheduleListItem0 = document.querySelector('#scheduleListItem0');
+        // console.log('selectDate');
+        // console.log(scheduleListItem0);
+        // if (scheduleListItem0) {
+        //   scheduleListItem0.showExpansion();
+        // }
+      },
+      loadSchedules() {
+        this.selectedDateSchedules = [];
+        console.log('--------------- loadSchedules');
+        if (this.schedules) {
+          for (var s=0; s<this.schedules.length; s++) {
+            if (this.selectedDate === this.schedules[s].schedule_date) {
+              let schedule = this.schedules[s];
+              this.selectedDateSchedules.push(schedule);
+              let self = this;
+              // コメント取得
+              this.$http.get('/api/schedule_comments/' + schedule.id)
+                .then((response)=>{
+                  // Vueに対して変更通知 https://jp.vuejs.org/v2/guide/reactivity.html
+                  self.$set(self.selectedDateSchedules[0], 'comments', response.data);
+                })
+                .catch(error => {
+                  this.errored = true;
+                  if (error.response.status == 401) {window.location.href = "/login"; return;}
+                  this.loading = false;
+                });
+            }
+          }
+        }
       },
       openAddSchedule() {
         this.$store.commit('navigator/push', {
@@ -334,6 +396,61 @@
           event.srcElement.rows = 3;
         }
       },
+      postComment(schedule_id) {
+        if (!this.comment_text) {
+          return;
+        }
+        let self = this;
+        // 送信フォームデータ準備
+        let formData = new FormData();
+        formData.append('comment_text', this.comment_text);
+        for(let i = 0; i < this.comment_files.length; i++){
+          formData.append('comment_files[]', this.comment_files[i]);
+        }
+        this.$http.post('/api/schedule_comments/' + schedule_id, formData)
+          .then((response)=>{
+            // console.log(response.data);
+            self.comment_text = '';
+            self.comment_files = [];
+            this.loadSchedules();
+            this.loading = false;
+          })
+          .catch(error => {
+            this.errored = true;
+            if (error.response.status == 401) {window.location.href = "/login"; return;}
+            this.loading = false;
+          })
+        // .finally(() => this.loading = false)
+        ;
+      },
+      confirmDeleteComment(schedule_id, comment_id) {
+        let self = this;
+        this.$ons.notification.confirm("削除しますか？", {title: ''})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.deleteComment(schedule_id, comment_id);
+          });
+      },
+      deleteComment(schedule_id, comment_id) {
+        // console.log("コメントID=" + comment_id);
+        let self = this;
+        self.$http.delete('/api/schedule_comments/' + schedule_id + '/' + comment_id)
+          .then((response)=>{
+            // console.log(response.data);
+            this.loadSchedules();
+          })
+          .catch(error => {
+            console.log(error);
+            self.errored = true;
+            if (error.response.status === 401) {window.location.href = "/login"; return;}
+            self.loading = false;
+          })
+        // .finally(() => self.loading = false)
+        ;
+      },
+      replaceATag(text) {
+        return window.fn.replaceATag(text);
+      }
     }
   }
 </script>
@@ -458,6 +575,46 @@
   }
   .comment_textarea {
     width: 100%;
+  }
+  .lastspace {
+    margin-bottom: 80px;
+  }
+  .comment {
+    font-size: 14px;
+    margin: 0;
+    white-space: pre-wrap;
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
+  }
+  .speech-bubble {
+    position: relative;
+    background: #81ff4f;
+    border-radius: .3em;
+    padding: 15px;
+    margin-top: 6px;
+  }
+
+  .speech-bubble:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5%;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-bottom-color: #81ff4f;
+    border-top: 0;
+    margin-left: -6px;
+    margin-top: -6px;
+  }
+  .delete_comment_icon {
+    color: gray;
+    float: right;
+  }
+  .image_in_post {
+    max-width: 100%;
   }
   .messageBtn {
     width: 20px;

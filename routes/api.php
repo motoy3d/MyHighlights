@@ -20,6 +20,7 @@
     Route::post('post_comments/{post_id}', 'Api\PostCommentController@store');
     Route::delete('post_comments/{post_id}/{comment_id}', 'Api\PostCommentController@destroy');
     Route::resource('schedules', 'Api\ScheduleController');
+    Route::get('schedule_comments/{schedule_id}', 'Api\ScheduleCommentController@show');
     Route::post('schedule_comments/{schedule_id}', 'Api\ScheduleCommentController@store');
     Route::delete('schedule_comments/{schedule_id}/{comment_id}', 'Api\ScheduleCommentController@destroy');
     Route::get('teams', 'Api\TeamController@show');
