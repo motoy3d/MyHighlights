@@ -14,7 +14,7 @@
           <v-ons-progress-circular indeterminate class="progress-circular"></v-ons-progress-circular>
         </div>
         <v-ons-list id="settings_list">
-          <v-ons-list-item modifier="chevron">
+          <v-ons-list-item>
             <div style="margin-right:auto;">{{ $store.state.navigator.user.name }}</div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangeEmail()">
@@ -23,8 +23,11 @@
           <v-ons-list-item modifier="chevron" @click="openChangePass()">
             パスワード変更
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron">
+          <v-ons-list-item>
             チーム名 <div class="right">横浜SCつばさ 36th</div>
+          </v-ons-list-item>
+          <v-ons-list-item modifier="chevron" @click="openICal()">
+            カレンダー同期
           </v-ons-list-item>
           <!--<v-ons-list-item modifier="chevron">-->
             <!--テーマカラー <div class="right">スカイブルー</div>-->
@@ -59,6 +62,7 @@
 </template>
 
 <script>
+  import ICal from './ICal.vue';
   export default {
     data() {
       return {
@@ -120,6 +124,12 @@
                 }
               });
           });
+      },
+      openICal() {
+        this.$store.commit('navigator/push', {
+          extends: ICal,
+          onsNavigatorOptions: {animation: 'slide'}
+        });
       }
     }
   };
