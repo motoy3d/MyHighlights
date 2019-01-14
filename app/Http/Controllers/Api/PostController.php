@@ -257,11 +257,9 @@ class PostController extends Controller
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
       ->select(
         'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
-//        'post_comment_attachments.original_file_name',
-//        'post_comment_attachments.file_path',
         'like_user_ids', 'post_comments.user_id', 'users.name')
       ->where('post_id', $post->id)
-      ->orderByDesc('post_comments.id')
+      ->orderByDesc('post_comments.created_at')
       ->get();
     for ($i=0; $i<count($comments); $i++) {
       $postCommentId = $comments[$i]->id;
