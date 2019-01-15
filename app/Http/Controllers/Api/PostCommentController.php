@@ -81,9 +81,7 @@ class PostCommentController extends Controller
     $postComment = PostComment::findOrFail($request->comment_id);
     if (!$postComment || $postComment->user_id != Auth::id()) { //コメントしたユーザーIDが別の場合は404
       // ヒットしない場合は404
-      return response()->json([
-        'message' => 'not found',
-      ], 404);
+      return response()->json(['message' => 'not found'], 404);
     }
     $count = PostComment::destroy($request->comment_id);
     $post->comment_count = $post->comment_count - 1;

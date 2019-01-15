@@ -73,6 +73,9 @@ class ICalendarController extends Controller
   public function getConfig()
   {
     $team = Team::findOrFail(Auth::user()->team_id);
-    return Response::json($team);
+    if (!$team) {
+      return response()->json(['message' => 'not found',], 404);
+    }
+    return Response::json(['ical_url' => env('APP_URL') . '/ical/' . $team->ical_id]);
   }
 }

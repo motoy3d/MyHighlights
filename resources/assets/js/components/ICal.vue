@@ -18,7 +18,7 @@
           以下の手順でスマホに登録ができます。<br><br>
           【iOSの場合】<br>
           ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」<br>
-          <a href="#">http://localhost:8000/ical/{{ ical_id }}</a><br>
+          <a :href="ical_url">{{ ical_url }}</a><br>
           　と入力→「保存」をタップ<br>
         </div>
       </v-ons-col>
@@ -32,7 +32,7 @@
       this.$http.get('/api/ical/config')
         .then((response)=>{
           this.loading = false;
-          this.ical_id = response.data.ical_id;
+          this.ical_url = response.data.ical_url;
         })
         .catch(error => {
           this.errored = true;
@@ -44,11 +44,10 @@
       return {
         loading: false,
         errored: false,
-        ical_id: ''
+        ical_url: ''
       }
     },
     computed: {
-
     },
     methods: {
 
