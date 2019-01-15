@@ -11,22 +11,38 @@
         <span>カレンダー同期設定</span>
       </div>
     </v-ons-toolbar>
-    <v-ons-row class="bg-white space">
+    <v-ons-row class="bg-white space lastspace">
       <v-ons-col>
         <div class="contents">
           iOS、Androidのカレンダーに取り込み(同期)ができます。<br><br>
           以下の手順でスマホに登録ができます。<br><br>
           【iOSの場合】<br>
-          ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」<br>
-          <a :href="ical_url">{{ ical_url }}</a><br>
-          　と入力→「保存」をタップ<br>
+          ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」→
+          以下のURLを入力→「保存」をタップ<br><br>
+          <br>
+          【Androidの場合】<br>
+          パソコンでGoogleカレンダーを開→ページ左側の [他のカレンダー] の横にある下向き矢印 下矢印 をクリック→
+          [URL で追加] →以下のURLを入力 →[カレンダーを追加]。<br><br><br>
+          <span id="icalUrl">{{ ical_url }}</span><br>
+          <v-ons-button id="copyUrlBtn" :data-clipboard-text="ical_url"
+                        class="button smallBtn ml-10 mt-10" modifier="outline">URLコピー</v-ons-button><br>
         </div>
       </v-ons-col>
     </v-ons-row>
+    <v-ons-alert-dialog id="copied_dialog" cancelable>
+      <div class="alert-dialog-content">
+        コピーしました。
+      </div>
+      <div class="alert-dialog-footer">
+        <v-ons-alert-dialog-button
+                onclick="$('#copied_dialog').hide();">OK</v-ons-alert-dialog-button>
+      </div>
+    </v-ons-alert-dialog>
   </v-ons-page>
 </template>
 
 <script>
+  import clipboard from 'clipboard';
   export default {
     beforeCreate() {
       this.$http.get('/api/ical/config')
@@ -40,11 +56,20 @@
           this.loading = false;
         });
     },
+    mounted() {
+      this.clipBoard = new clipboard('#copyUrlBtn');
+      this.clipBoard.on('success', function(e) {
+        $('#copied_dialog').show() ;
+        console.info('Text:', e.text);
+        e.clearSelection();
+      });
+    },
     data() {
       return {
         loading: false,
         errored: false,
-        ical_url: ''
+        ical_url: '',
+        clipBoard: null
       }
     },
     computed: {
@@ -58,5 +83,8 @@
 <style>
   .contents {
     word-break: break-all;
+  }
+  .lastspace {
+    height: 100%;
   }
 </style>
