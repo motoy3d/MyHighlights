@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Team;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -40,6 +39,7 @@ class ICalendarController extends Controller
     if (!$team) {
       return null;
     }
+    $calendar->setName($team->name);
     $schedules = DB::table('schedules')
       ->select(['schedules.*'])
       ->where('schedules.team_id', '=', $team->id)
