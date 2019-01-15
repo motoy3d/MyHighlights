@@ -24,8 +24,8 @@
           パソコンでGoogleカレンダーを開→ページ左側の [他のカレンダー] の横にある下向き矢印 下矢印 をクリック→
           [URL で追加] →以下のURLを入力 →[カレンダーを追加]。<br><br><br>
           <span id="icalUrl">{{ ical_url }}</span><br>
-          <v-ons-button id="copyUrlBtn" :data-clipboard-text="ical_url"
-                        class="button smallBtn ml-10 mt-10" modifier="outline">URLコピー</v-ons-button><br>
+          <v-ons-button id="copyUrlBtn" :data-clipboard-text="ical_url" class="button smallBtn ml-10 mt-10" modifier="outline"
+            @click="copyICalUrl()">URLコピー</v-ons-button><br>
         </div>
       </v-ons-col>
     </v-ons-row>
@@ -63,6 +63,11 @@
         console.info('Text:', e.text);
         e.clearSelection();
       });
+      this.clipBoard.on('error', function(e) {
+        alert('コピーできません');
+        alert(e);
+        console.log(e);
+      });
     },
     data() {
       return {
@@ -75,7 +80,14 @@
     computed: {
     },
     methods: {
-
+      copyICalUrl() {
+        let url = document.getElementById('icalUrl');
+        let range = document.createRange();
+        range.selectNode(url);
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        $('#copied_dialog').show();
+      }
     }
   };
 </script>
