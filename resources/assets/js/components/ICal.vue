@@ -18,13 +18,17 @@
           以下の手順でスマホに登録ができます。<br><br>
           【iOSの場合】<br>
           ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」→
-          以下のURLを入力→「保存」をタップ<br><br>
+          以下のURLを入力→「保存」をタップ<br><br><br>
+          <span>{{ ical_url }}</span><br>
+          <v-ons-button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10"
+                        modifier="outline">URLコピー</v-ons-button><br>
           <br>
+          <hr>
           【Androidの場合】<br>
-          パソコンでGoogleカレンダーを開→ページ左側の [他のカレンダー] の横にある下向き矢印 下矢印 をクリック→
+          パソコンでGoogleカレンダーを開→ページ左側の [他のカレンダー] の横にある︙をクリック→
           [URL で追加] →以下のURLを入力 →[カレンダーを追加]。<br><br><br>
-          <span id="icalUrl">{{ ical_url }}</span><br>
-          <v-ons-button id="copyUrlBtn" :data-clipboard-text="ical_url" class="button smallBtn ml-10 mt-10"
+          <span>{{ ical_url }}</span><br>
+          <v-ons-button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10"
                         modifier="outline">URLコピー</v-ons-button><br>
         </div>
       </v-ons-col>
@@ -57,7 +61,7 @@
         });
     },
     mounted() {
-      this.clipBoard = new clipboard('#copyUrlBtn');
+      this.clipBoard = new clipboard('.copyUrlBtn');
       this.clipBoard.on('success', function(e) {
         $('#copied_dialog').show() ;
         console.info('Text:', e.text);
