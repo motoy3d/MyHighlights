@@ -14,22 +14,20 @@
     <v-ons-row class="bg-white space lastspace">
       <v-ons-col>
         <div class="contents">
-          iOS、Androidのカレンダーに取り込み(同期)ができます。<br><br>
-          以下の手順でスマホに登録ができます。<br><br>
-          【iOSの場合】<br>
+          iPhone、Androidのカレンダーに取り込み(同期)ができます。<br><br>
+          以下の手順を最初に一度だけ実施すれば常に最新データが維持されます。<br><br>
+          【iPhoneの場合】<br>
           ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」→
           以下のURLを入力→「保存」をタップ<br><br><br>
           <span>{{ ical_url }}</span><br>
-          <v-ons-button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10"
-                        modifier="outline">URLコピー</v-ons-button><br>
+          <button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10">URLをコピー</button><br>
           <br>
           <hr>
           【Androidの場合】<br>
-          パソコンでGoogleカレンダーを開→ページ左側の [他のカレンダー] の横にある︙をクリック→
-          [URL で追加] →以下のURLを入力 →[カレンダーを追加]。<br><br><br>
+          パソコンでGoogleカレンダーを開く → ページ左側の「他のカレンダー」の横にある︙をクリック →
+          「URL で追加」 → 以下のURLを入力 → 「カレンダーを追加」を押す。<br><br><br>
           <span>{{ ical_url }}</span><br>
-          <v-ons-button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10"
-                        modifier="outline">URLコピー</v-ons-button><br>
+          <button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10">URLをコピー</button><br>
         </div>
       </v-ons-col>
     </v-ons-row>
@@ -93,7 +91,6 @@
     word-break: break-all;
   }
   .lastspace {
-    height: 100%;
-    padding-bottom: 100px;
+    height: 150%;
   }
 </style>
