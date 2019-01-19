@@ -6,6 +6,7 @@ use App\Team;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
@@ -72,7 +73,7 @@ class ICalendarController extends Controller
    */
   public function getConfig()
   {
-    $team = Team::findOrFail(Auth::user()->team_id);
+    $team = Team::findOrFail(Cookie::get('current_team_id'));
     if (!$team) {
       return response()->json(['message' => 'not found',], 404);
     }

@@ -10,6 +10,7 @@
 
   class UserImporter extends Command
   {
+    protected $teamId = 39;
     /**
      * The name and signature of the console command.
      *
@@ -58,7 +59,7 @@
 
           $this->info($name . ' ' . strpos($name, '母'));
           $member = Member::create([
-            "team_id" => 100,
+            "team_id" => $this->teamId,
             "name" => $name,
             "name_kana" => $name_kana,
             "type" => $type,
@@ -73,7 +74,7 @@
               "name" => $name,
               "name_kana" => $name_kana,
               "email" => $row[4],
-              "team_id" => 100,
+              "team_id" => $this->teamId,
               "member_id" => $member->id,
               "password" => Hash::make($row[4]),
               //        "status" => 'invited',

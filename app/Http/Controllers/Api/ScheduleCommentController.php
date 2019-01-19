@@ -9,6 +9,7 @@ use App\ScheduleCommentAttachment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
@@ -23,7 +24,7 @@ class ScheduleCommentController extends Controller
    */
   public function show($schedule_id) {
     $schedule = Schedule::findOrFail($schedule_id);
-    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$schedule || $schedule->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(['message' => 'not found',], 404);
     }
     $scheduleComments = DB::table('schedule_comments')
@@ -45,7 +46,7 @@ class ScheduleCommentController extends Controller
   public function store(Request $request, $schedule_id)
   {
     $schedule = Schedule::findOrFail($schedule_id);
-    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$schedule || $schedule->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',
@@ -91,7 +92,7 @@ class ScheduleCommentController extends Controller
   public function destroy($schedule_id, $comment_id)
   {
     $schedule = Schedule::findOrFail($schedule_id);
-    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$schedule || $schedule->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',

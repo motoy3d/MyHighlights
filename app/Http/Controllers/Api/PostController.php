@@ -11,14 +11,17 @@ use App\PostCommentAttachment;
 use App\PostResponse;
 use App\Questionnaire;
 use App\User;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Session;
 
 /**
  * Class PostController
@@ -35,11 +38,14 @@ class PostController extends Controller
    */
   public function index(Request $request)
   {
-    Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
+//    Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
     $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
-    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
+//    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
     Log::info("PostController#index");
-    Log::info("team_id=" . Auth::user());
+    $teams = Auth::user()->teams();
+    Log::info('★team_id0=' . $teams->first()->team_id);
+    Log::info('★Cookie current_team_id=' . Cookie::get('current_team_id'));
+
     $posts = DB::table('posts')
       ->leftJoin('post_responses', function (JoinClause $join) {
         $join->on('posts.id', '=', 'post_responses.post_id');
@@ -58,7 +64,7 @@ class PostController extends Controller
         'post_responses.star_flg',
         'create_user.name as created_name',
         'update_user.name as updated_name'])
-      ->where('posts.team_id', Auth::user()->team_id)
+      ->where('posts.team_id', Cookie::get('current_team_id'))
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
     Log::info('★キーワード:' . $keyword);
@@ -114,7 +120,7 @@ class PostController extends Controller
       Log::info($questionnaire);
     }
     $post = Post::create([
-      "team_id" => Auth::user()->team_id,
+      "team_id" => Cookie::get('current_team_id'),
       "title" => $request->title,
       "content" => $request->contents,
       "category_id" => $request->category_id,
@@ -161,7 +167,7 @@ class PostController extends Controller
         'posts.updated_id', '=', 'update_user.id')
       ->select(['posts.*', 'create_user.name as created_name', 'update_user.name as updated_name'])
       ->where('posts.id',$id)
-      ->where('posts.team_id',Auth::user()->team_id)
+      ->where('posts.team_id',Cookie::get('current_team_id'))
       ->first();
     if (!$post) {// ヒットしない場合は404
       return response()->json(null, 404);
@@ -294,7 +300,7 @@ class PostController extends Controller
   {
     //TODO validate
     $post = Post::findOrFail($id);
-    if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$post || $post->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
 
@@ -317,7 +323,7 @@ class PostController extends Controller
   public function destroy($id)
   {
     $post = Post::findOrFail($id);
-    if (!$post || $post->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$post || $post->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
     // TODO 削除権限どうするか。投稿者＋管理者？

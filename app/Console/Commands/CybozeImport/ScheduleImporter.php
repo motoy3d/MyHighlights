@@ -11,6 +11,7 @@
 
   class ScheduleImporter extends Command
   {
+    protected $teamId = 39;
     /**
      * The name and signature of the console command.
      *
@@ -61,7 +62,7 @@
           $created_id = $create_user? $create_user->id : -1;  //-1は退会者
 
           $member = Schedule::create([
-            "team_id" => 100,
+            "team_id" => $this->teamId,
             "schedule_date" => $shcedule_date,
             "title" => $title,
             "allday_flg" => 0,

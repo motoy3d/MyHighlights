@@ -9,6 +9,7 @@ use App\Questionnaire;
 use App\QuestionnaireAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
@@ -26,7 +27,7 @@ class QuestionnaireController extends Controller
     if ($request->question_no === 3) {return;}  //キャンセルの場合(UIで制御するので来ないはず)
     $post = Post::findOrFail($request->post_id);
     //チームIDが別の場合やアンケートIDがマッチしない場合は404
-    if (!$post || $post->team_id != Auth::user()->team_id
+    if (!$post || $post->team_id != Cookie::get('current_team_id')
       || $post->questionnaire_id != $request->questionnaire_id) {
       // ヒットしない場合は404
       return response()->json([

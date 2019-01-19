@@ -8,6 +8,7 @@ use App\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
@@ -38,7 +39,7 @@ class ScheduleController extends Controller
 
     $schedules = DB::table('schedules')
       ->select(['schedules.*'])
-      ->where('schedules.team_id', Auth::user()->team_id)
+      ->where('schedules.team_id', Cookie::get('current_team_id'))
       ->whereBetween('schedules.schedule_date', [$fromDate, $toDate])
       ->orderBy('schedules.schedule_date')
       ->orderBy('schedules.time_from')
@@ -69,7 +70,7 @@ class ScheduleController extends Controller
   {
     //TODO validate
     $schedule = Schedule::create([
-      "team_id" => Auth::user()->team_id,
+      "team_id" => Cookie::get('current_team_id'),
       "schedule_date" => $request->schedule_date,
       "title" => $request->title,
       "allday_flg" => $request->allday_flg == 'true'? true : false,
@@ -98,7 +99,7 @@ class ScheduleController extends Controller
     Log::info('ScheduleController#update');
     Log::info('title=' . $request->title);
     $schedule = Schedule::findOrFail($id);
-    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$schedule || $schedule->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       // ヒットしない場合は404
       return response()->json([
         'message' => 'not found',
@@ -129,7 +130,7 @@ class ScheduleController extends Controller
   public function destroy($id)
   {
     $schedule = Schedule::findOrFail($id);
-    if (!$schedule || $schedule->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$schedule || $schedule->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json([
         'message' => 'not found',
       ], 404);

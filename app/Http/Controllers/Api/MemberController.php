@@ -8,6 +8,7 @@ use App\Member;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class MemberController extends Controller
   public function index()
   {
     $members = DB::table('members')
-      ->where('members.team_id', Auth::user()->team_id)
+      ->where('members.team_id', Cookie::get('current_team_id'))
       ->orderBy('members.type')
       ->orderBy('members.backno')
       ->orderBy('members.id')
@@ -69,7 +70,7 @@ class MemberController extends Controller
 
     //TODO validate
     $member = Member::create([
-      "team_id" => Auth::user()->team_id,
+      "team_id" => Cookie::get('current_team_id'),
       "name" => $request->name,
       "type" => $request->type + 1,
       "birthday" => $request->birthday,
@@ -83,7 +84,7 @@ class MemberController extends Controller
       $user = User::create([
         "name" => $request->name,
         "email" => $request->email,
-        "team_id" => Auth::user()->team_id,
+        "team_id" => Cookie::get('current_team_id'),
         "member_id" => $member->id,
         "password" => Hash::make($password),
 //        "status" => 'invited',
@@ -133,7 +134,7 @@ class MemberController extends Controller
     //TODO validate
     $member = Member::findOrFail($id);
     //TODO 管理者権限チェック
-    if (!$member || $member->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$member || $member->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
 
@@ -167,7 +168,7 @@ class MemberController extends Controller
   {
     $member = Member::findOrFail($id);
     //TODO 管理者権限チェック
-    if (!$member || $member->team_id != Auth::user()->team_id) { //チームIDが別の場合は404
+    if (!$member || $member->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
     $count = $member->delete();

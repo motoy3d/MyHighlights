@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Team;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Response;
 
 /**
@@ -21,7 +22,7 @@ class TeamController extends Controller
    */
   public function show()
   {
-    $team = Team::findOrFail(Auth::user()->team_id);
+    $team = Team::findOrFail(Cookie::get('current_team_id'));
     return Response::json($team);
   }
 }
