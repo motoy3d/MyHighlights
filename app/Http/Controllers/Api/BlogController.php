@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Team;
 use Awjudd\FeedReader\Facades\FeedReader;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Response;
 
 /**
@@ -19,18 +21,21 @@ class BlogController extends Controller
    */
   public function index()
   {
-    $blogRssUrl = 'http://rssblog.ameba.jp/tsubasa36th/rss20.xml';
-    $feed = FeedReader::read($blogRssUrl);
+    $team = Team::find(Cookie::get('current_team_id'));
     $entries = [];
-    foreach($feed->get_items() as $item) {
-      $title = trim($item->get_title());
-      $link = trim($item->get_permalink());
-      $date = $item->get_date('Y.n.j');
-      array_push($entries, [
-        'title' => $title,
-        'link' => $link,
-        'date' => $date
-      ]);
+    $blogRssUrl = $team->blog_rss;
+    if ($blogRssUrl) {
+      $feed = FeedReader::read($blogRssUrl);
+      foreach($feed->get_items() as $item) {
+        $title = trim($item->get_title());
+        $link = trim($item->get_permalink());
+        $date = $item->get_date('Y.n.j');
+        array_push($entries, [
+          'title' => $title,
+          'link' => $link,
+          'date' => $date
+        ]);
+      }
     }
     return Response::json($entries);
   }
