@@ -23,9 +23,6 @@
           <v-ons-list-item modifier="chevron" @click="openChangePass()">
             パスワード変更
           </v-ons-list-item>
-          <v-ons-list-item>
-            チーム名 <div class="right">横浜SCつばさ 36th</div>
-          </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openICal()">
             カレンダー同期
           </v-ons-list-item>
@@ -38,9 +35,6 @@
           <!--<v-ons-list-item modifier="chevron">-->
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
-          <v-ons-list-item>
-            バージョン <div class="right">2018.12.1</div>
-          </v-ons-list-item>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
             ログアウト
           </v-ons-list-item>
