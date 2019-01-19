@@ -28,9 +28,17 @@ class HomeController extends Controller
   public function index(Request $request)
   {
     Log::info("HomeController#index ------------------------");
-    Log::info(Auth::user()->name . " team_id=" . Auth::user()->teams()->first()->team_id);
-    $currentTeamId = Auth::user()->teams()->orderBy('created_at')->first()->team_id;
-    Cookie::queue(Cookie::make('current_team_id', $currentTeamId));
+    if (!Cookie::get('current_team_id')) {
+      Log::info(Auth::user()->name . " team_id=" . Auth::user()->teams()->first()->id);
+      $currentTeamId = Auth::user()->teams()->orderBy('created_at')->first()->id;
+      $minutes = env('SESSION_LIFETIME', 129600);
+      $path = "/";
+      $domain = "";
+      $secure = env('APP_ENV') == 'production';
+      $httpOnly = false; //jsで扱うために必要
+      Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
+        $minutes, $path, $domain, $secure, $httpOnly));
+    }
     return view('home');
   }
 }

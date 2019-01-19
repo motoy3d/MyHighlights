@@ -32,7 +32,13 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+  /**
+   * ユーザーの所属しているチーム一覧を返す
+   * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+   */
     public function teams() {
-      return $this->hasMany('App\UserTeam');
+      // https://readouble.com/laravel/5.5/ja/eloquent-relationships.html#has-many-through
+      return $this->hasManyThrough('App\Team', 'App\UserTeam',
+        'user_id', 'id', 'id', 'team_id');
     }
 }

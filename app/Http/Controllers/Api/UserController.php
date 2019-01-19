@@ -25,6 +25,8 @@ class UserController extends Controller
    * @return \Illuminate\Http\JsonResponse
    */
   public function getMe(Request $request) {
+    $teams = Auth::user()->teams()->orderBy('created_at')->get();
+    Auth::user()->myTeams = $teams;
     return Response::json(Auth::user());
   }
   /**

@@ -5,7 +5,12 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
-        <span class="white">横浜SCつばさ</span>
+        <v-ons-select id="teamSelection" v-model="currentTeamId" modifier="underbar"
+                      class="fl-left mt-5 bold" @change="changeCurrentTeam()">
+          <option v-for="team in $store.state.navigator.user.myTeams" :value="team.id" class="bold">
+            {{ team.name }}
+          </option>
+        </v-ons-select>
       </div>
       <div class="right mr-5">
         <v-ons-toolbar-button @click="showSearch($event);">
@@ -18,7 +23,7 @@
         -->
       </div>
     </v-ons-toolbar>
-    <!-- ★★★検索popover -->
+    <!-- 検索popover -->
     <v-ons-popover cancelable direction="down" cover-target="true"
                    class="search_popover"
                    :visible.sync="searchPopoverVisible"
@@ -109,7 +114,11 @@
 <script>
   import Article from './Article.vue';
   import Post from './Post.vue';
+  import Cookies from 'js-cookie';
   export default {
+    // beforeCreate() {
+    //   this.currentTeamId = Cookies.get('current_team_id');
+    // },
     mounted() {
       try {
         this.load();
@@ -167,6 +176,10 @@
         this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
         this.$store.commit('timeline/setSearchCategoryId', this.searchCategoryId);
         this.load(() => {this.loading = false;});
+      },
+      changeCurrentTeam() {
+        Cookies.set('current_team_id', this.currentTeamId);
+        this.load();
       }
     },
     computed: {
@@ -183,7 +196,9 @@
         searchPopoverVisible: false,
         categories: null,
         searchKeyword: null,
-        searchCategoryId: null
+        searchCategoryId: null,
+        myTeams: null,
+        currentTeamId: Cookies.get('current_team_id')
       }
     }
   };
@@ -242,4 +257,9 @@
     margin: 20px;
     text-align: center;
   }
+  #teamSelection > .select-input {
+    color: white !important;
+    font-weight: bold !important;
+  }
+
 </style>
