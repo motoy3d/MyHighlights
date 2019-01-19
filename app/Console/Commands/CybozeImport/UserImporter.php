@@ -4,12 +4,14 @@
 
   use App\Member;
   use App\User;
+  use App\UserTeam;
   use Illuminate\Console\Command;
   use Illuminate\Support\Facades\DB;
   use Illuminate\Support\Facades\Hash;
 
   class UserImporter extends Command
   {
+    // こちら側のDBでのチームID
     protected $teamId = 39;
     /**
      * The name and signature of the console command.
@@ -64,23 +66,39 @@
             "name_kana" => $name_kana,
             "type" => $type,
             "birthday" => null,
-            "backno" => $type == '1' ? $row[4] : null,
+            "backno" => $type == '1' && $row[4]? $row[4] : null,
             "prof_img_filename" => $prof_img_filename,
             "created_id" => 0,
             "updated_id" => 0
           ]);
           if ($type == '2' || $type == '3') { //スタッフOR家族
-            $user = User::create([
-              "name" => $name,
-              "name_kana" => $name_kana,
-              "email" => $row[4],
-              "team_id" => $this->teamId,
-              "member_id" => $member->id,
-              "password" => Hash::make($row[4]),
-              //        "status" => 'invited',
-              "created_id" => 0,
-              "updated_id" => 0
-            ]);
+            $email = $row[4];
+            $existingUser = User::where('email', $email)->first();
+            if ($existingUser) {
+              $userTeam = UserTeam::create([
+                "user_id" => $existingUser->id,
+                "team_id" => $this->teamId,
+                "created_id" => 0,
+                "updated_id" => 0
+              ]);
+            } else {
+              $user = User::create([
+                "name" => $name,
+                "name_kana" => $name_kana,
+                "email" => $email,
+                "member_id" => $member->id,
+                "password" => Hash::make($row[4]),
+                //        "status" => 'invited',
+                "created_id" => 0,
+                "updated_id" => 0
+              ]);
+              $userTeam = UserTeam::create([
+                "user_id" => $user->id,
+                "team_id" => $this->teamId,
+                "created_id" => 0,
+                "updated_id" => 0
+              ]);
+            }
           }
         }
       });

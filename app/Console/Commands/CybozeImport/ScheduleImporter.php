@@ -11,6 +11,7 @@
 
   class ScheduleImporter extends Command
   {
+    // こちら側のDBでのチームID
     protected $teamId = 39;
     /**
      * The name and signature of the console command.
