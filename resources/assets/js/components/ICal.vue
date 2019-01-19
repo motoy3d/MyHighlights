@@ -7,7 +7,7 @@
         </v-ons-toolbar-button>
       </div>
       <div class="center navbartitle">
-        <v-ons-icon icon="fa-user-edit" size="20px"></v-ons-icon>
+        <v-ons-icon icon="fa-calendar" class="white" size="20px" style="font-weight:400"></v-ons-icon>
         <span>カレンダー同期設定</span>
       </div>
     </v-ons-toolbar>
@@ -16,16 +16,17 @@
         <div class="contents">
           iPhone、Androidのカレンダーに取り込み(同期)ができます。<br><br>
           以下の手順を最初に一度だけ実施すれば常に最新データが維持されます。<br><br>
-          【iPhoneの場合】<br>
+          <hr>
+          <strong><v-ons-icon icon="fa-mobile-alt" class="mr-10"></v-ons-icon>iPhoneの場合</strong><br>
           ホームで「設定」→「メール/連絡先/カレンダー」→「アカウントを追加」→「その他」→「照会するカレンダーを追加」→
-          以下のURLを入力→「保存」をタップ<br><br><br>
+          以下のURLを入力→「保存」をタップ<br><br>
           <span>{{ ical_url }}</span><br>
           <button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10">URLをコピー</button><br>
           <br>
           <hr>
-          【Androidの場合】<br>
+          <strong><v-ons-icon icon="fa-mobile-alt" class="mr-10"></v-ons-icon>Android(Googleカレンダー)の場合</strong><br>
           パソコンでGoogleカレンダーを開く → ページ左側の「他のカレンダー」の横にある︙をクリック →
-          「URL で追加」 → 以下のURLを入力 → 「カレンダーを追加」を押す。<br><br><br>
+          「URL で追加」 → 以下のURLを入力 → 「カレンダーを追加」を押す。<br><br>
           <span>{{ ical_url }}</span><br>
           <button :data-clipboard-text="ical_url" class="copyUrlBtn button smallBtn ml-10 mt-10">URLをコピー</button><br>
         </div>
