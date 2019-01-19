@@ -5,12 +5,19 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
-        <v-ons-select id="teamSelection" v-model="currentTeamId" modifier="underbar"
-                      class="fl-left mt-5 bold" @change="changeCurrentTeam()">
-          <option v-for="team in $store.state.navigator.user.myTeams" :value="team.id" class="bold">
-            {{ team.name }}
-          </option>
-        </v-ons-select>
+        <template v-if="$store.state.navigator.user.myTeams">
+          <template v-if="1 < $store.state.navigator.user.myTeams.length">
+            <v-ons-select id="teamSelection" v-model="currentTeamId" modifier="underbar"
+                          class="fl-left mt-5 bold" @change="changeCurrentTeam()">
+              <option v-for="team in $store.state.navigator.user.myTeams" :value="team.id" class="bold">
+                {{ team.name }}
+              </option>
+            </v-ons-select>
+          </template>
+          <template v-else>
+            <span class="white bold">{{ $store.state.navigator.user.myTeams[0].name }}</span>
+          </template>
+        </template>
       </div>
       <div class="right mr-5">
         <v-ons-toolbar-button @click="showSearch($event);">
@@ -33,11 +40,13 @@
                             v-model="searchKeyword"></v-ons-search-input>
         <!--<v-ons-input placeholder="キーワード(複数可)"-->
                      <!--class="keyword" v-model="searchKeyword"></v-ons-input>-->
-        <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left mt-20 ml-10">
-          <option v-for="cate in categories" :value="cate.id">
-            {{ cate.name }}
-          </option>
-        </v-ons-select>
+        <div>
+          <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left w-90p mt-20 mlr-10">
+            <option v-for="cate in categories" :value="cate.id">
+              {{ cate.name }}
+            </option>
+          </v-ons-select>
+        </div>
         <div>
           <v-ons-button class="mt-30 plr-40" @click="search()">検索</v-ons-button>
         </div>
@@ -116,13 +125,9 @@
   import Post from './Post.vue';
   import Cookies from 'js-cookie';
   export default {
-    // beforeCreate() {
-    //   this.currentTeamId = Cookies.get('current_team_id');
-    // },
     mounted() {
       try {
         this.load();
-        this.loadCategories();
       } catch($ex) {
         console.log($ex);
       }
@@ -137,6 +142,7 @@
         } else {
           this.$store.dispatch('timeline/load', this.$http);
         }
+        this.loadCategories();
       },
       loadMore(done) {
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
@@ -171,6 +177,7 @@
         this.searchPopoverVisible = true;
       },
       search() {
+        console.log('search: ' + this.searchCategoryId);
         this.searchPopoverVisible = false;
         this.loading = true;
         this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
@@ -179,7 +186,14 @@
       },
       changeCurrentTeam() {
         Cookies.set('current_team_id', this.currentTeamId);
-        this.load();
+        // 検索条件リセット
+        this.searchKeyword = null;
+        this.searchCategoryId = null;
+        this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
+        this.$store.commit('timeline/setSearchCategoryId', this.searchCategoryId);
+        this.load(); //タイムラインリロード
+        this.$store.dispatch('calendar/load', this.$http); //カレンダーリロード
+        this.$store.dispatch('members/load', this.$http); //メンバーリロード
       }
     },
     computed: {

@@ -61,34 +61,23 @@
   import Member from './Member.vue';
   export default {
     beforeCreate() {
-      this.$http.get('/api/members')
-        .then((response)=>{
-          this.allMembers = response.data;
-          this.loading = false;
-        })
-        .catch(error => {
-          console.log(error);
-          this.errored = true;
-          if (error.response.status == 401) {
-            window.location.href = "/login"; return;
-          }
-          this.loading = false;
-        });
-        // .finally(() => this.loading = false);
+      this.$store.dispatch('members/load', this.$http);
     },
     data() {
       return {
         loading: true,
-        allMembers: [],
         viewMemberType: 1  //1:選手、2:監督/コーチ、3:家族/友人
       }
     },
     computed: {
       viewMembers: {
         get() {
-          var members = [];
-          for (var i=0; i<this.allMembers.length; i++) {
-            var mem = this.allMembers[i];
+          let members = [];
+          if (!this.$store.state.members.members) {
+            return members;
+          }
+          for (let i=0; i<this.$store.state.members.members.length; i++) {
+            let mem = this.$store.state.members.members[i];
             if (mem.type == this.viewMemberType) {
               members.push(mem);
             }

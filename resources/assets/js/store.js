@@ -6,7 +6,8 @@ export default {
       state: {
         stack: [],
         options: {},
-        user: {}
+        user: {},
+        currentTeamId: null
       },
       mutations: {
         push(state, page) {
@@ -192,6 +193,7 @@ export default {
       },
       mutations: {
         set(state, schedules) {
+          console.log('スケジュール読み込み');
           state.schedules = schedules;
         },
         setLoading(state, isLoading) {
@@ -235,6 +237,42 @@ export default {
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
+        }
+      }
+    },
+
+    // メンバー画面
+    members: {
+      strict: true,
+      namespaced: true,
+      state: {
+        loading: false,
+        members: null
+      },
+      mutations: {
+        setMembers(state, members) {
+          state.members = members;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      },
+      actions: {
+        load(context, $http) {
+          console.log('members/load');
+          context.commit('setLoading', true);
+
+          $http.get('/api/members')
+            .then((response)=>{
+              context.commit('setMembers', response.data);
+              context.commit('setLoading', false);
+            })
+            .catch(error => {
+              console.log(error);
+              if (error.response.status == 401) {window.location.href = "/login"; return;}
+              context.commit('setLoading', false);
+            });
+          // .finally(() => this.loading = false);
         }
       }
     }

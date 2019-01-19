@@ -19,7 +19,7 @@
       this.$http.get('/api/me')
         .then((response)=>{
           // globalにユーザー情報セット
-          console.log('⭐me=' + response.data);
+          // console.log('⭐me=' + response.data);
           self.$store.commit('navigator/setUser', response.data);
         })
         // .catch(error => {
