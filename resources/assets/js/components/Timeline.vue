@@ -46,7 +46,7 @@
           </v-ons-select>
         </div>
         <div>
-          <v-ons-button class="mt-30 plr-40" @click="search()">検索</v-ons-button>
+          <v-ons-button class="mt-30 search_btn" @click="search()">検索</v-ons-button>
         </div>
       </div>
     </v-ons-popover>
@@ -273,6 +273,9 @@
   #teamSelection > .select-input {
     color: white !important;
     font-weight: bold !important;
+  }
+  .search_btn {
+    width: 12rem;
   }
 
 </style>

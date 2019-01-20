@@ -98,8 +98,8 @@ export default {
           console.log('posts URL=' + api);
           $http.get(api)
             .then((response)=>{
-              console.log('nextPageUrl=' + response.data.next_page_url);
-              let nextUrl = response.data.next_page_url;
+              // console.log('nextPageUrl=' + response.data.posts.next_page_url);
+              let nextUrl = response.data.posts.next_page_url;
               if (nextUrl && context.state.searchKeyword) {
                 nextUrl += '&keyword=' + context.state.searchKeyword;
               }
@@ -126,7 +126,7 @@ export default {
           }
           param.http.get(context.state.nextPageUrl)
             .then((response)=>{
-              let nextUrl = response.data.next_page_url;
+              let nextUrl = response.data.posts.next_page_url;
               if (nextUrl && context.state.searchKeyword) {
                 nextUrl += '&keyword=' + context.state.searchKeyword;
               }
