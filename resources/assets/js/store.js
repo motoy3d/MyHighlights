@@ -38,15 +38,11 @@ export default {
       strict: true,
       namespaced: true,
       state: {
-        index: 0,
-        timeline_badge: 0
+        index: 0
       },
       mutations: {
         set(state, index) {
           state.index = index;
-        },
-        setTimelineBadge(state, count) {
-          state.timeline_badge = count;
         }
       }
     },
@@ -60,7 +56,8 @@ export default {
         nextPageUrl: null,
         loading: false,
         searchKeyword: null,
-        searchCategoryId: null
+        searchCategoryId: null,
+        unreadCount: null
       },
       mutations: {
         set(state, posts) {
@@ -80,6 +77,11 @@ export default {
         },
         setSearchCategoryId(state, categoryId) {
           state.searchCategoryId = categoryId;
+        },
+        setUnreadCount(state, unreadCount) {
+          console.log('1 unreadCount========' + unreadCount);
+          state.unreadCount = unreadCount? unreadCount : null;
+          console.log('2 state.unreadCount========' + state.unreadCount);
         }
       },
       actions: {
@@ -101,7 +103,8 @@ export default {
               if (nextUrl && context.state.searchKeyword) {
                 nextUrl += '&keyword=' + context.state.searchKeyword;
               }
-              context.commit('set', response.data.data);
+              context.commit('set', response.data.posts.data);
+              context.commit('setUnreadCount', response.data.unreadCount);
               context.commit('setNextPageUrl', nextUrl);
               context.commit('setLoading', false);
             })
@@ -130,7 +133,7 @@ export default {
               if (nextUrl && context.state.searchCategoryId) {
                 nextUrl += '&category=' + context.state.searchCategoryId;
               }
-              context.commit('add', response.data.data);
+              context.commit('add', response.data.posts.data);
               context.commit('setNextPageUrl', nextUrl);
               param.done();
             })

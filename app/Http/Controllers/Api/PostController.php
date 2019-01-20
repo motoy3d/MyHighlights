@@ -42,10 +42,7 @@ class PostController extends Controller
     $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
 //    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
     Log::info("PostController#index");
-    $teams = Auth::user()->teams();
-    Log::info('★team_id0=' . $teams->first()->team_id);
-    Log::info('★Cookie current_team_id=' . Cookie::get('current_team_id'));
-
+    $teamId = Cookie::get('current_team_id');
     $posts = DB::table('posts')
       ->leftJoin('post_responses', function (JoinClause $join) {
         $join->on('posts.id', '=', 'post_responses.post_id');
@@ -64,7 +61,7 @@ class PostController extends Controller
         'post_responses.star_flg',
         'create_user.name as created_name',
         'update_user.name as updated_name'])
-      ->where('posts.team_id', Cookie::get('current_team_id'))
+      ->where('posts.team_id', $teamId)
       ->orderByDesc('posts.updated_at');
     $keyword = $request->keyword;
     Log::info('★キーワード:' . $keyword);
@@ -82,8 +79,14 @@ class PostController extends Controller
         ->where('category_id', $categoryId);
     }
 
+    // 未読数取得
+    $unreadCount = DB::table('posts')->whereRaw(
+      'id not in (select post_id from post_responses pr '
+          . 'where pr.user_id=? and pr.read_flg = 1)', [Auth::id()])
+      ->where('team_id', $teamId)
+      ->count();
     $posts = $posts->simplePaginate($perPageCount);
-    return Response::json($posts);
+    return Response::json(['posts' => $posts, 'unreadCount' => $unreadCount]);
   }
 
   /**

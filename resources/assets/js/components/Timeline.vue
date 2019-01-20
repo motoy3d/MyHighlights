@@ -36,10 +36,8 @@
                    :visible.sync="searchPopoverVisible"
                    :target="searchPopoverTarget">
       <div class="center space">
-        <v-ons-search-input placeholder="キーワード(複数可)" class="keyword"
+        <v-ons-search-input placeholder="キーワード" class="keyword"
                             v-model="searchKeyword"></v-ons-search-input>
-        <!--<v-ons-input placeholder="キーワード(複数可)"-->
-                     <!--class="keyword" v-model="searchKeyword"></v-ons-input>-->
         <div>
           <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left w-90p mt-20 mlr-10">
             <option v-for="cate in categories" :value="cate.id">
@@ -149,6 +147,7 @@
       },
       openArticle(post) {
         post.read_flg = true;
+        this.$store.commit('timeline/setUnreadCount', this.$store.state.timeline.unreadCount - 1);
         this.$store.commit('article/setPostId', post.id);
         this.$store.commit('navigator/push', {
           extends: Article,

@@ -5,14 +5,6 @@
       :tabs="tabs"
       :index.sync="index"
     ></v-ons-tabbar>
-    <!--<v-ons-tabbar position="auto"-->
-      <!--swipeable-->
-      <!--:modifier="md ? 'autogrow white-content' : ''"-->
-      <!--:on-swipe="md ? onSwipe : null"-->
-      <!--:tabbar-style="swipeTheme"-->
-      <!--:tabs="tabs"-->
-      <!--:index.sync="index"-->
-    <!--&gt;</v-ons-tabbar>-->
   </v-ons-page>
 </template>
 
@@ -25,45 +17,12 @@ import Settings from './Settings.vue';
 
 // Just a linear interpolation formula
 const lerp = (x0, x1, t) => parseInt((1 - t) * x0 + t * x1, 10);
-// RGB colors
-const red = [244, 67, 54];
-const blue = [30, 136, 229];
-const purple = [103, 58, 183];
 
 export default {
   data () {
     return {
-      // colors: red,
       animationOptions: {},
-      topPosition: 0,
-      tabs: [
-        {
-          label: 'タイムライン',
-          icon: 'fa-align-justify',
-          page: Timeline,
-          // badge: this.$store.state.tabbar.timeline_badge
-        },
-        {
-          label: 'カレンダー',
-          icon: 'fa-calendar-alt',
-          page: Calendar
-        },
-        {
-          label: 'ブログ',
-          icon: 'fa-rss',
-          page: Blog
-        },
-        {
-          label: 'メンバー',
-          icon: 'fa-users',
-          page: Members
-        },
-        {
-          label: '設定',
-          icon: 'fa-cog',
-          page: Settings
-        }
-      ]
+      topPosition: 0
     };
   },
 
@@ -88,6 +47,38 @@ export default {
         this.$store.commit('tabbar/set', newValue)
       }
     },
+    tabs: {
+      get() {
+        return [
+          {
+            label: 'タイムライン',
+            icon: 'fa-align-justify',
+            page: Timeline,
+            badge: this.$store.state.timeline.unreadCount
+          },
+          {
+            label: 'カレンダー',
+            icon: 'fa-calendar-alt',
+            page: Calendar
+          },
+          {
+            label: 'ブログ',
+            icon: 'fa-rss',
+            page: Blog
+          },
+          {
+            label: 'メンバー',
+            icon: 'fa-users',
+            page: Members
+          },
+          {
+            label: '設定',
+            icon: 'fa-cog',
+            page: Settings
+          }
+        ];
+      }
+    }
     // swipeTheme() {
     //   return this.md && {
     //     backgroundColor: `rgb(${this.colors.join(',')})`,
