@@ -54,7 +54,9 @@ class ScheduleController extends Controller
    */
   public function create()
   {
-    $categories = Category::all(['id', 'name', 'order_no']);
+    $categories = Category::where('team_id', Cookie::get('current_team_id'))
+      ->select(['id', 'name', 'order_no'])
+      ->orderBy('order_no')->get();
     return Response::json([
       'categories' => $categories
     ]);

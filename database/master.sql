@@ -14,8 +14,13 @@ insert into categories values(null,39,'練習連絡',1,0,now(),0,now()),
 (null,39,'はじめに',4,0,now(),0,now()),
 (null,39,'その他',5,0,now(),0,now());
 
+-- すべて既読に更新
+insert ignore into post_responses
+select null, u.user_id, p.id post_id,1,0,0,0,now(),0,now() from posts p join user_teams u on p.team_id=u.team_id
+where p.team_id=100 and u.team_id = 100 order by p.id
 
--- 一旦投稿コメントと投稿を削除
+
+-- 一旦投稿コメントと投稿を削除(データ移行時用)
 delete from post_responses where post_id in (select id from posts where team_id=39)
 delete from post_comments where post_id in (select id from posts where team_id=39)
 delete from posts where team_id=39
