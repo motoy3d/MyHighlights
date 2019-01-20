@@ -513,7 +513,7 @@
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
-    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
+    -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
   .updated_at {
     color: grey;
@@ -598,7 +598,7 @@
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
-    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
+    -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
   .comment_card {
     background-color: #81ff4f;

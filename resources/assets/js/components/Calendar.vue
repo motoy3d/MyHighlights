@@ -586,7 +586,7 @@
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
-    -webkit-tap-highlight-color: rgba(41, 147, 239) !important;
+    -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
   .speech-bubble {
     position: relative;
