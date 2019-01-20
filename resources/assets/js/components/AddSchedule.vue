@@ -47,7 +47,7 @@
                        placeholder="件名" v-model="title"></v-ons-input>
         </v-ons-row>
         <div class="space">
-          <v-ons-select v-model="selected_category">
+          <v-ons-select v-model="selected_category" class="category_select">
             <option v-for="cate in categories" :value="cate.id">
               {{ cate.name }}
             </option>
@@ -189,4 +189,7 @@
 </script>
 
 <style>
+  .category_select {
+    width: 10rem;
+  }
 </style>

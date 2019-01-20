@@ -19,7 +19,7 @@
                          class="w-100p" v-model="title"></v-ons-input>
           </div>
           <div class="space">
-            <v-ons-select v-model="selected_category">
+            <v-ons-select v-model="selected_category" class="category_select">
               <option v-for="cate in categories" :value="cate.id">
                 {{ cate.name }}
               </option>
@@ -283,5 +283,8 @@
     background-color: white;
     width: 95%;
     margin: 20px auto 20px auto;
+  }
+  .category_select {
+    width: 10rem;
   }
 </style>
