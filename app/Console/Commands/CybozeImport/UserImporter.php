@@ -12,7 +12,7 @@
   class UserImporter extends Command
   {
     // こちら側のDBでのチームID
-    protected $teamId = 39;
+    protected $teamId = 38;
     /**
      * The name and signature of the console command.
      *
@@ -45,7 +45,8 @@
      */
     public function handle()
     {
-      $filepath = fopen(storage_path('app/') . 'cybozu/user.csv', 'r');
+      $filepath = fopen(storage_path('app/')
+        . 'cybozu/user' . $this->teamId . '.csv', 'r');
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         while ($row = fgetcsv($filepath)) {

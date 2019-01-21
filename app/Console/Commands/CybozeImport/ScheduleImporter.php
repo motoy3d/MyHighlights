@@ -12,7 +12,7 @@
   class ScheduleImporter extends Command
   {
     // こちら側のDBでのチームID
-    protected $teamId = 39;
+    protected $teamId = 38;
     /**
      * The name and signature of the console command.
      *
@@ -44,7 +44,8 @@
      */
     public function handle()
     {
-      $filepath = fopen(storage_path('app/') . 'cybozu/schedule.csv', 'r');
+      $filepath = fopen(storage_path('app/')
+        . 'cybozu/schedule' . $this->teamId . '.csv', 'r');
       fgetcsv($filepath); //ヘッダ行
       DB::transaction(function () use ($filepath) {
         $week = array( "日", "月", "火", "水", "木", "金", "土" );
