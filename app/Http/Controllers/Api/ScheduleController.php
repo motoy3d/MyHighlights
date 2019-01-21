@@ -28,7 +28,7 @@ class ScheduleController extends Controller
    */
   public function index(Request $request)
   {
-    $months = env('SCHEDULE_DATA_LOADING_MONTHS', 6);
+    $months = env('SCHEDULE_DATA_LOADING_MONTHS', 12);
     //TODO validate
     $month = $request->month;
     $fromDate = Carbon::createFromFormat('Ymd', $month . '01')
