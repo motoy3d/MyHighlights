@@ -26,6 +26,7 @@ class MemberController extends Controller
   {
     $members = DB::table('members')
       ->where('members.team_id', Cookie::get('current_team_id'))
+      ->whereNull('withdrawal_date')
       ->orderBy('members.type')
       ->orderBy('members.backno')
       ->orderBy('members.id')
