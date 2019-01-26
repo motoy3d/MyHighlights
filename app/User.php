@@ -38,7 +38,8 @@ class User extends Authenticatable
    */
     public function teams() {
       // https://readouble.com/laravel/5.5/ja/eloquent-relationships.html#has-many-through
-      return $this->hasManyThrough('App\Team', 'App\UserTeam',
-        'user_id', 'id', 'id', 'team_id');
+      return $this->hasManyThrough('App\Team', 'App\Member',
+        'user_id', 'id', 'id', 'team_id')
+        ->orderBy('teams.id');
     }
 }

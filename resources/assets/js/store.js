@@ -244,7 +244,7 @@ export default {
       }
     },
 
-    // メンバー画面
+    // メンバー一覧画面
     members: {
       strict: true,
       namespaced: true,
@@ -278,6 +278,43 @@ export default {
           // .finally(() => this.loading = false);
         }
       }
+    },
+
+    // メンバー編集画面
+    edit_member: {
+      strict: true,
+      namespaced: true,
+      state: {
+        loading: false,
+        member_id: null
+      },
+      mutations: {
+        setMembers(state, members) {
+          state.members = members;
+        },
+        setLoading(state, isLoading) {
+          state.loading = isLoading;
+        }
+      },
+      actions: {
+        load(context, $http) {
+          console.log('members/load');
+          context.commit('setLoading', true);
+
+          $http.get('/api/members')
+              .then((response)=>{
+                context.commit('setMembers', response.data);
+                context.commit('setLoading', false);
+              })
+              .catch(error => {
+                console.log(error);
+                if (error.response.status == 401) {window.location.href = "/login"; return;}
+                context.commit('setLoading', false);
+              });
+          // .finally(() => this.loading = false);
+        }
+      }
     }
+
   }
 };

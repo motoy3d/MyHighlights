@@ -68,35 +68,40 @@ class MemberController extends Controller
 //    }
 //    Log::info('MemberController#store 3');
 
+    $user = null;
+    // ユーザー作成
+    if ($request->invitationFlg == "1") {
+      $password = str_random(10);
+      $user = User::create([
+        "name" => $request->name,
+        "email" => $request->email,
+        "password" => Hash::make($password),
+//        "status" => 'invited',
+        "created_id" => Auth::id(),
+        "updated_id" => Auth::id()
+      ]);
+
+      // 招待メール送信
+      Log::info('Auth::user ' . Auth::user());
+      $fromUser = User::findOrFail(Auth::id());
+      Mail::to($request->email)->send(
+        new UserInvitation($fromUser, $user, $password));
+    }
+
     //TODO validate
+    // メンバー作成
     $member = Member::create([
+      "user_id" => $user? $user->id : null,
       "team_id" => Cookie::get('current_team_id'),
       "name" => $request->name,
       "type" => $request->type + 1,
+      "admin_flg" => null,
       "birthday" => $request->birthday,
       "backno" => $request->backno,
       "prof_img_filename" => 'boy.png',
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
-    if ($request->invitationFlg == "1") {
-      $password = str_random(10);
-      $user = User::create([
-        "name" => $request->name,
-        "email" => $request->email,
-        "team_id" => Cookie::get('current_team_id'),
-        "member_id" => $member->id,
-        "password" => Hash::make($password),
-//        "status" => 'invited',
-        "created_id" => Auth::id(),
-        "updated_id" => Auth::id()
-      ]);
-      //TODO 招待メール
-      Log::info('Auth::user ' . Auth::user());
-      $fromUser = User::findOrFail(Auth::id());
-      Mail::to($request->email)->send(
-        new UserInvitation($fromUser, $user, $password));
-    }
     return Response::json($member);
   }
 
@@ -139,6 +144,7 @@ class MemberController extends Controller
     }
 
     $member->name = $request->name;
+    $member->name_kana = $request->nameKana;
     $member->type = $request->type;
     $member->birthday = $request->birthday;
     $member->backno = $request->backno;
@@ -152,6 +158,7 @@ class MemberController extends Controller
       ->first();
     if ($user) {
       $user->name = $request->name;
+      $user->name_kana = $request->nameKana;
       $user->email = $request->email;
     }
 

@@ -14,7 +14,7 @@
       </div>
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
-      <v-ons-icon icon="fa-plus" @click="openAddMember();"/>
+      <v-ons-icon icon="fa-plus" @click="openAddMember();"></v-ons-icon>
     </v-ons-fab>
     <v-ons-row>
       <v-ons-col>
@@ -34,7 +34,7 @@
         </div>
         <v-ons-list id="member_list">
           <v-ons-list-item v-for="member in viewMembers" :key="member.id"
-                           tappable modifier="chevron" @click="openMember();">
+                           tappable modifier="chevron" @click="openMember(member.id);">
             <div class="left">
               <img :src="'/storage/prof/' + member.prof_img_filename" class="prof_img">
             </div>
@@ -96,7 +96,8 @@
           onsNavigatorOptions: {animation: 'lift'}
         });
       },
-      openMember(member_id) {
+      openMember(member) {
+        this.$store.commit('article/setMemberId', member.id);
         this.$store.commit('navigator/push', {
           extends: Member,
           onsNavigatorOptions: {animation: 'slide'}

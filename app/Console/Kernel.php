@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
       Commands\CybozeImport\UserImporter::class,
-      Commands\CybozeImport\PostImporter::class,
+      Commands\CybozeImport\ScheduleImporter::class,
     ];
 
     /**

@@ -27,9 +27,17 @@
             <div class="segment__button">家族</div>
           </button>
         </div>
-        <div class="ml-15 mt-10"><small class="gray">名前(必須)</small></div>
+        <div class="ml-15 mt-10">
+          <small class="gray">名前</small>
+          <span class="notification ml-5 bg-gray"><small>必須</small></span>
+        </div>
         <div class="mlr-15 center">
           <v-ons-input modifier="border" placeholder="" id="name" name="name" class="w-100p"></v-ons-input>
+        </div>
+        <div class="ml-15 mt-10"><small class="gray">名前(カナ)</small></div>
+        <div class="mlr-15 center">
+          <v-ons-input modifier="border" placeholder="" class="w-100p"
+                       v-model="nameKana"></v-ons-input>
         </div>
         <div class="ml-15 mt-10"><small class="gray">誕生日</small></div>
         <div class="ml-15">
@@ -52,6 +60,9 @@
         <div class="mlr-15 center">
           <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"></v-ons-input>
         </div>
+        <div class="space mt-10">
+          管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
+        </div>
         <div class="space">
           <v-ons-button class="mtb-20" modifier="large">保存</v-ons-button>
         </div>
@@ -61,10 +72,88 @@
 </template>
 
 <script>
-  import AddMember from './AddMember.vue';
   export default {
+    beforeCreate() {
+      this.loading = true;
+      this.$http.get('/api/posts/create')
+              .then((response)=>{
+                this.categories = response.data.categories;
+                this.loading = false;
+              })
+              .catch(error => {
+                console.log(error);
+                this.errored = true;
+                if (error.response.status === 401) {
+                  window.location.href = "/login";
+                }
+                this.loading = false;
+              })
+      // .finally(() => this.loading = false)
+      ;
+      console.log('start load');
+
+      let post_id = this.$store.state.article.post_id;
+      this.$http.get('/api/posts/' + post_id)
+              .then((response)=>{
+                let post = response.data.post;
+                console.log(post);
+                this.title = post.title;
+                this.contents = post.content;
+                this.notification_flg = post.notification_flg === 1;
+                this.post_attachments = response.data.post_attachments;
+                this.questionnaire = response.data.questionnaire;
+                this.user = response.data.user;
+                this.loading = false;
+              })
+              .catch(error => {
+                console.log(error);
+                this.errored = true;
+                if (error.response.status === 401) {
+                  window.location.href = "/login";
+                }
+                this.loading = false;
+              })
+      // .finally(() => this.loading = false);
+      ;
+    },
+    data() {
+      return {
+        name: "",
+        nameKana: "",
+        memberTypeSegment: 0,
+        birthday: "",
+        backno: "",
+        invitationFlg: true,
+        email: "",
+        adminFlg: false
+      }
+    },
     methods: {
+      // TODO 実装
       save() {
+        if (!this.name) {
+          alert('氏名は必須です');
+          return;
+        }
+        if (this.invitationFlg && !this.email) {
+          alert('メールアドレスは必須です');
+          return;
+        }
+        this.$http.put('/api/members', this.$data)
+          .then(response => {
+            // console.log(response.data);
+            this.loading = false;
+          })
+          .catch(error => {
+            console.log(error.response);
+            if (error.response.status === 401) {
+              window.location.href = "/login";
+            }
+            this.loading = false;
+          })
+        // .finally(() => this.loading = false)
+        ;
+        this.$store.commit('navigator/pop');
       }
     }
   };

@@ -14,37 +14,50 @@
     <div class="bg-white">
       <form id="postForm" action="#" method="POST" v-on:submit.prevent>
         <div class="segment space center" style="width: 100%; margin: 0 auto;">
-          <v-ons-segment :index.sync="memberType" style="width: 91%">
+          <v-ons-segment :index.sync="memberTypeSegment" style="width: 91%">
             <button>選手</button>
             <button>監督/コーチ</button>
             <button>家族/友人</button>
           </v-ons-segment>
         </div>
-        <div class="ml-15 mt-10"><small class="gray">名前(必須)</small></div>
+        <div class="ml-15 mt-10">
+          <small class="gray">名前</small>
+          <span class="notification ml-5 bg-gray"><small>必須</small></span>
+        </div>
         <div class="mlr-15 center">
           <v-ons-input modifier="border" placeholder="" class="w-100p"
                        v-model="name"></v-ons-input>
+        </div>
+        <div class="ml-15 mt-10"><small class="gray">名前(カナ)</small></div>
+        <div class="mlr-15 center">
+          <v-ons-input modifier="border" placeholder="" class="w-100p"
+                       v-model="nameKana"></v-ons-input>
         </div>
         <div class="ml-15 mt-10"><small class="gray">誕生日</small></div>
         <div class="ml-15">
           <v-ons-input modifier="border" type="date" class="w-100p"
                        v-model="birthday"></v-ons-input>
         </div>
-        <template v-if="memberType === 0">
+        <template v-if="memberTypeSegment === 0">
           <div class="ml-15 mt-10"><small class="gray">背番号</small></div>
           <div class="ml-15">
             <v-ons-input modifier="border" class="backno_input" type="number"
                          v-model="backno"></v-ons-input>
           </div>
         </template>
-        <div class="space">
-          このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
-        </div>
-        <div class="ml-15"><small class="gray">メールアドレス</small></div>
-        <div class="mlr-15 center">
-          <v-ons-input modifier="border" placeholder="" class="w-100p"
-                       v-model="email"></v-ons-input>
-        </div>
+        <template v-if="memberTypeSegment != 0">
+          <div class="space">
+            このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
+          </div>
+          <div class="ml-15"><small class="gray">メールアドレス</small></div>
+          <div class="mlr-15 center">
+            <v-ons-input modifier="border" placeholder="" class="w-100p"
+                         v-model="email"></v-ons-input>
+          </div>
+          <div class="space mt-10">
+            管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
+          </div>
+        </template>
         <div class="space">
           <v-ons-button class="mtb-20" modifier="large" @click="register();">登録</v-ons-button>
         </div>
@@ -59,11 +72,13 @@
       return {
         loading: true,
         name: "",
-        memberType: 0,
+        nameKana: "",
+        memberTypeSegment: 0,
         birthday: "",
         backno: "",
         invitationFlg: true,
-        email: ""
+        email: "",
+        adminFlg: false
       }
     },
     methods: {
