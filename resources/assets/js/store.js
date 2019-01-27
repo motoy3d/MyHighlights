@@ -84,7 +84,9 @@ export default {
         },
         setUnreadCount(state, unreadCount) {
           // console.log('1 unreadCount========' + unreadCount);
-          state.unreadCount = unreadCount? unreadCount : null;
+          if (0 <= unreadCount) {
+            state.unreadCount = unreadCount? unreadCount : null;
+          }
           // console.log('2 state.unreadCount========' + state.unreadCount);
         }
       },

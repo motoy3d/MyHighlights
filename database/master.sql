@@ -78,6 +78,18 @@ update members set admin_flg=1 where
   ,'齊藤　誠晃・父'
   ,'池田　きり')
 
+-- アイコン更新
+update members set prof_img_filename='woman.png' where name in (
+'阿部　時宗'
+,'田井　柾翔'
+,'小笠原　隼'
+,'長坂　夏樹'
+,'田村　悠翔'
+,'川島　修'
+,'吉田　隼斗'
+,'平田　大輔'
+)
+
 −− scheduleの00:00:00をnullに更新
 update schedules set time_from=null where time_from='00:00:00';
 update schedules set time_to=null where time_to='00:00:00';
