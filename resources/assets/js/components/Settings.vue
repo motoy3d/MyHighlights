@@ -74,11 +74,34 @@
             if (!newEmail) {
               return;
             }
-            self.$ons.notification.confirm(
-              newEmail, {title: 'このアドレスでいいですか？'})
+            self.$ons.notification.confirm(newEmail,
+                    {title: 'このアドレスでいいですか？', buttonLabels:['キャンセル', 'OK']})
               .then(function(answer){
-                alert(answer);
-                //TODO API
+                  if (self.posting) {
+                      return;
+                  }
+                  if (answer === 1) {
+                    self.loading = true;
+                    let formData = new FormData();
+                    formData.append('email', newEmail);
+                    self.$http.post('/api/users/updateEmail', formData).then(response => {
+                      self.$ons.notification.alert('変更されました', {title: ''});
+                      self.loading = false; self.posting = false;
+                    })
+                    .catch(error => {
+                      console.log(error);
+                      if (error.response.status === 401) {
+                        window.location.href = "/login";
+                      }
+                      self.loading = false; self.posting = false;
+                    });
+                    self.$http.get('/api/me')
+                      .then((response)=>{
+                        // globalにユーザー情報セット
+                        // console.log('⭐me=' + response.data);
+                        self.$store.commit('navigator/setUser', response.data);
+                      });
+                  }
               });
           });
       },
@@ -96,7 +119,7 @@
             }
             const newpass2 = newpass;
             self.$ons.notification.confirm(
-              newpass, {title: 'このパスワードでいいですか？'})
+              newpass, {title: 'このパスワードでいいですか？', buttonLabels:['キャンセル', 'OK']})
               .then(function(answer){
                 if (self.posting) {
                   return;

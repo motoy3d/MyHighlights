@@ -25,8 +25,8 @@
     Route::delete('schedule_comments/{schedule_id}/{comment_id}', 'Api\ScheduleCommentController@destroy');
     Route::get('teams', 'Api\TeamController@show');
     Route::get('me', 'Api\UserController@getMe');
-    Route::put('users/updateName', 'Api\UserController@updateName');
-    Route::put('users/updateEmail', 'Api\UserController@updateEmail');
+    Route::post('users/updateName', 'Api\UserController@updateName');
+    Route::post('users/updateEmail', 'Api\UserController@updateEmail');
     Route::post('users/updatePassword', 'Api\UserController@updatePassword');
     Route::resource('members', 'Api\MemberController');
     Route::post('questionnaires/answer', 'Api\QuestionnaireController@store');
