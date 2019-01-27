@@ -71,6 +71,9 @@
         this.$ons.notification.prompt("新しいメールアドレス",
           {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(newEmail) {
+            if (!newEmail) {
+              return;
+            }
             self.$ons.notification.confirm(
               newEmail, {title: 'このアドレスでいいですか？'})
               .then(function(answer){
