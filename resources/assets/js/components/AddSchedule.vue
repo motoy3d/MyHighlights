@@ -107,8 +107,7 @@
       // $('#endTimeForAdd').pickatime();
     },
     beforeMount() {
-      let date = this.$store.state.add_schedule.selectedDate;
-      this.schedule_date = date;
+      this.schedule_date = this.$store.state.add_schedule.selectedDate;
     },
     data() {
       return {
