@@ -103,6 +103,7 @@
           })
           // .finally(() => this.loading = false)
         ;
+        this.$ons.notification.alert('メンバーを登録しました。', {title: ''});
         this.$store.dispatch('members/load', this.$http);
         this.$store.commit('navigator/pop');
       },
