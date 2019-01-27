@@ -96,9 +96,7 @@
         .catch(error => {
           console.log(error);
           this.errored = true;
-          if (error.response.status === 401) {
-            window.location.href = "/login";
-          }
+          if (error.response.status === 401) {window.location.href = "/login";}
           this.loading = false;
         })
         // .finally(() => this.loading = false)
@@ -107,6 +105,10 @@
       // $('#startHourForAdd').pickatime({format:'H時', interval:60});
       // $('#startMinuteForAdd').pickatime({format:'i分', interval:5, min: new Date(2018,1,1,0,0), max: new Date(2018,1,1,0,59)});
       // $('#endTimeForAdd').pickatime();
+    },
+    beforeMount() {
+      let date = this.$store.state.add_schedule.selectedDate;
+      this.schedule_date = date;
     },
     data() {
       return {

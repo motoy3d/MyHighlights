@@ -145,25 +145,25 @@
                   <div class="mt-10 ml-15" v-for="(comment, index) in schedule.comments" :key="comment.id">
                     <!--<hr class="mt-15">-->
                     <div>
-                <span class="bold">
-                  {{ comment.created_name }}
-                </span>
+                      <span class="bold">
+                        {{ comment.created_name }}
+                      </span>
                       <span class="updated_at">
-                  <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
-                    {{ comment.created_at | moment("from") }}　
-                  </template>
-                  <template v-else>
-                    {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
-                  </template>
-                </span>
+                        <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
+                          {{ comment.created_at | moment("from") }}　
+                        </template>
+                        <template v-else>
+                          {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
+                        </template>
+                      </span>
                     </div>
                     <div>
                       <div class="speech-bubble">
                         <span class="comment" v-html="replaceATag(comment.comment_text)"></span>
                         <span v-if="comment.user_id == $store.state.navigator.user.id"><!-- 型が違うので==使用 -->
-                    <v-ons-icon icon="fa-trash" class="delete_comment_icon"
-                                @click="confirmDeleteComment(schedule.id, comment.id)"></v-ons-icon>
-                  </span>
+                          <v-ons-icon icon="fa-trash" class="delete_comment_icon"
+                                      @click="confirmDeleteComment(schedule.id, comment.id)"></v-ons-icon>
+                        </span>
                         <p v-for="att in comment.attachments">
                           <a :href="att.file_path">
                             <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
@@ -333,6 +333,7 @@
         }
       },
       openAddSchedule() {
+        this.$store.commit('add_schedule/setSelectedDate', this.selectedDate);
         this.$store.commit('navigator/push', {
           extends: AddSchedule,
           onsNavigatorOptions: {animation: 'lift'}

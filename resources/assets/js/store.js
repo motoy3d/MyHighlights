@@ -242,6 +242,20 @@ export default {
       }
     },
 
+    // 予定作成画面
+    add_schedule: {
+      strict: true,
+      namespaced: true,
+      state: {
+        selectedDate: null
+      },
+      mutations: {
+        setSelectedDate(state, selectedDate) {
+          state.selectedDate = selectedDate;
+        }
+      }
+    },
+
     // 予定編集画面
     edit_schedule: {
       strict: true,
