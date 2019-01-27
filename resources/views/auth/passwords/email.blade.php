@@ -50,7 +50,7 @@
               aria-label="パスワード再設定">
           @csrf
 
-          <div class="form-group row">
+          <div class="form-group row mt-30">
             <div class="col-md-6">
               <input id="email" type="email"
                          modifier="border" placeholder="メールアドレス"

@@ -95,7 +95,7 @@
         <div class="form-group row mt-30 mb-0">
           <div class="col-md-6 offset-md-4">
             <button type="submit" class="button">
-              パスワード保存
+              パスワード再設定
             </button>
           </div>
         </div>
