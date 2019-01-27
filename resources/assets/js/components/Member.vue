@@ -13,19 +13,12 @@
     </v-ons-toolbar>
     <div class="bg-white">
       <form id="postForm" action="#" method="POST" v-on:submit.prevent="save">
-        <div class="segment space" style="width: 91%; margin: 0 auto;">
-          <button class="segment__item">
-            <input type="radio" class="segment__input" name="segment-a" checked>
-            <div class="segment__button">選手</div>
-          </button>
-          <button class="segment__item">
-            <input type="radio" class="segment__input" name="segment-a">
-            <div class="segment__button">監督/コーチ</div>
-          </button>
-          <button class="segment__item">
-            <input type="radio" class="segment__input" name="segment-a">
-            <div class="segment__button">家族</div>
-          </button>
+        <div class="segment space center" style="width: 100%; margin: 0 auto;">
+          <v-ons-segment :index.sync="memberTypeSegment" style="width: 91%">
+            <button>選手</button>
+            <button>監督/コーチ</button>
+            <button>家族/友人</button>
+          </v-ons-segment>
         </div>
         <div class="ml-15 mt-10">
           <small class="gray">名前</small>
@@ -58,10 +51,13 @@
             <!--<input type="file" name="myfile" />-->
           <!--</div>-->
         <!--</div>-->
-        <div class="space">
+        <div class="space" v-if="!email">
           このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
         </div>
-        <div class="ml-15"><small class="gray">メールアドレス</small></div>
+        <div class="ml-15 mt-10">
+          <small class="gray">メールアドレス</small>
+          <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
+        </div>
         <div class="mlr-15 center">
           <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"
                        v-model="email" :disabled="!email && !invitationFlg"></v-ons-input>
@@ -79,12 +75,36 @@
 
 <script>
   export default {
-    beforeMount() {
-      this.load();
+    beforeCreate() {
+      this.loading = true;
+      let member_id = this.$store.state.edit_member.member_id;
+      this.$http.get('/api/members/' + member_id)
+        .then((response)=>{
+          this.member = response.data;
+          this.user_id = this.member.user_id;
+          this.name = this.member.name;
+          this.nameKana = this.member.name_kana;
+          this.memberTypeSegment = this.member.type - 1;
+          this.birthday = this.member.birthday;
+          this.backno = this.member.backno;
+          this.invitationFlg = false;
+          this.email = this.member.email;
+          this.adminFlg = this.member.admin_flg === 1;
+          this.loading = false;
+        })
+        .catch(error => {
+          console.log(error);
+          this.errored = true;
+          if (error.response.status == 401) {window.location.href = "/login"; return;}
+          this.loading = false;
+        })
+      // .finally(() => this.loading = false)
+      ;
     },
     data() {
       return {
         member: null,
+        user_id: "",
         name: "",
         nameKana: "",
         memberTypeSegment: null,
@@ -96,33 +116,6 @@
       }
     },
     methods: {
-      // TODO 実装
-      load() {
-        // console.log('start load');
-        this.loading = true;
-        let member_id = this.$store.state.edit_member.member_id;
-        this.$http.get('/api/members/' + member_id)
-          .then((response)=>{
-            this.member = response.data;
-            this.name = this.member.name;
-            this.nameKana = this.member.name_kana;
-            this.memberTypeSegment = this.member.type - 1;
-            this.birthday = this.member.birthday;
-            this.backno = this.member.backno;
-            this.invitationFlg = false;
-            this.email = this.member.email;
-            this.adminFlg = this.member.admin_flg === 1;
-            this.loading = false;
-          })
-          .catch(error => {
-            console.log(error);
-            this.errored = true;
-            if (error.response.status == 401) {window.location.href = "/login"; return;}
-            this.loading = false;
-          })
-        // .finally(() => this.loading = false)
-        ;
-      },
       save() {
         if (!this.name) {
           this.$ons.notification.alert('氏名を入れてください', {title: ''});
