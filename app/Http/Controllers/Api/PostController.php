@@ -88,10 +88,12 @@ class PostController extends Controller
     }
 
     // 未読数取得
-    $unreadCount = DB::table('posts')->whereRaw(
-      'id not in (select post_id from post_responses pr '
+    $unreadCount = DB::table('posts')
+      ->whereRaw('id not in (select post_id from post_responses pr '
           . 'where pr.user_id=? and pr.read_flg = 1)', [Auth::id()])
       ->where('team_id', $teamId)
+      ->whereRaw('created_at > (select created_at from members where user_id=? and team_id=?)',
+          [Auth::id(), $teamId])
       ->count();
     $posts = $posts->simplePaginate($perPageCount);
     return Response::json(['posts' => $posts, 'unreadCount' => $unreadCount]);

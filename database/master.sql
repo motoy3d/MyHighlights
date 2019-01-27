@@ -78,6 +78,9 @@ update members set admin_flg=1 where
   ,'齊藤　誠晃・父'
   ,'池田　きり')
 
+−− scheduleの00:00:00をnullに更新
+update schedules set time_from=null where time_from='00:00:00';
+update schedules set time_to=null where time_to='00:00:00';
 
 -- 一旦投稿コメントと投稿を削除(データ移行時用)
 delete from post_responses where post_id in (select id from posts where team_id=39)
