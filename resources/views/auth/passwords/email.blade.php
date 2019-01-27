@@ -45,29 +45,28 @@
             {{ session('status') }}
           </div>
         @endif
+        @if ($errors->has('email'))
+          <p class="invalid-feedback" role="alert">
+            <strong>{{ $errors->first('email') }}</strong>
+          </p>
+        @endif
 
+        <i id="sendBtnSpinner" class="fa fa-spinner fa-spin fa-3x" style="display:none"></i>
         <form method="POST" action="{{ route('password.email') }}"
-              aria-label="パスワード再設定">
+              aria-label="パスワード再設定" onsubmit="submitForm()">
           @csrf
-
           <div class="form-group row mt-30">
             <div class="col-md-6">
               <input id="email" type="email"
                          modifier="border" placeholder="メールアドレス"
                          class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
                          name="email" value="{{ old('email') }}" required autofocus>
-
-              @if ($errors->has('email'))
-                <p class="invalid-feedback" role="alert">
-                  <strong>{{ $errors->first('email') }}</strong>
-                </p>
-              @endif
             </div>
           </div>
 
           <div class="form-group row mt-30 mb-0">
             <div class="col-md-6 offset-md-4">
-              <button type="submit" class="button">
+              <button id="sendBtn" type="submit" class="button">
                 パスワード再設定用メール送信
               </button>
             </div>
@@ -77,5 +76,12 @@
     </div>
   </ons-page>
   <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script>
+    function submitForm() {
+      document.getElementsByClassName('invalid-feedback')[0].remove();
+      document.getElementById('sendBtn').setAttribute('disabled', true);
+      document.getElementById('sendBtnSpinner').setAttribute('style', 'display:block');
+    }
+  </script>
 </body>
 </html>

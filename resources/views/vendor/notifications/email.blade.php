@@ -58,7 +58,8 @@
         {{--'actionText' => $actionText--}}
     {{--]--}}
 {{--)--}}
-{{ $actionText }}ボタンが利用できない場合は、以下のURLをコピー＆ペーストしてブラウザから直接アクセスしてください。\n
+{{ $actionText }}ボタンが利用できない場合は、以下のURLをコピー＆ペーストしてブラウザから直接アクセスしてください。
+
 [{{ $actionUrl }}]({!! $actionUrl !!})
 @endcomponent
 @endisset
