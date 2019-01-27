@@ -63,8 +63,9 @@ class PostController extends Controller
         'update_user.name as updated_name'])
       ->where('posts.team_id', $teamId)
       ->orderByDesc('posts.updated_at');
+
+    // キーワード検索
     $keyword = $request->keyword;
-    Log::info('★キーワード:' . $keyword);
     if ($keyword) { //キーワード検索パラメータがある場合、タイトルと本文から検索する //TODO コメントも検索
       $posts = $posts
         ->where(function($query) use($keyword) {
@@ -72,11 +73,18 @@ class PostController extends Controller
             ->orWhere('posts.content', 'LIKE', '%' . $keyword . '%');
         });
     }
+    // カテゴリー検索
     $categoryId = $request->category;
     if ($categoryId) {
       Log::info('★カテゴリー=' . $categoryId);
       $posts = $posts
         ->where('category_id', $categoryId);
+    }
+    // 未読検索
+    $unread = $request->unread;
+    if ($unread) {
+      $posts = $posts
+        ->whereNull('post_responses.read_flg');
     }
 
     // 未読数取得

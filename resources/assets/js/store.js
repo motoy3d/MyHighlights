@@ -57,6 +57,7 @@ export default {
         loading: false,
         searchKeyword: null,
         searchCategoryId: null,
+        searchUnread: null,
         unreadCount: null
       },
       mutations: {
@@ -78,6 +79,9 @@ export default {
         setSearchCategoryId(state, categoryId) {
           state.searchCategoryId = categoryId;
         },
+        setSearchUnread(state, unread) {
+          state.searchUnread = unread;
+        },
         setUnreadCount(state, unreadCount) {
           // console.log('1 unreadCount========' + unreadCount);
           state.unreadCount = unreadCount? unreadCount : null;
@@ -95,6 +99,9 @@ export default {
           if (context.state.searchCategoryId) {
             api += (paramFlg? '&' : '?') + 'category=' + context.state.searchCategoryId;
           }
+          if (context.state.searchUnread) {
+            api += (paramFlg? '&' : '?') + 'unread=' + context.state.searchUnread;
+          }
           console.log('posts URL=' + api);
           $http.get(api)
             .then((response)=>{
@@ -102,6 +109,12 @@ export default {
               let nextUrl = response.data.posts.next_page_url;
               if (nextUrl && context.state.searchKeyword) {
                 nextUrl += '&keyword=' + context.state.searchKeyword;
+              }
+              if (nextUrl && context.state.searchCategoryId) {
+                nextUrl += '&category=' + context.state.searchCategoryId;
+              }
+              if (nextUrl && context.state.searchUnread) {
+                nextUrl += '&unread=' + context.state.searchUnread;
               }
               context.commit('set', response.data.posts.data);
               context.commit('setUnreadCount', response.data.unreadCount);
@@ -132,6 +145,9 @@ export default {
               }
               if (nextUrl && context.state.searchCategoryId) {
                 nextUrl += '&category=' + context.state.searchCategoryId;
+              }
+              if (nextUrl && context.state.searchUnread) {
+                nextUrl += '&unread=' + context.state.searchUnread;
               }
               context.commit('add', response.data.posts.data);
               context.commit('setNextPageUrl', nextUrl);

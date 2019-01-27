@@ -36,17 +36,22 @@
                    :visible.sync="searchPopoverVisible"
                    :target="searchPopoverTarget">
       <div class="center space">
-        <v-ons-search-input placeholder="キーワード" class="keyword"
-                            v-model="searchKeyword"></v-ons-search-input>
         <div>
-          <v-ons-select v-model="searchCategoryId" modifier="underbar" class="fl-left w-90p mt-20 mlr-10">
+          <v-ons-search-input placeholder="キーワード" class="keyword"
+                              v-model="searchKeyword"></v-ons-search-input>
+        </div>
+        <div class="mt-20 mlr-10">
+          <v-ons-select v-model="searchCategoryId" modifier="underbar" class="w-100p">
             <option v-for="cate in categories" :value="cate.id">
               {{ cate.name }}
             </option>
           </v-ons-select>
         </div>
-        <div>
-          <v-ons-button class="mt-30 search_btn" @click="search()">検索</v-ons-button>
+        <div class="mt-20 mlr-10 left">
+          未読のみ <v-ons-switch v-model="searchUnread"></v-ons-switch>
+        </div>
+        <div class="mt-30 mb-10">
+          <v-ons-button class="search_btn" @click="search()">検索</v-ons-button>
         </div>
       </div>
     </v-ons-popover>
@@ -183,6 +188,7 @@
         this.loading = true;
         this.$store.commit('timeline/setSearchKeyword', this.searchKeyword);
         this.$store.commit('timeline/setSearchCategoryId', this.searchCategoryId);
+        this.$store.commit('timeline/setSearchUnread', this.searchUnread);
         this.load(() => {this.loading = false;});
       },
       changeCurrentTeam() {
@@ -212,6 +218,7 @@
         categories: null,
         searchKeyword: null,
         searchCategoryId: null,
+        searchUnread: false,
         myTeams: null,
         currentTeamId: Cookies.get('current_team_id')
       }
