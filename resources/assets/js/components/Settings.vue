@@ -68,7 +68,8 @@
     methods: {
       openChangeEmail() {
         let self = this;
-        this.$ons.notification.prompt("新しいメールアドレス", {title: ''})
+        this.$ons.notification.prompt("新しいメールアドレス",
+          {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(newEmail) {
             self.$ons.notification.confirm(
               newEmail, {title: 'このアドレスでいいですか？'})

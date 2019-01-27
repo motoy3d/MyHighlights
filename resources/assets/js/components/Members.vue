@@ -96,8 +96,8 @@
           onsNavigatorOptions: {animation: 'lift'}
         });
       },
-      openMember(member) {
-        this.$store.commit('article/setMemberId', member.id);
+      openMember(member_id) {
+        this.$store.commit('edit_member/setMemberId', member_id);
         this.$store.commit('navigator/push', {
           extends: Member,
           onsNavigatorOptions: {animation: 'slide'}

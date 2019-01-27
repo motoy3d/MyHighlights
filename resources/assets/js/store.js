@@ -79,9 +79,9 @@ export default {
           state.searchCategoryId = categoryId;
         },
         setUnreadCount(state, unreadCount) {
-          console.log('1 unreadCount========' + unreadCount);
+          // console.log('1 unreadCount========' + unreadCount);
           state.unreadCount = unreadCount? unreadCount : null;
-          console.log('2 state.unreadCount========' + state.unreadCount);
+          // console.log('2 state.unreadCount========' + state.unreadCount);
         }
       },
       actions: {
@@ -289,8 +289,8 @@ export default {
         member_id: null
       },
       mutations: {
-        setMembers(state, members) {
-          state.members = members;
+        setMemberId(state, member_id) {
+          state.member_id = member_id;
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
