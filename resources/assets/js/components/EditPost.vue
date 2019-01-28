@@ -69,10 +69,10 @@
           </div>
           <div class="space">
           </div>
-          <div class="space row middle">
-            <v-ons-switch id="notificate" v-model="notification_flg"></v-ons-switch>
-            <label for="notificate" class="middle">みんなにメール通知</label>
-          </div>
+          <!--<div class="space row middle">-->
+            <!--<v-ons-switch id="notificate" v-model="notification_flg"></v-ons-switch>-->
+            <!--<label for="notificate" class="middle">みんなにメール通知</label>-->
+          <!--</div>-->
           <div class="space">
             <v-ons-button id="postBtn" class="mtb-20" modifier="large"
                           @click="post()" :disabled="posting">

@@ -13,7 +13,7 @@
     </v-ons-toolbar>
     <div class="row">
       <div class="col bg-white">
-        <form id="postForm" action="#" method="POST">
+        <form id="postForm" action="#" method="POST" onsubmit="return false;">
           <div class="space center">
             <v-ons-input modifier="border" placeholder="件名"
                          class="w-100p" v-model="title"></v-ons-input>
@@ -69,10 +69,10 @@
           </div>
           <div class="space">
           </div>
-          <div class="space row middle">
-            <v-ons-switch id="notificate" v-model="notification_flg"></v-ons-switch>
-            <label for="notificate" class="middle">みんなにメール通知</label>
-          </div>
+          <!--<div class="space row middle">-->
+            <!--<v-ons-switch id="notificate" v-model="notification_flg"></v-ons-switch>-->
+            <!--<label for="notificate" class="middle">みんなにメール通知</label>-->
+          <!--</div>-->
           <div class="space">
             <v-ons-button id="postBtn" class="mtb-20" modifier="large"
                           @click="post()" :disabled="posting">
@@ -86,7 +86,7 @@
 
     <!-- アンケート作成画面Modal -->
     <v-ons-modal var="questionnaireModal">
-      <form id="createQuestionnaireForm" action="#" method="POST">
+      <form id="createQuestionnaireForm" action="#" method="POST" v-on:submit.prevent="post">
         <div class="questionnaire_container p-10">
           <div class="row">
             <div class="col space">
