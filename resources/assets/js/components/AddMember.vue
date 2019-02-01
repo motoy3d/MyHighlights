@@ -12,6 +12,7 @@
       </div>
     </v-ons-toolbar>
     <div class="bg-white">
+      <small class="gray space">選手と保護者をそれぞれ登録してください。</small>
       <form id="postForm" action="#" method="POST" v-on:submit.prevent>
         <div class="segment space center" style="width: 100%; margin: 0 auto;">
           <v-ons-segment :index.sync="memberTypeSegment" style="width: 91%" @postchange="changeMemberType()">
@@ -45,6 +46,12 @@
                          v-model="backno"></v-ons-input>
           </div>
         </template>
+        <div class="space">
+          <img src="/storage/prof/boy.png" class="prof_img_large prof_img_selected">
+          <img src="/storage/prof/girl.png" class="prof_img_large">
+          <img src="/storage/prof/man.png" class="prof_img_large">
+          <img src="/storage/prof/woman.png" class="prof_img_large">
+        </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
             このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
@@ -119,4 +126,11 @@
 </script>
 
 <style>
+  .prof_img_large {
+    width: 96px;
+    height: 96px;
+  }
+  .prof_img_selected {
+    border: #ff8d00 2px solid;
+  }
 </style>
