@@ -40,7 +40,7 @@
             </div>
             <div class="w-100p">
               <p style="text-align: left">
-                <span v-if="member.type == 1">{{ member.backno }}.</span>
+                <span v-if="member.type == 1 && member.backno">{{ member.backno }}.</span>
                 {{ member.name }}
               </p>
               <!--<div class="mr-30">-->
