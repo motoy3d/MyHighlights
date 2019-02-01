@@ -352,7 +352,7 @@
       },
       confirmDeleteSchedule(index) {
         let self = this;
-        this.$ons.notification.confirm("この予定を削除しますか？", {title: ''})
+        this.$ons.notification.confirm("この予定を削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
             self.deleteSchedule(index);
@@ -426,7 +426,7 @@
       },
       confirmDeleteComment(schedule_id, comment_id) {
         let self = this;
-        this.$ons.notification.confirm("削除しますか？", {title: ''})
+        this.$ons.notification.confirm("削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
             self.deleteComment(schedule_id, comment_id);

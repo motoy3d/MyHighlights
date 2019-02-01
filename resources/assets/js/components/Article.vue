@@ -312,7 +312,7 @@
       },
       confirmDeleteComment(comment_id) {
         let self = this;
-        this.$ons.notification.confirm("削除しますか？", {title: ''})
+        this.$ons.notification.confirm("削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
             self.deleteComment(comment_id);
@@ -447,7 +447,7 @@
       },
       confirmDeletePost() {
         let self = this;
-        this.$ons.notification.confirm("この投稿を削除しますか？", {title: ''})
+        this.$ons.notification.confirm("この投稿を削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
             self.deletePost(self.$store.state.article.post_id);
