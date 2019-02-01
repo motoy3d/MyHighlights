@@ -33,7 +33,7 @@
             <ul>
               <li v-for="(file, index) in fileNames" class="mtb-10 break">
                 <span>{{ file }}
-                  <v-ons-icon icon="fa-trash" class="gray"
+                  <v-ons-icon icon="fa-trash" class="gray ml-5"
                               @click="deleteFile(index);"></v-ons-icon>
                 </span>
               </li>
@@ -62,7 +62,7 @@
 
           <div class="space">
             <div class="upload-btn-wrapper">
-              <v-ons-button class="smallBtn" modifier="outline">
+              <v-ons-button class="smallBtn" modifier="outline" :disabled="maxFiles <= files.length">
                 <v-ons-icon icon="fa-file"></v-ons-icon> 添付ファイル</v-ons-button>
               <input type="file" multiple @change="onFileSet"/>
             </div>
@@ -166,7 +166,8 @@
         questionnaire_title_tmp: null,
         questionnaire_title: null,
         questionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
-        questionnaire_selections: [{text:''}, {text:''}, {text:''}]
+        questionnaire_selections: [{text:''}, {text:''}, {text:''}],
+        maxFiles: 20
       }
     },
     methods: {
@@ -205,8 +206,9 @@
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status === 401) {
-              window.location.href = "/login";
+            if (error.response.status === 401) {window.location.href = "/login";}
+            if (error.response.status === 413) {
+              this.$ons.notification.alert('アップロード容量が大きすぎます。容量を減らして投稿してください。', {title: ''});
             }
             this.loading = false; this.posting = false;
           })
@@ -221,6 +223,18 @@
       onFileSet(event) {
         const upFiles = event.target.files;
         for(let i=0; i<upFiles.length; i++) {
+          // console.log('fileset ' + i);
+          if(this.maxFiles <= this.files.length) {
+            this.$ons.notification.alert(this.maxFiles + 'ファイルまで添付可能です。', {title: ''});
+            return false;
+          }
+          // console.log('count ok ');
+          const maxMB = 10;
+          if ((1024*1024*maxMB) < upFiles[i].size) {
+            this.$ons.notification.alert('1ファイル最大' + maxMB + 'MBまで添付可能です。', {title: ''});
+            return false;
+          }
+          // console.log('size ok ');
           this.files.push(upFiles[i]);
           this.fileNames.push(upFiles[i].name);
         }
