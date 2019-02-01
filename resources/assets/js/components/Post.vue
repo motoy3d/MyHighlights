@@ -32,7 +32,10 @@
           <div class="mb-10" v-if="0 < fileNames.length">
             <ul>
               <li v-for="(file, index) in fileNames" class="mtb-10 break">
-                {{ file }}
+                <span>{{ file }}
+                  <v-ons-icon icon="fa-trash" class="gray"
+                              @click="deleteFile(index);"></v-ons-icon>
+                </span>
               </li>
             </ul>
           </div>
@@ -216,13 +219,15 @@
       },
       // ファイルが選択された時
       onFileSet(event) {
-        // console.log("onFileSet.");
-        this.files = event.target.files;
-        this.fileNames = [];
-        for (let i=0; i<this.files.length; i++) {
-          this.fileNames.push(this.files[i].name);
+        const upFiles = event.target.files;
+        for(let i=0; i<upFiles.length; i++) {
+          this.files.push(upFiles[i]);
+          this.fileNames.push(upFiles[i].name);
         }
-        // console.log(this.files);
+      },
+      deleteFile(index) {
+        this.files.splice(index, 1);
+        this.fileNames.splice(index, 1);
       },
       showQuestionnaireModal() {
         this.questionnaire_title_tmp = this.questionnaire_title;
