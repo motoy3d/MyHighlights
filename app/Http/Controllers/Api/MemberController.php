@@ -101,7 +101,7 @@ class MemberController extends Controller
       "admin_flg" => null,
       "birthday" => $request->birthday,
       "backno" => $request->backno,
-      "prof_img_filename" => 'boy.png',
+      "prof_img_filename" => $request->selectedAvatarFilename,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);

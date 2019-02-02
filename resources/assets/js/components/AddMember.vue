@@ -46,15 +46,31 @@
                          v-model="backno"></v-ons-input>
           </div>
         </template>
-        <div class="space center">
-          <img src="/storage/prof/preset_boy.png" class="prof_img_lg prof_img_selected">
-          <img src="/storage/prof/preset_girl.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_man.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_woman.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_kuma.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_lion.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_zou.png" class="prof_img_lg">
-          <img src="/storage/prof/preset_penguin.png" class="prof_img_lg">
+        <div class="space mt-15 center">
+          <img src="/storage/prof/preset_boy.png" id="preset_boy.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_boy.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_girl.png" id="preset_girl.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_girl.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_man.png" id="preset_man.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_man.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_woman.png" id="preset_woman.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_woman.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_kuma.png" id="preset_kuma.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kuma.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_lion.png" id="preset_lion.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_lion.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_zou.png" id="preset_zou.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_zou.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
@@ -89,12 +105,19 @@
         backno: "",
         invitationFlg: false,
         email: "",
-        adminFlg: false
+        adminFlg: false,
+        selectedAvatarFilename: "preset_boy.png"
+      }
+    },
+    computed: {
+      selectedAvatarFilenameComputed: {
+        get() {
+          return this.selectedAvatarFilename;
+        }
       }
     },
     methods: {
       register() {
-        //TODO validate
         if (!this.name) {
           this.$ons.notification.alert('氏名を入れてください', {title: ''});
           return;
@@ -124,6 +147,10 @@
         } else{
           this.invitationFlg = true;
         }
+      },
+      changeAvatar(event) {
+        // console.log(event.srcElement.id);
+        this.selectedAvatarFilename = event.srcElement.id;
       }
     }
   };
