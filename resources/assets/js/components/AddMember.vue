@@ -47,14 +47,14 @@
           </div>
         </template>
         <div class="space center">
-          <img src="/storage/prof/boy.png" class="prof_img_lg prof_img_selected">
-          <img src="/storage/prof/girl.png" class="prof_img_lg">
-          <img src="/storage/prof/man.png" class="prof_img_lg">
-          <img src="/storage/prof/woman.png" class="prof_img_lg">
-          <img src="/storage/prof/kuma.png" class="prof_img_lg">
-          <img src="/storage/prof/lion.png" class="prof_img_lg">
-          <img src="/storage/prof/zou.png" class="prof_img_lg">
-          <img src="/storage/prof/penguin.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_boy.png" class="prof_img_lg prof_img_selected">
+          <img src="/storage/prof/preset_girl.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_man.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_woman.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_kuma.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_lion.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_zou.png" class="prof_img_lg">
+          <img src="/storage/prof/preset_penguin.png" class="prof_img_lg">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
