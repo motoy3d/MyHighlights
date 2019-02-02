@@ -47,10 +47,10 @@
           </div>
         </template>
         <div class="space">
-          <img src="/storage/prof/boy.png" class="prof_img_large prof_img_selected">
-          <img src="/storage/prof/girl.png" class="prof_img_large">
-          <img src="/storage/prof/man.png" class="prof_img_large">
-          <img src="/storage/prof/woman.png" class="prof_img_large">
+          <img src="/storage/prof/boy.png" class="prof_img prof_img_selected">
+          <img src="/storage/prof/girl.png" class="prof_img">
+          <img src="/storage/prof/man.png" class="prof_img">
+          <img src="/storage/prof/woman.png" class="prof_img">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
@@ -126,10 +126,6 @@
 </script>
 
 <style>
-  .prof_img_large {
-    width: 96px;
-    height: 96px;
-  }
   .prof_img_selected {
     border: #ff8d00 2px solid;
   }
