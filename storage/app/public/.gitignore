@@ -1,9 +1,5 @@
 !comment_attachment/
 !post_attachment/
 !prof/
-!prof/boy.png
-!prof/man.png
-!prof/woman.png
-!prof/girl.png
-!prof/girl2.png
+!prof/preset/*
 !.gitignore

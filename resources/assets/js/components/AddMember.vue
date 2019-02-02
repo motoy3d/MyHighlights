@@ -46,11 +46,15 @@
                          v-model="backno"></v-ons-input>
           </div>
         </template>
-        <div class="space">
-          <img src="/storage/prof/boy.png" class="prof_img prof_img_selected">
-          <img src="/storage/prof/girl.png" class="prof_img">
-          <img src="/storage/prof/man.png" class="prof_img">
-          <img src="/storage/prof/woman.png" class="prof_img">
+        <div class="space center">
+          <img src="/storage/prof/boy.png" class="prof_img_lg prof_img_selected">
+          <img src="/storage/prof/girl.png" class="prof_img_lg">
+          <img src="/storage/prof/man.png" class="prof_img_lg">
+          <img src="/storage/prof/woman.png" class="prof_img_lg">
+          <img src="/storage/prof/kuma.png" class="prof_img_lg">
+          <img src="/storage/prof/lion.png" class="prof_img_lg">
+          <img src="/storage/prof/zou.png" class="prof_img_lg">
+          <img src="/storage/prof/penguin.png" class="prof_img_lg">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
@@ -126,6 +130,12 @@
 </script>
 
 <style>
+  .prof_img_lg {
+    width: 72px;
+    height: 72px;
+    margin-left: 5px;
+    margin-right: 5px;
+  }
   .prof_img_selected {
     border: #ff8d00 2px solid;
   }
