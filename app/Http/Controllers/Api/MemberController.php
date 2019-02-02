@@ -159,6 +159,7 @@ class MemberController extends Controller
     $member->type = $request->memberTypeSegment + 1;  //DB反映されない。updateに入らない。要調査。
     $member->birthday = $request->birthday;
     $member->backno = $request->backno;
+    $member->prof_img_filename = $request->selectedAvatarFilename;
     $member->admin_flg = $request->adminFlg;
     $member->updated_id = Auth::id();
     $member = $member->save();

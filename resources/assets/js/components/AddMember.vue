@@ -71,6 +71,18 @@
           <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png"
                :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_img_selected' : '')"
                @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_kurage.png" id="preset_kurage.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kurage.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_kinoko.png" id="preset_kinoko.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kinoko.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_egg.png" id="preset_egg.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_egg.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
+          <img src="/storage/prof/preset_obake.png" id="preset_obake.png"
+               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_img_selected' : '')"
+               @click="changeAvatar($event)">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">

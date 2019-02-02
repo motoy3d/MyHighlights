@@ -7,11 +7,11 @@
       <div class="center navbartitle">
         <v-ons-icon icon="fa-users" size="20px"></v-ons-icon> メンバー
       </div>
-      <div class="toolbar__right mr-5">
-        <v-ons-toolbar-button @click="">
-          <v-ons-icon icon="fa-search" class="white" size="28px"></v-ons-icon>
-        </v-ons-toolbar-button>
-      </div>
+      <!--<div class="toolbar__right mr-5">-->
+        <!--<v-ons-toolbar-button @click="">-->
+          <!--<v-ons-icon icon="fa-search" class="white" size="28px"></v-ons-icon>-->
+        <!--</v-ons-toolbar-button>-->
+      <!--</div>-->
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
       <v-ons-icon icon="fa-plus" @click="openAddMember();"></v-ons-icon>

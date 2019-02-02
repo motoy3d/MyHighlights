@@ -12,6 +12,10 @@
       </div>
     </v-ons-toolbar>
     <div class="bg-white">
+      <div class="center pt-10">
+        <img v-if="avatarFileName" :src="'/storage/prof/' + avatarFileName" class="prof_img_main">
+        <div><v-ons-button class="smallBtn" modifier="quiet" @click="showAvatarSelection($event)">変更</v-ons-button></div>
+      </div>
       <form id="postForm" action="#" method="POST" v-on:submit.prevent="save">
         <div class="segment space center" style="width: 100%; margin: 0 auto;">
           <v-ons-segment :index.sync="memberTypeSegment" style="width: 91%">
@@ -70,6 +74,50 @@
         </div>
       </form>
     </div>
+    <!-- 検索popover -->
+    <v-ons-popover cancelable direction="down" cover-target="true"
+                   class="avatar_popover"
+                   :visible.sync="avatarPopoverVisible"
+                   :target="avatarPopoverTarget">
+      <div class="center space">
+        <img src="/storage/prof/preset_boy.png" id="preset_boy.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_boy.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_girl.png" id="preset_girl.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_girl.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_man.png" id="preset_man.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_man.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_woman.png" id="preset_woman.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_woman.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_kuma.png" id="preset_kuma.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kuma.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_lion.png" id="preset_lion.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_lion.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_zou.png" id="preset_zou.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_zou.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_kurage.png" id="preset_kurage.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kurage.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_kinoko.png" id="preset_kinoko.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kinoko.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_egg.png" id="preset_egg.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_egg.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+        <img src="/storage/prof/preset_obake.png" id="preset_obake.png"
+             :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_img_selected' : '')"
+             @click="changeAvatar($event)">
+      </div>
+    </v-ons-popover>
   </v-ons-page>
 </template>
 
@@ -90,6 +138,8 @@
           this.invitationFlg = false;
           this.email = this.member.email;
           this.adminFlg = this.member.admin_flg === 1;
+          this.avatarFileName = this.member.prof_img_filename;
+          this.selectedAvatarFilename = this.member.prof_img_filename;
           this.loading = false;
         })
         .catch(error => {
@@ -112,10 +162,32 @@
         backno: "",
         invitationFlg: false,
         email: "",
-        adminFlg: false
+        adminFlg: false,
+        avatarFileName: "preset_white.png",
+        changeAvatarMode: false,
+        selectedAvatarFilename: "",
+        avatarPopoverTarget: null,
+        avatarPopoverVisible: false,
+      }
+    },
+    computed: {
+      selectedAvatarFilenameComputed: {
+        get() {
+          return this.selectedAvatarFilename;
+        }
       }
     },
     methods: {
+      showAvatarSelection() {
+        this.avatarPopoverTarget = event;
+        this.avatarPopoverVisible = true;
+      },
+      changeAvatar(event) {
+        // console.log(event.srcElement.id);
+        this.selectedAvatarFilename = event.srcElement.id;
+        this.avatarFileName = event.srcElement.id;
+        this.avatarPopoverVisible = false;
+      },
       save() {
         if (!this.name) {
           this.$ons.notification.alert('氏名を入れてください', {title: ''});
@@ -145,4 +217,23 @@
 </script>
 
 <style>
+  .prof_img_main {
+    width: 96px;
+    height: 96px;
+    margin-left: 5px;
+    margin-right: 5px;
+  }
+  .prof_img_lg {
+    width: 72px;
+    height: 72px;
+    margin-left: 5px;
+    margin-right: 5px;
+  }
+  .prof_img_selected {
+    border: #ff8d00 2px solid;
+  }
+  .avatar_popover {
+    width: 360px;
+    max-width: 400px;
+  }
 </style>
