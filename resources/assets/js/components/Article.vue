@@ -281,8 +281,11 @@
         ;
       },
       postComment() {
-        if (!this.comment_text) {
+        if (!this.comment_text && this.comment_files.length == 0) {
           return;
+        }
+        if (!this.comment_text && 0 < this.comment_files.length) {
+          this.comment_text = '　'; //添付ファイルのみの場合、ダミー
         }
         let post_id = this.$store.state.article.post_id;
         let self = this;
