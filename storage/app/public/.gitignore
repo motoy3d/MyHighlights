@@ -1,5 +1,13 @@
 !comment_attachment/
 !post_attachment/
 !prof/
-!prof/preset/*
+!prof/preset/boy.png
+!prof/preset/man.png
+!prof/preset/woman.png
+!prof/preset/girl.png
+!prof/preset/girl2.png
+!prof/preset/kuma.png
+!prof/preset/line.png
+!prof/preset/zou.png
+!prof/preset/penguin.png
 !.gitignore
