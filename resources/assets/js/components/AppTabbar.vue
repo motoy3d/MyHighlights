@@ -14,6 +14,7 @@ import Calendar from './Calendar.vue';
 import Blog from './Blog.vue';
 import Members from './Members.vue';
 import Settings from './Settings.vue';
+import Cookies from 'js-cookie';
 
 // Just a linear interpolation formula
 const lerp = (x0, x1, t) => parseInt((1 - t) * x0 + t * x1, 10);
@@ -49,7 +50,8 @@ export default {
     },
     tabs: {
       get() {
-        return [
+        let tabsTemp =
+        [
           {
             label: 'タイムライン',
             icon: 'fa-align-justify',
@@ -77,6 +79,12 @@ export default {
             page: Settings
           }
         ];
+        if(Cookies.get('current_team_id') != 36) {
+          tabsTemp.splice(2, 1);
+        }
+        console.log('tabsTemp------------------');
+        console.log(tabsTemp);
+        return tabsTemp;
       }
     }
     // swipeTheme() {
