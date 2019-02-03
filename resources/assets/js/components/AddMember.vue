@@ -47,42 +47,40 @@
           </div>
         </template>
         <div class="space mt-15 center">
-          <img src="/storage/prof/preset_boy.png" id="preset_boy.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_boy.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_girl.png" id="preset_girl.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_girl.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_man.png" id="preset_man.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_man.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_woman.png" id="preset_woman.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_woman.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_kuma.png" id="preset_kuma.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kuma.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_lion.png" id="preset_lion.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_lion.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_zou.png" id="preset_zou.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_zou.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_kurage.png" id="preset_kurage.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kurage.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_kinoko.png" id="preset_kinoko.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_kinoko.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_egg.png" id="preset_egg.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_egg.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
-          <img src="/storage/prof/preset_obake.png" id="preset_obake.png"
-               :class="'prof_img_lg ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_img_selected' : '')"
-               @click="changeAvatar($event)">
+            <img src="/storage/prof/preset_boy.png" id="preset_boy.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_boy.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_girl.png" id="preset_girl.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_girl.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_man.png" id="preset_man.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_man.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_woman.png" id="preset_woman.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_woman.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_kuma.png" id="preset_kuma.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_kuma.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_lion.png" id="preset_lion.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_lion.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_zou.png" id="preset_zou.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_zou.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_buta.png" id="preset_buta.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_buta.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_kurage.png" id="preset_kurage.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_kurage.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_kinoko.png" id="preset_kinoko.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_kinoko.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_egg.png" id="preset_egg.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_egg.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_tofu.png" id="preset_tofu.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_tofu.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_obake.png" id="preset_obake.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_imgelected' : '')"
+            <img src="/storage/prof/preset_zombi.png" id="preset_zombi.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_zombi.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_greenmonster.png" id="preset_greenmonster.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_greenmonster.png'? 'prof_imgelected' : '')">
+            <img src="/storage/prof/preset_hero.png" id="preset_hero.png" @click="changeAvatar($event)"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_hero.png'? 'prof_imgelected' : '')">
         </div>
         <template v-if="memberTypeSegment !== 0">
           <div class="space">
@@ -169,13 +167,13 @@
 </script>
 
 <style>
-  .prof_img_lg {
-    width: 72px;
-    height: 72px;
+  .prof_img {
+    width: 64px;
+    height: 64px;
     margin-left: 5px;
     margin-right: 5px;
   }
-  .prof_img_selected {
+  .prof_imgelected {
     border: #ff8d00 2px solid;
   }
 </style>
