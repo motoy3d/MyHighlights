@@ -94,8 +94,8 @@
              :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_lion.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_zou.png" id="preset_zou.png" @click="changeAvatar($event)"
              :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_zou.png'? 'prof_img_selected' : '')">
-        <img src="/storage/prof/preset_buta.png" id="preset_buta.png" @click="changeAvatar($event)"
-             :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_buta.png'? 'prof_img_selected' : '')">
+        <img src="/storage/prof/preset_kaeru.png" id="preset_kaeru.png" @click="changeAvatar($event)"
+             :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_kaeru.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_penguin.png" id="preset_penguin.png" @click="changeAvatar($event)"
              :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_penguin.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_kurage.png" id="preset_kurage.png" @click="changeAvatar($event)"
