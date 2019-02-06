@@ -144,24 +144,7 @@ class PostController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
-    if ($request->allFiles()) { //添付がある場合
-      $files = $request->file('files');
-      foreach ($files as $file) {
-        $originalFilename = $file->getClientOriginalName();
-        // ファイル保存
-        $filePath = $file->storePublicly('public/post_attachment');
-        // URLのために置換
-        $filePath = str_replace('public/', 'storage/', $filePath);
-        $postAttachment = PostAttachment::create([
-          "post_id" => $post->id,
-          "original_file_name" => $originalFilename,
-          "file_path" => $filePath,
-          "file_type" => substr($originalFilename, strrpos($originalFilename, '.') + 1),
-          "created_id" => Auth::id(),
-          "updated_id" => Auth::id()
-        ]);
-      }
-    }
+    $this->saveAttachment($request, $post);
 
     return Response::json($post);
   }
@@ -325,7 +308,11 @@ class PostController extends Controller
     $post->questionnaire_id = $request->questionnaire_id;
     $post->notification_flg = $request->notification_flg;
     $post->updated_id = Auth::id();
-    $post = $post->save();
+    $post->save();
+Log::info("post=");
+    Log::info($post);
+
+    $this->saveAttachment($request, $post);
     return Response::json($post);
   }
 
@@ -372,6 +359,35 @@ class PostController extends Controller
       ->select(['id', 'name', 'order_no'])
       ->orderBy('order_no')->get();
     return Response::json(["categories" => $categories]);
+  }
+
+  /**
+   * 添付ファイルを保存する。
+   * @param Request $request
+   * @param $post
+   */
+  public function saveAttachment(Request $request, $post): void
+  {
+    if ($request->allFiles()) { //添付がある場合
+      $files = $request->file('files');
+      foreach ($files as $file) {
+        $originalFilename = $file->getClientOriginalName();
+        // ファイル保存
+        $filePath = $file->storePublicly('public/post_attachment');
+        // URLのために置換
+        $filePath = str_replace('public/', 'storage/', $filePath);
+        Log::info("saveAttachmnt");
+        Log::info($post);
+        $postAttachment = PostAttachment::create([
+          "post_id" => $post->id,
+          "original_file_name" => $originalFilename,
+          "file_path" => $filePath,
+          "file_type" => substr($originalFilename, strrpos($originalFilename, '.') + 1),
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
+      }
+    }
   }
 
 }

@@ -9,11 +9,11 @@
         </v-ons-toolbar-button>
       </div>
       <!-- 実装あとで -->
-      <!--<div class="right mr-5">-->
-        <!--<v-ons-toolbar-button>-->
-          <!--<v-ons-icon icon="fa-pen" class="white" size="20px" @click="openEditPost()"></v-ons-icon>-->
-        <!--</v-ons-toolbar-button>-->
-      <!--</div>-->
+      <div class="right mr-5">
+        <v-ons-toolbar-button>
+          <v-ons-icon icon="fa-pen" class="white" size="20px" @click="openEditPost()"></v-ons-icon>
+        </v-ons-toolbar-button>
+      </div>
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
@@ -38,14 +38,14 @@
                 <div v-if="isImage(att.file_type)" class="mt-30">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
-                    <a :href="att.file_path" :download="att.original_file_name" target="_blank">
+                    <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
                     </a>
                   </div>
                 </div>
-                <div v-else class="pt-10">
-                  <span>{{ att.original_file_name }}</span>
+                <div v-else class="mt-30">
+                  <span class="break">{{ att.original_file_name }}</span>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
@@ -153,7 +153,7 @@
                   <p v-for="att in comment.attachments">
                     <a :href="att.file_path">
                       <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
-                      <span>{{ att.original_file_name }}</span>
+                      <span class="break">{{ att.original_file_name }}</span>
                     </a>
                   </p>
                 </div>

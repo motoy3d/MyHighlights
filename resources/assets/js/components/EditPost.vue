@@ -32,7 +32,10 @@
           <div class="mb-10" v-if="0 < fileNames.length">
             <ul>
               <li v-for="(file, index) in fileNames" class="mtb-10 break">
-                {{ file }}
+                <span>{{ file }}
+                  <v-ons-icon icon="fa-trash" class="gray ml-5"
+                              @click="deleteFile(index);"></v-ons-icon>
+                </span>
               </li>
             </ul>
           </div>
@@ -75,9 +78,9 @@
           <!--</div>-->
           <div class="space">
             <v-ons-button id="postBtn" class="mtb-20" modifier="large"
-                          @click="post()" :disabled="posting">
+                          @click="update()" :disabled="posting">
               <v-ons-icon icon="fa-spinner" spin v-if="posting"></v-ons-icon>
-              投稿
+              保存
             </v-ons-button>
           </div>
         </form>
@@ -189,7 +192,8 @@
         questionnaire_title_tmp: null,
         questionnaire_title: null,
         questionnaire_selections_tmp: [{text:''}, {text:''}, {text:''}],
-        questionnaire_selections: [{text:''}, {text:''}, {text:''}]
+        questionnaire_selections: [{text:''}, {text:''}, {text:''}],
+        maxFiles: 20
       }
     },
     computed: {
@@ -198,7 +202,7 @@
       }
     },
     methods: {
-      post() {
+      update() {
         //TODO validate
         if (this.posting) {
           return;
@@ -211,9 +215,10 @@
         // 送信フォームデータ準備
         let formData = new FormData();
         formData.append('title', this.title);
+        console.log('title>>>>>>>>>' + this.title);
         formData.append('contents', this.contents);
         formData.append('category_id', this.category_id);
-        formData.append('notification_flg', this.notification_flg);
+        formData.append('notification_flg', this.notification_flg? 1 : 0);
         if (this.questionnaire_title) {
           formData.append('questionnaire_title', this.questionnaire_title);
           formData.append('questionnaire_selections', JSON.stringify(this.questionnaire_selections));
@@ -221,8 +226,13 @@
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
         }
+        // PUTメソッドではFormDataが通常送れない仕様のためワークアラウンド　https://qiita.com/komatzz/items/21b58c92e14d2868ac8e
+        let config = {headers: {'content-type': 'multipart/form-data'}};
+        config.headers['X-HTTP-Method-Override'] = 'PUT'; // PUT で上書く
+
         // 送信
-        this.$http.post('/api/posts', formData)
+        let post_id = this.$store.state.article.post_id;
+        this.$http.post('/api/posts/' + post_id, formData, config)
           .then(response => {
             // console.log(response.data);
             this.$ons.notification.alert('投稿しました', {title: ''})
@@ -233,9 +243,7 @@
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status === 401) {
-              window.location.href = "/login";
-            }
+            if (error.response.status === 401) {window.location.href = "/login";}
             this.loading = false; this.posting = false;
           })
           // .finally(() => {this.loading = false; this.posting = false;})
@@ -247,13 +255,27 @@
       },
       // ファイルが選択された時
       onFileSet(event) {
-        // console.log("onFileSet.");
-        this.files = event.target.files;
-        this.fileNames = [];
-        for (let i=0; i<this.files.length; i++) {
-          this.fileNames.push(this.files[i].name);
+        const upFiles = event.target.files;
+        for(let i=0; i<upFiles.length; i++) {
+          // console.log('fileset ' + i);
+          if(this.maxFiles <= this.files.length) {
+            this.$ons.notification.alert(this.maxFiles + 'ファイルまで添付可能です。', {title: ''});
+            return false;
+          }
+          // console.log('count ok ');
+          const maxMB = 10;
+          if ((1024*1024*maxMB) < upFiles[i].size) {
+            this.$ons.notification.alert('1ファイル最大' + maxMB + 'MBまで添付可能です。', {title: ''});
+            return false;
+          }
+          // console.log('size ok ');
+          this.files.push(upFiles[i]);
+          this.fileNames.push(upFiles[i].name);
         }
-        // console.log(this.files);
+      },
+      deleteFile(index) {
+        this.files.splice(index, 1);
+        this.fileNames.splice(index, 1);
       },
       showQuestionnaireModal() {
         this.questionnaire_title_tmp = this.questionnaire_title;

@@ -201,6 +201,35 @@ export default {
         setLoading(state, isLoading) {
           state.loading = isLoading;
         }
+      },
+      actions: {
+        //TODO 実装中
+        // load(context, $http) {
+        //   context.commit('setLoading', true);
+        //   let post_id = context.state.article.post_id;
+        //   $http.get('/api/posts/' + post_id)
+        //       .then((response)=>{
+        //         this.post = response.data.post;
+        //         this.post_responses = response.data.post_responses;
+        //         this.post_attachments = response.data.post_attachments;
+        //         this.questionnaire = response.data.questionnaire;
+        //         this.comments = response.data.comments;
+        //         this.likes = response.data.likes;
+        //         this.likes_count = this.likes? this.likes.length : 0;
+        //         this.user = response.data.user;
+        //         this.loading = false;
+        //       })
+        //       .catch(error => {
+        //         console.log(error);
+        //         this.errored = true;
+        //         if (error.response.status == 401) {
+        //           window.location.href = "/login"; return;
+        //         }
+        //         this.loading = false;
+        //       })
+        //   // .finally(() => this.loading = false)
+        //   ;
+        // }
       }
     },
 
