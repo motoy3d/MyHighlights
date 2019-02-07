@@ -125,14 +125,23 @@ class PostController extends Controller
     $questionnaire = null;
     Log::info("questionnaire_selections:" . $request->questionnaire_selections);
     if ($request->questionnaire_title && $request->questionnaire_selections) {
-      $questionnaire = Questionnaire::create([
-        "title" => $request->questionnaire_title,
-        "items" => $request->questionnaire_selections, // json形式 [{"text":"質問1"},{"text":"質問2"}]
-        "created_id" => Auth::id(),
-        "updated_id" => Auth::id()
-      ]);
-      Log::info('アンケート');
-      Log::info($questionnaire);
+      $selectionsTmp = json_decode($request->questionnaire_selections);
+      $selections = [];
+      foreach ($selectionsTmp as $item) {
+        if ($item->text != '') {
+          array_push($selections, $item);
+        }
+      }
+      if (0 < count($selections)) {
+        $questionnaire = Questionnaire::create([
+          "title" => $request->questionnaire_title,
+          "items" => json_encode($selections), // json形式 [{"text":"質問1"},{"text":"質問2"}]
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
+        Log::info('アンケート');
+        Log::info($questionnaire);
+      }
     }
     $post = Post::create([
       "team_id" => Cookie::get('current_team_id'),
@@ -163,7 +172,10 @@ class PostController extends Controller
         'posts.created_id', '=', 'create_user.id')
       ->leftJoin('users as update_user',
         'posts.updated_id', '=', 'update_user.id')
-      ->select(['posts.*', 'create_user.name as created_name', 'update_user.name as updated_name'])
+      ->leftJoin('categories',
+        'posts.category_id', '=', 'categories.id')
+      ->select(['posts.*', 'create_user.name as created_name',
+        'update_user.name as updated_name', 'categories.name as category_name'])
       ->where('posts.id',$id)
       ->where('posts.team_id',Cookie::get('current_team_id'))
       ->first();
@@ -273,6 +285,11 @@ class PostController extends Controller
       $comments[$i]->attachments = $commentAttachments;
     }
 
+    // カテゴリー一覧
+    $categories = Category::where('team_id', Cookie::get('current_team_id'))
+      ->select(['id', 'name', 'order_no'])
+      ->orderBy('order_no')->get();
+
     //TODO コメントへのいいねリスト
 
     // １つにまとめる
@@ -283,6 +300,7 @@ class PostController extends Controller
       'questionnaire' => $questionnaire,
       'comments' => $comments,
       'likes' => $likes,
+      'categories' => $categories,
       'user' => Auth::user()
     ]);
   }
@@ -297,15 +315,29 @@ class PostController extends Controller
   public function update(Request $request, $id)
   {
     //TODO validate
+    $questionnaire = null;
+    Log::info("questionnaire_selections:" . $request->questionnaire_selections);
+    if ($request->questionnaire_title && $request->questionnaire_selections) {
+      $questionnaire = Questionnaire::create([
+        "title" => $request->questionnaire_title,
+        "items" => $request->questionnaire_selections, // json形式 [{"text":"質問1"},{"text":"質問2"}]
+        "created_id" => Auth::id(),
+        "updated_id" => Auth::id()
+      ]);
+      Log::info('アンケート');
+      Log::info($questionnaire);
+    }
+
     $post = Post::findOrFail($id);
     if (!$post || $post->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
-
     $post->title = $request->title;
     $post->content = $request->contents;
     $post->category_id = $request->category_id;
-    $post->questionnaire_id = $request->questionnaire_id;
+    if ($questionnaire) { //新規アンケート作成の場合のみセット。
+      $post->questionnaire_id = $questionnaire->id;
+    }
     $post->notification_flg = $request->notification_flg;
     $post->updated_id = Auth::id();
     $post->save();

@@ -38,10 +38,11 @@ export default {
       strict: true,
       namespaced: true,
       state: {
-        index: 0
+        index: 0,
+        tabs: []
       },
       mutations: {
-        set(state, index) {
+        setIndex(state, index) {
           state.index = index;
         }
       }

@@ -44,8 +44,8 @@ export default {
       get() {
         return this.$store.state.tabbar.index;
       },
-      set(newValue) {
-        this.$store.commit('tabbar/set', newValue)
+      set(index) {
+        this.$store.commit('tabbar/setIndex', index)
       }
     },
     tabs: {
