@@ -8,7 +8,9 @@
           <v-ons-icon icon="fa-angle-left" class="white" size="32px"></v-ons-icon>
         </v-ons-toolbar-button>
       </div>
-      <!-- 実装あとで -->
+      <div class="center">
+        <span class="category_name">{{ post.category_name }}</span>
+      </div>
       <div class="right mr-5">
         <v-ons-toolbar-button>
           <v-ons-icon icon="fa-pen" class="white" size="20px" @click="openEditPost()"></v-ons-icon>
@@ -145,7 +147,7 @@
               </div>
               <div>
                 <div class="speech-bubble">
-                  <span class="comment" v-html="replaceATag(comment.comment_text)"></span>
+                  <span class="comment break" v-html="replaceATag(comment.comment_text)"></span>
                   <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
                     <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
@@ -505,6 +507,11 @@
     font-weight: bold;
     text-align:left;
     margin: 0;
+  }
+  .category_name {
+    color: white;
+    /*font-size: 15px;*/
+    /*margin: 0 0 0 5px;*/
   }
   .entry_content {
     font-size: 16px;
