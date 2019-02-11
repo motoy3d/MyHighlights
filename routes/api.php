@@ -26,6 +26,7 @@
     Route::get('teams', 'Api\TeamController@show');
     Route::get('me', 'Api\UserController@getMe');
     Route::post('users/updateName', 'Api\UserController@updateName');
+    Route::post('users/updateNameKana', 'Api\UserController@updateNameKana');
     Route::post('users/updateEmail', 'Api\UserController@updateEmail');
     Route::post('users/updatePassword', 'Api\UserController@updatePassword');
     Route::resource('members', 'Api\MemberController');

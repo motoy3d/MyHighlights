@@ -52,6 +52,26 @@ class UserController extends Controller
   }
 
   /**
+   * ユーザー名かなの更新。
+   *
+   * @param  \Illuminate\Http\Request  $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function updateNameKana(Request $request)
+  {
+    //TODO validate
+    $user = User::findOrFail(Auth::user()->id);
+    if (!$user) {// ヒットしない場合は404
+      return response()->json(null, 404);
+    }
+
+    $user->name_kana = $request->name_kana;
+    $user->updated_id = Auth::id();
+    $user = $user->save();
+    return Response::json($user);
+  }
+
+  /**
    * ユーザーメールアドレスの更新。
    *
    * @param  \Illuminate\Http\Request  $request

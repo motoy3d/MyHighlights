@@ -17,17 +17,19 @@
           <v-ons-list-header>アカウント</v-ons-list-header>
           <v-ons-list-item>
             {{ $store.state.navigator.user.name }}
-            <div class="right"><v-ons-button modifier="quiet" class="small">変更</v-ons-button></div>
+            <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangeName(false)">変更</v-ons-button></div>
           </v-ons-list-item>
           <v-ons-list-item>
             {{ $store.state.navigator.user.name_kana }}
-            <div class="right"><v-ons-button modifier="quiet" class="small">変更</v-ons-button></div>
+            <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangeName(true)">変更</v-ons-button></div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron" @click="openChangeEmail()">
+          <v-ons-list-item>
             {{ $store.state.navigator.user.email }}
+            <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangeEmail()">変更</v-ons-button></div>
           </v-ons-list-item>
-          <v-ons-list-item modifier="chevron" @click="openChangePass()">
-            パスワード変更
+          <v-ons-list-item>
+            パスワード ******
+            <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangePass()">変更</v-ons-button></div>
           </v-ons-list-item>
         </v-ons-list>
         <br>
@@ -51,7 +53,7 @@
             ログアウト
           </v-ons-list-item>
         </v-ons-list>
-        <br><br>
+        <br><br><br><br>
         <v-ons-list>
           <v-ons-list-item class="red" modifier="chevron" onclick="$('#withdrawal_dialog').show()">
             退会する
@@ -94,6 +96,43 @@
       }
     },
     methods: {
+      openChangeName(isKana) {
+        let self = this;
+        let defVal = isKana? this.$store.state.navigator.user.name_kana : this.$store.state.navigator.user.name;
+        this.$ons.notification.prompt(isKana? "氏名かな変更" : "氏名変更",
+          {defaultValue: defVal, title: '', buttonLabels:['キャンセル', 'OK']})
+          .then(function(newName) {
+            if (!newName) {
+              return;
+            }
+            self.$ons.notification.confirm(newName,
+              {title: 'この氏名でいいですか？', buttonLabels:['キャンセル', 'OK']})
+              .then(function(answer){
+                if (self.posting) {
+                  return;
+                }
+                if (answer === 1) {
+                  self.loading = true;
+                  let formData = new FormData();
+                  formData.append(isKana? 'name_kana' : 'name', newName);
+                  let apiUrl = '/api/users/' + (isKana? 'updateNameKana' : 'updateName');
+                  self.$http.post(apiUrl, formData).then(response => {
+                    self.$ons.notification.alert('変更されました', {title: ''});
+                    self.loading = false; self.posting = false;
+                  })
+                  .catch(error => {
+                    console.log(error);
+                    if (error.response.status === 401) {window.location.href = "/login";}
+                    self.loading = false; self.posting = false;
+                  });
+                  self.$http.get('/api/me')
+                    .then((response)=>{
+                      self.$store.commit('navigator/setUser', response.data);
+                    });
+                }
+              });
+          });
+      },
       openChangeEmail() {
         let self = this;
         this.$ons.notification.prompt("新しいメールアドレス",
@@ -118,9 +157,7 @@
                     })
                     .catch(error => {
                       console.log(error);
-                      if (error.response.status === 401) {
-                        window.location.href = "/login";
-                      }
+                      if (error.response.status === 401) {window.location.href = "/login";}
                       self.loading = false; self.posting = false;
                     });
                     self.$http.get('/api/me')
@@ -164,9 +201,7 @@
                     })
                     .catch(error => {
                       console.log(error);
-                      if (error.response.status === 401) {
-                        window.location.href = "/login";
-                      }
+                      if (error.response.status === 401) {window.location.href = "/login";}
                       self.loading = false; self.posting = false;
                     })
                   // .finally(() => {this.loading = false; this.posting = false;})
