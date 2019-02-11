@@ -8,7 +8,7 @@
         <template v-if="$store.state.navigator.user.myTeams">
           <template v-if="1 < $store.state.navigator.user.myTeams.length">
             <v-ons-select id="teamSelection" v-model="currentTeamId" modifier="underbar"
-                          class="fl-left mt-5 bold" @change="changeCurrentTeam()">
+                          class="mt-5 bold" @change="changeCurrentTeam()">
               <option v-for="team in $store.state.navigator.user.myTeams" :value="team.id" class="bold">
                 {{ team.name }}
               </option>

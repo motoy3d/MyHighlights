@@ -14,15 +14,24 @@
           <v-ons-progress-circular indeterminate class="progress-circular"></v-ons-progress-circular>
         </div>
         <v-ons-list id="settings_list">
+          <v-ons-list-header>アカウント</v-ons-list-header>
           <v-ons-list-item>
-            <div style="margin-right:auto;">{{ $store.state.navigator.user.name }}</div>
+            {{ $store.state.navigator.user.name }}
+            <div class="right"><v-ons-button modifier="quiet" class="small">変更</v-ons-button></div>
+          </v-ons-list-item>
+          <v-ons-list-item>
+            {{ $store.state.navigator.user.name_kana }}
+            <div class="right"><v-ons-button modifier="quiet" class="small">変更</v-ons-button></div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangeEmail()">
-            メールアドレス <div class="right">{{ $store.state.navigator.user.email }}</div>
+            {{ $store.state.navigator.user.email }}
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openChangePass()">
             パスワード変更
           </v-ons-list-item>
+        </v-ons-list>
+        <br>
+        <v-ons-list>
           <v-ons-list-item modifier="chevron" @click="openICal()">
             カレンダー同期
           </v-ons-list-item>
@@ -35,8 +44,17 @@
           <!--<v-ons-list-item modifier="chevron">-->
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
+        </v-ons-list>
+        <br>
+        <v-ons-list>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
             ログアウト
+          </v-ons-list-item>
+        </v-ons-list>
+        <br><br>
+        <v-ons-list>
+          <v-ons-list-item class="red" modifier="chevron" onclick="$('#withdrawal_dialog').show()">
+            退会する
           </v-ons-list-item>
         </v-ons-list>
       </v-ons-col>
@@ -47,9 +65,19 @@
       </div>
       <div class="alert-dialog-footer">
         <v-ons-alert-dialog-button
-          onclick="document.getElementById('logout-form').submit();">OK</v-ons-alert-dialog-button>
+                @click="logout()">OK</v-ons-alert-dialog-button>
         <v-ons-alert-dialog-button
-          onclick="$('#logout_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
+                onclick="$('#logout_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
+      </div>
+    </v-ons-alert-dialog>
+    <v-ons-alert-dialog id="withdrawal_dialog" cancelable>
+      <div class="alert-dialog-content">
+        本当に退会しますか？
+      </div>
+      <div class="alert-dialog-footer">
+        <v-ons-alert-dialog-button class="red" @click="withdraw()">退会する</v-ons-alert-dialog-button>
+        <v-ons-alert-dialog-button
+                onclick="$('#withdrawal_dialog').hide();">キャンセル</v-ons-alert-dialog-button>
       </div>
     </v-ons-alert-dialog>
   </v-ons-page>
@@ -151,6 +179,12 @@
           extends: ICal,
           onsNavigatorOptions: {animation: 'slide'}
         });
+      },
+      logout() {
+        $('#logout-form').submit();
+      },
+      withdraw() {
+        $('#withdrawal-form').submit();
       }
     }
   };

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Controller;
 use App\User;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,6 +98,29 @@ class UserController extends Controller
 //      // TODO メッセージリソース化
 //      return response()->json('現在のパスワードが違います', 400);
 //    }
+  }
+
+  /**
+   * 退会する。
+   * @param Request $request
+   * @param $user_id 退会するユーザーのID
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function withdraw(Request $request, $user_id)
+  {
+    //TODO 他ユーザーを退会させる場合は管理者チェック
+
+    $user = User::findOrFail($user_id);
+    if (!$user || $user->id != $user_id) { //ユーザーが自分のみ退会可能。管理者からの退会はTODO
+      return response()->json(null, 404);
+    }
+    // 退会日時を更新
+    $user->withdrawal_date = Carbon::now();
+    $user->save();
+
+    // ログアウト
+    $logoutController = app()->make(LoginController::class);
+    return $logoutController->logout($request);
   }
 
 }
