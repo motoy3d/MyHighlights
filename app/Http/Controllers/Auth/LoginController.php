@@ -43,4 +43,14 @@ class LoginController extends Controller
       $this->middleware('guest')->except('logout');
   }
 
+  /* ログイン条件の変更 */
+  public function credentials(Request $request)
+  {
+    $authConditionsOrigin = $request->only($this->username(), 'password');
+    $authConditionsCustom = array_merge(
+      $authConditionsOrigin,
+      ['withdrawal_date' => null]
+    );
+    return $authConditionsCustom;
+  }
 }
