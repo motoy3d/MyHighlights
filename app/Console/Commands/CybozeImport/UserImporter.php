@@ -12,7 +12,8 @@
   class UserImporter extends Command
   {
     // こちら側のDBでのチームID
-    protected $teamIds = [36, 37, 38, 39, 40];
+//    protected $teamIds = [35, 36, 37, 38, 39, 40];
+    protected $teamIds = [35];
     /**
      * The name and signature of the console command.
      *
@@ -54,11 +55,11 @@
             $name = $row[0] . '　' .  $row[1];
             $name_kana = $row[2] . '　' .  $row[3];
             $type = $row[5];
-            $prof_img_filename = 'boy.png';
+            $prof_img_filename = 'preset_boy.png';
             if ($type == '2') {
-              $prof_img_filename = 'man.png';
+              $prof_img_filename = 'preset_man.png';
             } else if ($type == '3') {
-              $prof_img_filename = strpos($name, '母')? 'woman.png' : 'man.png';
+              $prof_img_filename = strpos($name, '母')? 'preset_woman.png' : 'preset_man.png';
             }
 
             // users作成

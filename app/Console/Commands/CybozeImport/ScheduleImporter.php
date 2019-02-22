@@ -12,7 +12,8 @@
   class ScheduleImporter extends Command
   {
     // こちら側のDBでのチームID
-    protected $teamIds = [36, 37, 38, 39];
+//    protected $teamIds = [35, 36, 37, 38, 39];
+    protected $teamIds = [35];
     /**
      * The name and signature of the console command.
      *
