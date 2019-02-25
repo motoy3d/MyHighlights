@@ -193,6 +193,14 @@
       },
       changeCurrentTeam() {
         Cookies.set('current_team_id', this.currentTeamId);
+        console.log('this.currentTeamId=' + this.currentTeamId);
+        for (let t=0; t < this.$store.state.navigator.user.myTeams.length; t++) {
+          let team = this.$store.state.navigator.user.myTeams[t];
+          if (this.currentTeamId == team.id) {
+            console.log('クッキー ' + team.name);
+            Cookies.set('current_team_name', team.name); break;
+          }
+        }
         // 検索条件リセット
         this.searchKeyword = null;
         this.searchCategoryId = null;
@@ -220,7 +228,8 @@
         searchCategoryId: null,
         searchUnread: false,
         myTeams: null,
-        currentTeamId: Cookies.get('current_team_id')
+        currentTeamId: Cookies.get('current_team_id'),
+        currentTeamName: Cookies.get('current_team_name')
       }
     }
   };

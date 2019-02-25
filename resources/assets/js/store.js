@@ -126,9 +126,7 @@ export default {
             })
             .catch(error => {
               console.log(error);
-              if (error.response.status == 401) {
-                window.location.href = "/login"; return;
-              }
+              if (error.response.status == 401) {window.location.href = "/login"; return;}
               context.commit('setLoading', false);
             })
             //iOS10以下?でfinallyの付近でundefinedエラーになる

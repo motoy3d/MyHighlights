@@ -40,7 +40,7 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
-        <span class="white">横浜SCつばさ　ログイン</span>
+        <img src="/img/tsubasa-up-logo.png" width="150" class="mt-3">
       </div>
     </ons-toolbar>
     <div class="row bg-white h-100p">

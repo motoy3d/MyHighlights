@@ -121,26 +121,19 @@ class UserController extends Controller
   }
 
   /**
-   * 退会する。
-   * @param Request $request
-   * @param $user_id 退会するユーザーのID
+   * ユーザーのメール通知フラグの更新。
+   *
+   * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\JsonResponse
    */
-  public function withdraw(Request $request, $user_id)
+  public function updateMailNotificationFlg(Request $request)
   {
-    //TODO 他ユーザーを退会させる場合は管理者チェック
-
-    $user = User::findOrFail($user_id);
-    if (!$user || $user->id != $user_id) { //ユーザーが自分のみ退会可能。管理者からの退会はTODO
-      return response()->json(null, 404);
-    }
-    // 退会日時を更新
-    $user->withdrawal_date = Carbon::now();
+    //TODO validate
+    Log::info("メール通知フラグ " . $request->mail_notification_flg);
+    $user = Auth::user();
+    $user->mail_notification_flg = $request->mail_notification_flg;
     $user->save();
 
-    // ログアウト
-    $logoutController = app()->make(LoginController::class);
-    return $logoutController->logout($request);
+    return Response::json($user);
   }
-
 }

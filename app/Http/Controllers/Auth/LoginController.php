@@ -43,7 +43,11 @@ class LoginController extends Controller
       $this->middleware('guest')->except('logout');
   }
 
-  /* ログイン条件の変更 */
+  /**
+   * ログイン条件にusers.withdrawal_date is nullを追加
+   * @param Request $request
+   * @return array
+   */
   public function credentials(Request $request)
   {
     $authConditionsOrigin = $request->only($this->username(), 'password');
@@ -53,4 +57,17 @@ class LoginController extends Controller
     );
     return $authConditionsCustom;
   }
+
+  /**
+   * ログイン成功直後の処理
+   *
+   * @param  \Illuminate\Http\Request  $request
+   * @param  mixed  $user
+   * @return mixed
+   */
+  protected function authenticated(Request $request, $user)
+  {
+    //
+  }
+
 }

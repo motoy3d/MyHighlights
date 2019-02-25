@@ -38,8 +38,10 @@
   <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
     @csrf
   </form>
-  <form id="withdrawal-form" action="{{ route('withdrawal', Auth::id()) }}" method="POST" style="display: none;">
+  <form id="withdrawal-form" action="{{ route('withdrawal') }}" method="POST" style="display: none;">
     @csrf
+    <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+    <input type="hidden" id="withdrawal_team_id" name="team_id" value="{{ Cookie::get('current_team_id') }}">
   </form>
   <script src="{{ mix('js/manifest.js') }}"></script>
   <script src="{{ mix('js/vendor.js') }}"></script>

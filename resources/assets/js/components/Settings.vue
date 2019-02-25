@@ -34,6 +34,13 @@
         </v-ons-list>
         <br>
         <v-ons-list>
+          <v-ons-list-item >
+            メール通知を受け取る
+            <div class="right">
+              <v-ons-switch v-model="mailNotificationFlg"
+                            @click="updateMailNotificationFlg()"></v-ons-switch>
+            </div>
+          </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openICal()">
             カレンダー同期
           </v-ons-list-item>
@@ -56,9 +63,10 @@
         <br><br><br><br>
         <v-ons-list>
           <v-ons-list-item class="red" modifier="chevron" onclick="$('#withdrawal_dialog').show()">
-            退会する
+            {{ currentTeamName }}を退会する
           </v-ons-list-item>
         </v-ons-list>
+        <br><br>
       </v-ons-col>
     </v-ons-row>
     <v-ons-alert-dialog id="logout_dialog" cancelable>
@@ -74,7 +82,7 @@
     </v-ons-alert-dialog>
     <v-ons-alert-dialog id="withdrawal_dialog" cancelable>
       <div class="alert-dialog-content">
-        本当に退会しますか？
+        本当に[{{ currentTeamName }}]を退会しますか？
       </div>
       <div class="alert-dialog-footer">
         <v-ons-alert-dialog-button class="red" @click="withdraw()">退会する</v-ons-alert-dialog-button>
@@ -87,12 +95,22 @@
 
 <script>
   import ICal from './ICal.vue';
+  import Cookies from 'js-cookie';
   export default {
     data() {
       return {
         loading: false,
         errored: false,
         posting: false,
+      }
+    },
+    computed: {
+      currentTeamName: {
+        get() {return Cookies.get('current_team_name');}
+      },
+      mailNotificationFlg: {
+        get() {return this.$store.state.navigator.user.mail_notification_flg == 1},
+        set(mailNotificationFlg) {this.$store.state.navigator.user.mail_notification_flg = mailNotificationFlg;}
       }
     },
     methods: {
@@ -216,10 +234,28 @@
           onsNavigatorOptions: {animation: 'slide'}
         });
       },
+      updateMailNotificationFlg() {
+        let formData = new FormData();
+        formData.append('mail_notification_flg', this.mailNotificationFlg? 1 : 0);
+        this.$http.post('/api/users/updateMailNotificationFlg', formData).then(response => {
+          this.loading = false; this.posting = false;
+        })
+        .catch(error => {
+          console.log(error);
+          if (error.response.status === 401) {window.location.href = "/login";}
+          this.loading = false; this.posting = false;
+        });
+        this.$http.get('/api/me').then((response)=>{
+          // globalにユーザー情報セット
+          // console.log('⭐me=' + response.data);
+          this.$store.commit('navigator/setUser', response.data);
+        });
+      },
       logout() {
         $('#logout-form').submit();
       },
       withdraw() {
+        $('#withdrawal_team_id').val(Cookies.get('current_team_id'));
         $('#withdrawal-form').submit();
       }
     }

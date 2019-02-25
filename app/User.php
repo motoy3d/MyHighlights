@@ -41,6 +41,7 @@ class User extends Authenticatable
     // https://readouble.com/laravel/5.5/ja/eloquent-relationships.html#has-many-through
     return $this->hasManyThrough('App\Team', 'App\Member',
       'user_id', 'id', 'id', 'team_id')
+      ->whereNull('members.withdrawal_date')
       ->orderBy('teams.id');
   }
 

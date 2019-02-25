@@ -1,5 +1,16 @@
 -- カテゴリー
 insert into categories values
+(null, 35, 'はじめに', 1, 0, now(), 0, now()),
+(null, 35, '試合連絡', 2, 0, now(), 0, now()),
+(null, 35, '練習連絡', 3, 0, now(), 0, now()),
+(null, 35, '事務連絡', 4, 0, now(), 0, now()),
+(null, 35, 'その他', 5, 0, now(), 0, now()),
+(null, 35, '2014年度', 6, 0, now(), 0, now()),
+(null, 35, '2015年度', 7, 0, now(), 0, now()),
+(null, 35, '2016年度', 8, 0, now(), 0, now()),
+(null, 35, '2017年度', 9, 0, now(), 0, now()),
+(null, 35, '2018年度', 10, 0, now(), 0, now()),
+
 (null, 36, '練習連絡', 1, 0, now(), 0, now()),
 (null, 36, '試合連絡', 2, 0, now(), 0, now()),
 (null, 36, '試合結果 報告', 3, 0, now(), 0, now()),
@@ -38,6 +49,11 @@ insert into categories values
 ;
 
 -- すべて既読に更新
+insert ignore into post_responses
+ select null, m.user_id, p.id post_id,1,0,0,0,now(),0,now()
+ from posts p join members m on p.team_id=m.team_id
+ where p.team_id=35 and m.team_id = 35 and m.user_id is not null order by p.id;
+
 insert ignore into post_responses
  select null, m.user_id, p.id post_id,1,0,0,0,now(),0,now()
  from posts p join members m on p.team_id=m.team_id
@@ -96,7 +112,7 @@ update members set prof_img_filename='woman.png' where name in (
 ,'平田　大輔'
 )
 
-−− scheduleの00:00:00をnullに更新
+−− schedulesの00:00:00をnullに更新
 update schedules set time_from=null where time_from='00:00:00';
 update schedules set time_to=null where time_to='00:00:00';
 

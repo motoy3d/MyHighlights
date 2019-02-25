@@ -74,7 +74,7 @@
         </div>
       </form>
     </div>
-    <!-- 検索popover -->
+    <!-- アイコンpopover -->
     <v-ons-popover cancelable direction="down" cover-target="true"
                    class="avatar_popover"
                    :visible.sync="avatarPopoverVisible"
