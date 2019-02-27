@@ -39,11 +39,11 @@ class UserInvitation extends Mailable
     Log::info('build. name=' . $this->fromUser->name);
     return $this
       ->subject($this->fromUser->name .
-        'さんから横浜SCつばさアプリへ招待されました')
+        'さんから横浜SCつばさ用アプリ「' . env('APP_NAME', 'つばさ⬆UP') . '」へ招待されました')
       ->view('emails.user_invitation')
       ->with([
         'name' => $this->newUser->name,
-        'team_name' => '横浜SCつばさ',
+        'team_name' => env('APP_NAME', 'つばさ⬆UP'),
         'site_link' => env('APP_URL'),
         'email' => $this->newUser->email,
         'password' => $this->password

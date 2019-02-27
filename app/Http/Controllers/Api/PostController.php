@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Category;
 use App\Config;
+use App\Jobs\PostNotificationJob;
+use App\Mail\PostNotification;
+use App\Member;
 use App\Post;
 use App\PostAttachment;
 use App\PostComment;
@@ -20,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 
@@ -121,7 +125,8 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
-    // アンケート
+
+    // アンケート登録
     $questionnaire = null;
     Log::info("questionnaire_selections:" . $request->questionnaire_selections);
     if ($request->questionnaire_title && $request->questionnaire_selections) {
@@ -143,6 +148,7 @@ class PostController extends Controller
         Log::info($questionnaire);
       }
     }
+    // 投稿の登録
     $post = Post::create([
       "team_id" => Cookie::get('current_team_id'),
       "title" => $request->title,
@@ -153,7 +159,10 @@ class PostController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+    // 添付ファイルの登録
     $this->saveAttachment($request, $post);
+    // メール配信
+    $this->sendMail($post);
 
     return Response::json($post);
   }
@@ -398,7 +407,7 @@ Log::info("post=");
    * @param Request $request
    * @param $post
    */
-  public function saveAttachment(Request $request, $post): void
+  private function saveAttachment(Request $request, $post): void
   {
     if ($request->allFiles()) { //添付がある場合
       $files = $request->file('files');
@@ -420,6 +429,18 @@ Log::info("post=");
         ]);
       }
     }
+  }
+
+  /**
+   * 投稿時の通知メールをグループ内の各メンバーに送る。（通知設定オンのメンバーのみ）
+   * @param $post
+   */
+  private function sendMail($post) {
+    $startTime = microtime(true);
+    $fromUser = User::findOrFail(Auth::id());
+    $this->dispatch(new PostNotificationJob($fromUser, $post));
+    $runningTime =  microtime(true) - $startTime;
+    Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
   }
 
 }
