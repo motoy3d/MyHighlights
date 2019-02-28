@@ -58,32 +58,34 @@
             <!--<input type="file" name="myfile" />-->
           <!--</div>-->
         <!--</div>-->
-        <template v-if="$store.state.navigator.user.currentTeamAdminFlg">
-          <div class="space" v-if="!user_id">
-            このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
-          </div>
-          <div class="ml-15 mt-10">
-            <small class="gray">メールアドレス</small>
-            <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
-          </div>
-          <div class="mlr-15 center">
-            <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"
-                         v-model="email" :disabled="!email && !invitationFlg"></v-ons-input>
-          </div>
-          <div class="space mt-10">
-            管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
-          </div>
-        </template>
-        <template v-else>
-          <div class="ml-15 mt-10">
-            <small class="gray">メールアドレス</small>
-          </div>
-          <div class="mlr-15">
-            {{ email? email : '-' }}
-          </div>
-          <div class="space mt-10" v-if="adminFlg">
-            管理者
-          </div>
+        <template v-if="memberTypeSegment !== 0">
+          <template v-if="$store.state.navigator.user.currentTeamAdminFlg">
+            <div class="space" v-if="!user_id">
+              このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
+            </div>
+            <div class="ml-15 mt-10">
+              <small class="gray">メールアドレス</small>
+              <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
+            </div>
+            <div class="mlr-15 center">
+              <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"
+                           v-model="email" :disabled="!email && !invitationFlg"></v-ons-input>
+            </div>
+            <div class="space mt-10">
+              管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
+            </div>
+          </template>
+          <template v-else>
+            <div class="ml-15 mt-10">
+              <small class="gray">メールアドレス</small>
+            </div>
+            <div class="mlr-15">
+              {{ email? email : '-' }}
+            </div>
+            <div class="space mt-10" v-if="adminFlg">
+              管理者
+            </div>
+          </template>
         </template>
         <div class="space">
           <v-ons-button class="mtb-20" modifier="large" @click="save()">保存</v-ons-button>
