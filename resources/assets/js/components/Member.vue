@@ -14,7 +14,10 @@
     <div class="bg-white">
       <div class="center pt-10">
         <img v-if="avatarFileName" :src="'/storage/prof/' + avatarFileName" class="prof_img_main">
-        <div><v-ons-button class="smallBtn" modifier="quiet" @click="showAvatarSelection($event)">変更</v-ons-button></div>
+        <div v-if="$store.state.navigator.user.currentTeamAdminFlg || user_id === $store.state.navigator.user.id">
+          <v-ons-button class="smallBtn" modifier="quiet"
+                           @click="showAvatarSelection($event)">変更</v-ons-button>
+        </div>
       </div>
       <form id="postForm" action="#" method="POST" v-on:submit.prevent="save">
         <div class="segment space center" style="width: 100%; margin: 0 auto;">
@@ -55,20 +58,33 @@
             <!--<input type="file" name="myfile" />-->
           <!--</div>-->
         <!--</div>-->
-        <div class="space" v-if="!email">
-          このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
-        </div>
-        <div class="ml-15 mt-10">
-          <small class="gray">メールアドレス</small>
-          <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
-        </div>
-        <div class="mlr-15 center">
-          <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"
-                       v-model="email" :disabled="!email && !invitationFlg"></v-ons-input>
-        </div>
-        <div class="space mt-10">
-          管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
-        </div>
+        <template v-if="$store.state.navigator.user.currentTeamAdminFlg">
+          <div class="space" v-if="!user_id">
+            このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
+          </div>
+          <div class="ml-15 mt-10">
+            <small class="gray">メールアドレス</small>
+            <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
+          </div>
+          <div class="mlr-15 center">
+            <v-ons-input modifier="border" placeholder="" name="title" class="w-100p"
+                         v-model="email" :disabled="!email && !invitationFlg"></v-ons-input>
+          </div>
+          <div class="space mt-10">
+            管理者 <v-ons-switch v-model="adminFlg"></v-ons-switch>
+          </div>
+        </template>
+        <template v-else>
+          <div class="ml-15 mt-10">
+            <small class="gray">メールアドレス</small>
+          </div>
+          <div class="mlr-15">
+            {{ email? email : '-' }}
+          </div>
+          <div class="space mt-10" v-if="adminFlg">
+            管理者
+          </div>
+        </template>
         <div class="space">
           <v-ons-button class="mtb-20" modifier="large" @click="save()">保存</v-ons-button>
         </div>

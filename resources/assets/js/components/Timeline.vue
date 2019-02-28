@@ -201,6 +201,9 @@
             Cookies.set('current_team_name', team.name); break;
           }
         }
+        this.$http.get('/api/me').then((response)=>{
+          this.$store.commit('navigator/setUser', response.data);// globalにユーザー情報セット
+        });
         // 検索条件リセット
         this.searchKeyword = null;
         this.searchCategoryId = null;

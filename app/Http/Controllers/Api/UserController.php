@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Controller;
+use App\Member;
 use App\User;
 use Carbon\Carbon;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
@@ -29,6 +31,10 @@ class UserController extends Controller
   public function getMe(Request $request) {
     $teams = Auth::user()->teams()->orderBy('created_at')->get();
     Auth::user()->myTeams = $teams;
+    $member = Member::where('user_id', Auth::id())
+      ->where('team_id', Cookie::get('current_team_id'))
+      ->first();
+    Auth::user()->currentTeamAdminFlg = $member->admin_flg;
     return Response::json(Auth::user());
   }
   /**

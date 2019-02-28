@@ -120,6 +120,7 @@ class MemberController extends Controller
     if ($member->user_id) {
       $user = User::find($member->user_id);
       if ($user) {
+        $member->user_id = $user->id;
         $member->email = $user->email;
       }
     }
