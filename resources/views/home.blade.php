@@ -40,7 +40,7 @@
   </form>
   <form id="withdrawal-form" action="{{ route('withdrawal') }}" method="POST" style="display: none;">
     @csrf
-    <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+    <input type="hidden" id="withdrawal_user_id" name="user_id" value="{{ Auth::id() }}">
     <input type="hidden" id="withdrawal_team_id" name="team_id" value="{{ Cookie::get('current_team_id') }}">
   </form>
   <script src="{{ mix('js/manifest.js') }}"></script>

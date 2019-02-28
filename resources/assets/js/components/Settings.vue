@@ -255,6 +255,7 @@
         $('#logout-form').submit();
       },
       withdraw() {
+        $('#withdrawal_user_id').val(this.$store.state.navigator.user.id);
         $('#withdrawal_team_id').val(Cookies.get('current_team_id'));
         $('#withdrawal-form').submit();
       }
