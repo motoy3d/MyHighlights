@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="つばさ">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>横浜SCつばさ</title>
+  <title>Tsubasa⬆UP - 横浜SCつばさアプリ</title>
   <link rel="manifest" href="/manifest.json">
   <link href="{{ mix('css/app.css') }}" rel="stylesheet">
   <link rel="apple-touch-icon" href="appicon.png">
@@ -40,7 +40,7 @@
         <img src="/img/appicon2.png" class="logo">
       </div>
       <div class="center">
-        <img src="/img/tsubasa-up-logo.png" width="150" class="mt-3">
+        <img src="/img/tsubasa-up-logo.png" width="180" class="mt-5">
       </div>
     </ons-toolbar>
     <div class="row bg-white h-100p">
