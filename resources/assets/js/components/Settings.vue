@@ -28,7 +28,7 @@
             <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangeEmail()">変更</v-ons-button></div>
           </v-ons-list-item>
           <v-ons-list-item>
-            パスワード ******
+            パスワード ***********
             <div class="right"><v-ons-button modifier="quiet" class="small" @click="openChangePass()">変更</v-ons-button></div>
           </v-ons-list-item>
         </v-ons-list>

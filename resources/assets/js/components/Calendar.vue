@@ -100,7 +100,7 @@
               {{ schedule.title }}
             </div>
             <div class="expandable-content">
-              <p class="mb-20">{{ schedule.content }}</p>
+              <p class="mb-20 pre-wrap">{{ schedule.content }}</p>
               <v-ons-button class="button smallBtn" modifier="outline"
                             @click="openEditSchedule(schedule);">
                 <v-ons-icon icon="fa-pencil" class="schedule_edit_icon"></v-ons-icon>
