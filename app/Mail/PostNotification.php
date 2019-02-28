@@ -37,12 +37,12 @@ class PostNotification extends Mailable
   {
     $team = Team::findOrFail($this->post->team_id);
     return $this
-      ->subject('[' . $team->name . '] ' . $this->post->title)
+      ->subject($this->post->title . ' (' . $team->name . ')')
       ->view('emails.post_notification')
       ->with([
         'content' => $this->post->content,
-        'app_name' => env('APP_NAME', 'つばさ⬆UP'),
-        'app_link' => env('APP_URL')
+        'app_name' => env('APP_NAME', 'Tsubasa↑UP'),
+        'app_link' => env('APP_URL', 'https://tsubasa.smartj.mobi')
       ]);
   }
 }
