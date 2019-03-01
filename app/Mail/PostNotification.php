@@ -16,16 +16,18 @@ class PostNotification extends Mailable
 
   public $fromUser;
   public $post;
+  public $team;
 
   /**
    * Create a new message instance.
    *
    * @return void
    */
-  public function __construct(User $fromUser, $post)
+  public function __construct(User $fromUser, $post, $team)
   {
     $this->fromUser = $fromUser;
     $this->post = $post;
+    $this->team = $team;
   }
 
   /**
@@ -35,9 +37,8 @@ class PostNotification extends Mailable
    */
   public function build()
   {
-    $team = Team::findOrFail($this->post->team_id);
     return $this
-      ->subject($this->post->title . ' (' . $team->name . ')')
+      ->subject($this->post->title . ' (' . $this->team->name . ')')
       ->text('emails.post_notification')
       ->with([
         'content' => $this->post->content,
