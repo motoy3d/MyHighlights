@@ -47,6 +47,7 @@
       <form method="POST" id="login_form" action="{{ route('login') }}" aria-label="{{ __('Login') }}">
         @csrf
         <div class="col bg-white center" style="padding: 30% 0 0 0">
+          <p class="space red">iOS 10以下で、正しくログインできない問題が出ています。対応中のためお待ち下さい。</p>
           <div class="space">
             <input id="email" type="email" modifier="border" placeholder="メールアドレス"
                        class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
