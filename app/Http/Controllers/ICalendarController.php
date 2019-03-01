@@ -77,6 +77,6 @@ class ICalendarController extends Controller
     if (!$team) {
       return response()->json(['message' => 'not found',], 404);
     }
-    return Response::json(['ical_url' => env('APP_URL') . '/ical/' . $team->ical_id]);
+    return Response::json(['ical_url' => env('APP_URL', 'https://tsubasa.smartj.mobi') . '/ical/' . $team->ical_id]);
   }
 }
