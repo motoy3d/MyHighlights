@@ -14,7 +14,7 @@
     <div class="bg-white">
       <div class="center pt-10">
         <img v-if="avatarFileName" :src="'/storage/prof/' + avatarFileName" class="prof_img_main">
-        <div v-if="$store.state.navigator.user.currentTeamAdminFlg || user_id === $store.state.navigator.user.id">
+        <div v-if="$store.state.navigator.user.currentTeamAdminFlg || user_id === $store.state.navigator.user.id || memberTypeSegment === 0">
           <v-ons-button class="smallBtn" modifier="quiet"
                            @click="showAvatarSelection($event)">変更</v-ons-button>
         </div>
