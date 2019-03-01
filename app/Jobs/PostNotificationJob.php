@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\PostNotification;
 use App\Member;
+use App\Team;
 use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -51,6 +52,7 @@ class PostNotificationJob implements ShouldQueue
       ->get();
     Log::info('メール送信開始 ' . count($users) . '件');
     $i = 1;
+    $team = Team::findOrFail($this->post->team_id);
     foreach ($users as $user) {
       Log::info('メール送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
       try {
@@ -58,9 +60,9 @@ class PostNotificationJob implements ShouldQueue
           Log::info('メールアドレスなし.ユーザーID=' . $user->id);
           continue;
         }
-        Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post));
+        Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post, $team));
         sleep(2);
-      } catch(Exception $ex) {
+      } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
       }
     }
