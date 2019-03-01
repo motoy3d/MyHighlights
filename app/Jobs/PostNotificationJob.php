@@ -48,9 +48,12 @@ class PostNotificationJob implements ShouldQueue
       ->whereNull('users.withdrawal_date')
       ->where('users.mail_notification_flg', 1)
       ->get();
+    Log::info('メール送信開始 ' . count($users) . '件');
+    $i = 1;
     foreach ($users as $user) {
-      Log::info('メール送信 ' . $user->email);
+      Log::info('メール送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
       Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post));
+      sleep(3);
     }
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール送信処理時間: ' . $runningTime . ' [s]');
