@@ -31,8 +31,23 @@ class UserController extends Controller
   public function getMe(Request $request) {
     $teams = Auth::user()->teams()->orderBy('created_at')->get();
     Auth::user()->myTeams = $teams;
+    $currentTeamId = Cookie::get('current_team_id');
+    if (!$currentTeamId) { //ここでCookieにセットされていると思っていたが、されていないエラーが出たので再度セット。
+      $team = $teams[0];
+      $currentTeamId = $team->id;
+      $currentTeamName = $team->name;
+      $minutes = env('SESSION_LIFETIME', 129600);
+      $path = "/";
+      $domain = "";
+      $secure = env('APP_ENV', 'production') == 'production';
+      $httpOnly = false; //jsで扱うために必要
+      Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
+        $minutes, $path, $domain, $secure, $httpOnly));
+      Cookie::queue(Cookie::make('current_team_name', $currentTeamName,
+        $minutes, $path, $domain, $secure, $httpOnly));
+    }
     $member = Member::where('user_id', Auth::id())
-      ->where('team_id', Cookie::get('current_team_id'))
+      ->where('team_id', $currentTeamId)
       ->first();
     Auth::user()->currentTeamAdminFlg = $member->admin_flg;
     return Response::json(Auth::user());

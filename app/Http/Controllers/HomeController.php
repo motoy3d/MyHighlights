@@ -47,7 +47,7 @@ class HomeController extends Controller
       $minutes = env('SESSION_LIFETIME', 129600);
       $path = "/";
       $domain = "";
-      $secure = env('APP_ENV') == 'production';
+      $secure = env('APP_ENV', 'production') == 'production';
       $httpOnly = false; //jsで扱うために必要
       Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
         $minutes, $path, $domain, $secure, $httpOnly));
