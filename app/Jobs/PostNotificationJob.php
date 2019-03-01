@@ -53,8 +53,16 @@ class PostNotificationJob implements ShouldQueue
     $i = 1;
     foreach ($users as $user) {
       Log::info('メール送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
-      Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post));
-      sleep(3);
+      try {
+        if (!$user->email) {
+          Log::info('メールアドレスなし.ユーザーID=' . $user->id);
+          continue;
+        }
+        Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post));
+        sleep(2);
+      } catch(Exception $ex) {
+        Log::error('メール送信エラー: ' . $ex->getMessage());
+      }
     }
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール送信処理時間: ' . $runningTime . ' [s]');
