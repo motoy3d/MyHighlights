@@ -20,9 +20,11 @@ mix.js('resources/assets/js/app.js', 'public/js')
 
 // コンパイルしたファイルのバージョン付け
 // https://readouble.com/laravel/5.5/ja/mix.html
-if (mix.inProduction()) {
+// if (mix.inProduction()) {
+// npm run prod だとiOS10でjsエラーが起きたので、本番もdevを使用するようにした。
+// devでもバージョニングするようにした。
   mix.version();
-}
+// }
 
 
 // Full API
