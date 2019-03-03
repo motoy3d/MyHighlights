@@ -1,4 +1,4 @@
-# つばさ用グループウェア
+# つばさ用グループウェア Tsubasa⬆UP
 
 サイボウズLiveに代わるグループウェアとして作成。
 Webアプリケーション。PWA対応していく。基本的にスマホ向け。PCでも使用は可能。
@@ -22,6 +22,8 @@ Webアプリケーション。PWA対応していく。基本的にスマホ向�
 - webpack
 - composer
 - npm
+- Amazon SES
+- Amazon S3
 
 ## 連絡先
 motoy3d@gmail.com
