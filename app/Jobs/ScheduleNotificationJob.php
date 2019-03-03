@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -56,7 +57,12 @@ class ScheduleNotificationJob implements ShouldQueue
     $team = Team::findOrFail($this->schedule->team_id);
 
     // タイトルと本文
-    $title = $this->schedule->title . ($this->scheduleComment? ' へのコメント' : '');
+    $date = Carbon::createFromFormat('Y-m-d', $this->schedule->schedule_date);
+    $weekday = array( "日", "月", "火", "水", "木", "金", "土" );
+    $title = $date->format('n/j')
+      . '(' . $weekday[$date->format("w")] . ') '
+      . $this->schedule->title
+      . ($this->scheduleComment? ' へのコメント' : '');
     $content = '';
     if ($this->scheduleComment) {
       $content = $this->fromUser->name . "さんが「" . $this->schedule->title . "」にコメントしました。\n\n"
