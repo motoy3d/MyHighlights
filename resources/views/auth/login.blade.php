@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="つばさ">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>Tsubasa⬆UP - 横浜SCつばさアプリ</title>
+  <title>Tsubasa⬆UP - ログイン</title>
   <link rel="manifest" href="/manifest.json">
   <link href="{{ mix('css/app.css') }}" rel="stylesheet">
   <link rel="apple-touch-icon" href="appicon.png">
@@ -47,7 +47,6 @@
       <form method="POST" id="login_form" action="{{ route('login') }}" aria-label="{{ __('Login') }}">
         @csrf
         <div class="col bg-white center" style="padding: 16% 0 0 0">
-          <p class="space red small">iOS 9以下では利用できません。PC(Chrome)をご使用ください。</p>
           <div class="space">
             <input id="email" type="email" modifier="border" placeholder="メールアドレス"
                        class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
@@ -78,7 +77,10 @@
             <a href="password/reset" class="gray small">パスワードを忘れた場合はこちら</a>
           </div>
         </div>
-        <p class="space small grey">ログインできない方は、<a href="mailto:motoy3d@gmail.com">motoy3d@gmail.com</a> までメールしてください。</p>
+        <div class="space">
+          <p class="red small">iOS 9以下では利用できません。PC(Chrome)をご使用ください。</p>
+          <p class="small grey">ログインできない方は、<a href="mailto:motoy3d@gmail.com">motoy3d@gmail.com</a> までメールしてください。</p>
+        </div>
         {{--<hr class="login_hr">--}}
         {{--<div class="row pb-50">--}}
           {{--<div class="center space">--}}
