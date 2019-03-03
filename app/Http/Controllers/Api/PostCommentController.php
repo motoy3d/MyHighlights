@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PostNotificationJob;
 use App\Post;
 use App\PostComment;
 use App\PostCommentAttachment;
 use App\PostResponse;
+use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -61,6 +63,17 @@ class PostCommentController extends Controller
     // コメント数の更新
     $post->comment_count = $post->comment_count + 1;
     $post->save();
+
+    // 通知
+    Log::info('コメント通知：' . $request->comment_notification_flg);
+    if ($request->comment_notification_flg === 'true' && $request->comment_text) {
+      Log::info('コメント通知実行');
+      $startTime = microtime(true);
+      $fromUser = User::findOrFail(Auth::id());
+      $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult));
+      $runningTime =  microtime(true) - $startTime;
+      Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
+    }
     return Response::json($postCommentResult);
   }
 

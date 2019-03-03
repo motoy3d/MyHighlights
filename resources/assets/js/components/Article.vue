@@ -105,18 +105,20 @@
               <!--</v-ons-icon>-->
             </div>
             <!-- コメント入力 -->
-            <v-ons-row class="mt-30">
+            <p class="gray small mb-0">↓ベルのアイコンはメール通知オンオフの切り替えになります</p>
+            <v-ons-row> <!-- class="mt-30" ↑のメッセージをなくしたらmt-30を復活 -->
               <v-ons-col width="30px" vertical-align="bottom" class="left">
+                <v-ons-icon icon="fa-bell" :class="(comment_notification_flg? 'goodblue' : 'lightgray') + ' mb-20'"
+                            size="24px" @click="toggleNotification()"></v-ons-icon>
                 <div class="upload-btn-wrapper">
                   <span class="notification" v-if="0 < comment_files.length">
                     {{ comment_files.length }}</span>
-                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"
-                                ></v-ons-icon>
+                    <v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"></v-ons-icon>
                   <input type="file" multiple @change="onFileSet"/>
                 </div>
               </v-ons-col>
               <v-ons-col vertical-align="bottom">
-                <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
+                <textarea class="textarea comment_textarea" rows="4" placeholder="コメント"
                           v-model="comment_text" @keyup="fitTextarea()"></textarea>
               </v-ons-col>
               <v-ons-col width="50px" vertical-align="bottom" class="center">
@@ -222,6 +224,7 @@
         comments: {},
         comment_text: "",
         comment_files: [],
+        comment_notification_flg: true,
         likes_count: 0,
         likes: [],
         user: {},
@@ -294,6 +297,7 @@
         // 送信フォームデータ準備
         let formData = new FormData();
         formData.append('comment_text', this.comment_text);
+        formData.append('comment_notification_flg', this.comment_notification_flg);
         for(let i = 0; i < this.comment_files.length; i++){
           formData.append('comment_files[]', this.comment_files[i]);
         }
@@ -380,6 +384,9 @@
       },
       toggleLike(likeIcon) {
       },
+      toggleNotification() {
+        this.comment_notification_flg = !this.comment_notification_flg;
+      },
       showAnswerModal(question, answer) {
         if (!question.answerCounts[answer]) {
           return;
@@ -444,10 +451,10 @@
       },
       fitTextarea() {
         let num = event.srcElement.value.match(/\r\n|\n/g);
-        if (num != null && 3 < num.length) {
+        if (num != null && 4 < num.length) {
           event.srcElement.rows = num.length > 8 ? 8 : num.length + 1;
         } else {
-          event.srcElement.rows = 3;
+          event.srcElement.rows = 4;
         }
       },
       confirmDeletePost() {

@@ -15,7 +15,8 @@ class PostNotification extends Mailable
   use Queueable, SerializesModels;
 
   public $fromUser;
-  public $post;
+  public $title;
+  public $content;
   public $team;
 
   /**
@@ -23,10 +24,11 @@ class PostNotification extends Mailable
    *
    * @return void
    */
-  public function __construct(User $fromUser, $post, $team)
+  public function __construct(User $fromUser, $title, $content, $team)
   {
     $this->fromUser = $fromUser;
-    $this->post = $post;
+    $this->title = $title;
+    $this->content = $content;
     $this->team = $team;
   }
 
@@ -38,10 +40,10 @@ class PostNotification extends Mailable
   public function build()
   {
     return $this
-      ->subject($this->post->title . ' (' . $this->team->name . ')')
+      ->subject($this->title . ' (' . $this->team->name . ')')
       ->text('emails.post_notification')
       ->with([
-        'content' => $this->post->content,
+        'content' => $this->content,
         'app_name' => env('APP_NAME', 'Tsubasa↑UP'),
         'app_link' => env('APP_URL', 'https://tsubasa.smartj.mobi')
       ]);

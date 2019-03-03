@@ -438,7 +438,7 @@ Log::info("post=");
   private function sendMail($post) {
     $startTime = microtime(true);
     $fromUser = User::findOrFail(Auth::id());
-    $this->dispatch(new PostNotificationJob($fromUser, $post));
+    $this->dispatch(new PostNotificationJob($fromUser, $post, null));
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
   }

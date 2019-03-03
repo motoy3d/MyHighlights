@@ -50,6 +50,7 @@ html {
 .mb-0 {margin-bottom: 0;}
 .mb-5 {margin-bottom: 5px;}
 .mb-10 {margin-bottom: 10px;}
+.mb-15 {margin-bottom: 15px;}
 .mb-20 {margin-bottom: 20px;}
 .ml-5 {margin-left: 5px;}
 .ml-10 {margin-left: 10px;}
@@ -104,7 +105,8 @@ ons-switch {
   vertical-align: middle;
 }
 textarea {
-	width: 100%;
+  width: 100%;
+  background-color: #fafafc !important;
 }
 /* ------ 共通class(modifier) ------ */
 .text-input--border {

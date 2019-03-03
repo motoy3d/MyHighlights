@@ -1,5 +1,5 @@
 <template>
-  <v-ons-page id="post">
+  <v-ons-page id="post" class="bg-white">
     <v-ons-toolbar class="navbar">
       <div class="center navbartitle">
         <v-ons-icon icon="fa-comment-alt" class="white" size="20px"></v-ons-icon>
@@ -11,6 +11,7 @@
         </v-ons-toolbar-button>
         </div>
     </v-ons-toolbar>
+    <div class="page__background" style="background-color: white;"></div>
     <div class="row">
       <div class="col bg-white">
         <form id="postForm" action="#" method="POST" onsubmit="return false;">
@@ -26,7 +27,7 @@
             </v-ons-select>
           </div>
           <div class="space">
-            <textarea class="textarea w-100p" rows="10" placeholder="本文"
+            <textarea class="textarea w-100p" rows="12" placeholder="本文"
             v-model="contents"></textarea>
           </div>
           <div class="mb-10" v-if="0 < fileNames.length">

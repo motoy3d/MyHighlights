@@ -5,13 +5,11 @@ namespace App\Jobs;
 use App\Mail\PostNotification;
 use App\Member;
 use App\Team;
-use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -22,16 +20,19 @@ class PostNotificationJob implements ShouldQueue
   public $timeout = 3600; // タイムアウト設定１時間
   public $fromUser;
   public $post;
+  public $postComment;
 
   /**
-   * Create a new job instance.
-   *
-   * @return void
+   * コンストラクタ。投稿と投稿コメントで共用。$postには必ず値が入り、$postCommentには投稿コメント通知の場合のみ値が入る。
+   * @param $fromUser
+   * @param $post
+   * @param $postComment
    */
-  public function __construct($fromUser, $post)
+  public function __construct($fromUser, $post, $postComment)
   {
     $this->fromUser = $fromUser;
     $this->post = $post;
+    $this->postComment = $postComment;
   }
 
   /**
@@ -42,7 +43,7 @@ class PostNotificationJob implements ShouldQueue
   public function handle()
   {
     $startTime = microtime(true);
-    // 投稿のチームに所属していて、退会していなくて、メール通知オンのユーザーのアドレスリスト取得
+    // 送信先取得（投稿のチームに所属していて、退会していなくて、メール通知オンのユーザーのアドレスリスト取得）
     $users = Member::select(['users.email'])
       ->join('users', 'users.id', '=', 'members.user_id')
       ->where('members.team_id', $this->post->team_id)
@@ -53,6 +54,18 @@ class PostNotificationJob implements ShouldQueue
     Log::info('メール送信開始 ' . count($users) . '件');
     $i = 1;
     $team = Team::findOrFail($this->post->team_id);
+
+    // タイトルと本文
+    $title = $this->post->title . ($this->postComment? ' へのコメント' : '');
+    $content = '';
+    if ($this->postComment) {
+      $content = $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
+    } else {
+      $content = $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
+    }
+    Log::info('タイトル：' . $title);
+
+    // 一人ずつ間隔を空けながら送信
     foreach ($users as $user) {
       Log::info('メール送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
       try {
@@ -60,7 +73,9 @@ class PostNotificationJob implements ShouldQueue
           Log::info('メールアドレスなし.ユーザーID=' . $user->id);
           continue;
         }
-        Mail::to($user->email)->send(new PostNotification($this->fromUser, $this->post, $team));
+        // メール送信実行
+        Mail::to($user->email)->send(
+          new PostNotification($this->fromUser, $title, $content, $team));
         sleep(2);
       } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
