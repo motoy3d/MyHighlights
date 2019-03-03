@@ -119,15 +119,10 @@
 
               <!-- コメント入力 -->
               <v-ons-row class="mt-30">
-                <!--<v-ons-col width="30px" vertical-align="bottom" class="left">-->
-                  <!--<div class="upload-btn-wrapper">-->
-                  <!--<span class="notification" v-if="0 < comment_files.length">-->
-                    <!--{{ comment_files.length }}</span>-->
-                    <!--<v-ons-icon icon="fa-paperclip" class="goodblue" size="24px"-->
-                    <!--&gt;</v-ons-icon>-->
-                    <!--<input type="file" multiple @change="onFileSet"/>-->
-                  <!--</div>-->
-                <!--</v-ons-col>-->
+                <v-ons-col width="30px" vertical-align="bottom" class="left">
+                  <v-ons-icon icon="fa-bell" :class="(comment_notification_flg? 'goodblue' : 'lightgray') + ' mb-5'"
+                              size="24px" @click="toggleNotification()"></v-ons-icon>
+                </v-ons-col>
                 <v-ons-col vertical-align="bottom">
                 <textarea class="textarea comment_textarea" rows="3" placeholder="コメント"
                           v-model="comment_text" @keyup="fitTextarea()"></textarea>
@@ -212,6 +207,7 @@
         currentMonth: today.getMonth(),
         comment_text: "",
         comment_files: [],
+        comment_notification_flg: true,
       }
     },
     beforeMount() {
@@ -405,6 +401,7 @@
         // 送信フォームデータ準備
         let formData = new FormData();
         formData.append('comment_text', this.comment_text);
+        formData.append('comment_notification_flg', this.comment_notification_flg);
         for(let i = 0; i < this.comment_files.length; i++){
           formData.append('comment_files[]', this.comment_files[i]);
         }
@@ -448,6 +445,9 @@
           })
         // .finally(() => self.loading = false)
         ;
+      },
+      toggleNotification() {
+        this.comment_notification_flg = !this.comment_notification_flg;
       },
       replaceATag(text) {
         return window.fn.replaceATag(text);

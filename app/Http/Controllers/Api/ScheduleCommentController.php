@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PostNotificationJob;
+use App\Jobs\ScheduleNotificationJob;
 use App\Schedule;
 use App\ScheduleComment;
 use App\ScheduleCommentAttachment;
+use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,25 +63,36 @@ class ScheduleCommentController extends Controller
       "updated_id" => Auth::id()
     ]);
 
-    if ($request->allFiles()) { // 添付がある場合
-      $files = $request->file('comment_files');
-      foreach ($files as $file) {
-        $originalFilename = $file->getClientOriginalName();
-        // ファイル保存
-        $filePath = $file->storePublicly('public/schedule_comment_attachment');
-        // URLのために置換
-        $filePath = str_replace('public/', 'storage/', $filePath);
-        $scheduleCommentAttachment = ScheduleCommentAttachment::create([
-          "schedule_comment_id" => $scheduleCommentResult->id,
-          "original_file_name" => $originalFilename,
-          "file_path" => $filePath,
-          "file_type" => strtolower(substr($originalFilename,strrpos($originalFilename, '.') + 1)),
-          "created_id" => Auth::id(),
-          "updated_id" => Auth::id()
-        ]);
-      }
-    }
+    // 未実装
+//    if ($request->allFiles()) { // 添付がある場合
+//      $files = $request->file('comment_files');
+//      foreach ($files as $file) {
+//        $originalFilename = $file->getClientOriginalName();
+//        // ファイル保存
+//        $filePath = $file->storePublicly('public/schedule_comment_attachment');
+//        // URLのために置換
+//        $filePath = str_replace('public/', 'storage/', $filePath);
+//        $scheduleCommentAttachment = ScheduleCommentAttachment::create([
+//          "schedule_comment_id" => $scheduleCommentResult->id,
+//          "original_file_name" => $originalFilename,
+//          "file_path" => $filePath,
+//          "file_type" => strtolower(substr($originalFilename,strrpos($originalFilename, '.') + 1)),
+//          "created_id" => Auth::id(),
+//          "updated_id" => Auth::id()
+//        ]);
+//      }
+//    }
     $schedule->save();
+    // 通知
+    Log::info('コメント通知：' . $request->comment_notification_flg);
+    if ($request->comment_notification_flg === 'true' && $request->comment_text) {
+      Log::info('コメント通知実行');
+      $startTime = microtime(true);
+      $fromUser = User::findOrFail(Auth::id());
+      $this->dispatch(new ScheduleNotificationJob($fromUser, $schedule, $scheduleCommentResult));
+      $runningTime =  microtime(true) - $startTime;
+      Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
+    }
     return Response::json($scheduleCommentResult);
   }
 
