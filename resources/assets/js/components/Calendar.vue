@@ -317,7 +317,7 @@
               this.$http.get('/api/schedule_comments/' + schedule.id)
                 .then((response)=>{
                   // Vueに対して変更通知 https://jp.vuejs.org/v2/guide/reactivity.html
-                  self.$set(self.selectedDateSchedules[0], 'comments', response.data);
+                  self.$set(schedule, 'comments', response.data);
                 })
                 .catch(error => {
                   this.errored = true;
