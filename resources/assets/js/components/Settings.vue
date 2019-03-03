@@ -63,7 +63,7 @@
         <br><br><br><br>
         <v-ons-list>
           <v-ons-list-item class="red" modifier="chevron" onclick="$('#withdrawal_dialog').show()">
-            {{ currentTeamName }}を退会する
+            {{ $store.state.navigator.currentTeamName }}を退会する
           </v-ons-list-item>
         </v-ons-list>
         <br><br>
@@ -82,7 +82,7 @@
     </v-ons-alert-dialog>
     <v-ons-alert-dialog id="withdrawal_dialog" cancelable>
       <div class="alert-dialog-content">
-        本当に[{{ currentTeamName }}]を退会しますか？
+        本当に[{{ $store.state.navigator.currentTeamName }}]を退会しますか？
       </div>
       <div class="alert-dialog-footer">
         <v-ons-alert-dialog-button class="red" @click="withdraw()">退会する</v-ons-alert-dialog-button>
@@ -105,9 +105,6 @@
       }
     },
     computed: {
-      currentTeamName: {
-        get() {return Cookies.get('current_team_name');}
-      },
       mailNotificationFlg: {
         get() {return this.$store.state.navigator.user.mail_notification_flg == 1},
         set(mailNotificationFlg) {this.$store.state.navigator.user.mail_notification_flg = mailNotificationFlg;}

@@ -198,7 +198,9 @@
           let team = this.$store.state.navigator.user.myTeams[t];
           if (this.currentTeamId == team.id) {
             console.log('クッキー ' + team.name);
-            Cookies.set('current_team_name', team.name); break;
+            Cookies.set('current_team_name', team.name);
+            this.$store.commit('navigator/setCurrentTeamName', team.name);
+            break;
           }
         }
         this.$http.get('/api/me').then((response)=>{

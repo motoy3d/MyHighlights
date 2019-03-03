@@ -9,8 +9,8 @@
 </template>
 
 <script>
-  import AppSplitter from './AppSplitter.vue';
   import AppTabbar from './AppTabbar.vue';
+  import Cookies from 'js-cookie';
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -27,6 +27,7 @@
         //   if (error.response.status == 401) {window.location.href = "/login";}
         // })
       ;
+      this.$store.commit('navigator/setCurrentTeamName', Cookies.get('current_team_name'));
       // navigatorにTabbarをpush
       this.$store.commit('navigator/push', AppTabbar);
     },

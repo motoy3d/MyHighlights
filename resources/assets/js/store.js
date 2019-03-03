@@ -7,7 +7,8 @@ export default {
         stack: [],
         options: {},
         user: {},
-        currentTeamId: null
+        currentTeamId: null,
+        currentTeamName: null
       },
       mutations: {
         push(state, page) {
@@ -30,7 +31,13 @@ export default {
         },
         setUser(state, user) {
           state.user = user;
-        }
+        },
+        setCurrentTeamId(state, currentTeamId) {
+          state.currentTeamId = currentTeamId;
+        },
+        setCurrentTeamName(state, currentTeamName) {
+          state.currentTeamName = currentTeamName;
+        },
       }
     },
 
