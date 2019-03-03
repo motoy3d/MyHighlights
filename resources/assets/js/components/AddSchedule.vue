@@ -1,5 +1,5 @@
 <template>
-  <v-ons-page id="post">
+  <v-ons-page id="post" class="bg-white">
     <v-ons-toolbar class="navbar">
       <div class="center navbartitle">
         <v-ons-icon icon="fa-calendar" class="white" size="20px"
@@ -12,6 +12,7 @@
         </v-ons-toolbar-button>
       </div>
     </v-ons-toolbar>
+    <div class="page__background" style="background-color: white;"></div>
     <div class="bg-white space">
       <form id="addScheduleForm" action="#" method="POST">
         <v-ons-row class="space">
