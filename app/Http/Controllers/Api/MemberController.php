@@ -78,13 +78,14 @@ class MemberController extends Controller
         "name_kana" => $request->nameKana,
         "email" => $request->email,
         "password" => Hash::make($password),
+        "mail_notification_flg" => true,
 //        "status" => 'invited',
         "created_id" => Auth::id(),
         "updated_id" => Auth::id()
       ]);
+//      Log::info('ユーザー作成：' . $user->mail_notification_flg);
 
       // 招待メール送信
-      Log::info('Auth::user ' . Auth::user());
       $fromUser = User::findOrFail(Auth::id());
       Mail::to($request->email)->send(
         new UserInvitation($fromUser, $user, $password));
