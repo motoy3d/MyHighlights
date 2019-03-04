@@ -46,7 +46,7 @@
     <div class="row bg-white h-100p">
       <form method="POST" id="login_form" action="{{ route('login') }}" aria-label="{{ __('Login') }}">
         @csrf
-        <div class="col bg-white center" style="padding: 16% 0 0 0">
+        <div class="col bg-white center" style="padding: 30% 0 0 0">
           <div class="space">
             <input id="email" type="email" modifier="border" placeholder="メールアドレス"
                        class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
