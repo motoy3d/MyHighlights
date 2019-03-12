@@ -105,8 +105,7 @@
               <!--</v-ons-icon>-->
             </div>
             <!-- コメント入力 -->
-            <p class="gray small mb-0">↓ベルのアイコンはメール通知オンオフの切り替えになります</p>
-            <v-ons-row> <!-- class="mt-30" ↑のメッセージをなくしたらmt-30を復活 -->
+            <v-ons-row class="mt-30">
               <v-ons-col width="30px" vertical-align="bottom" class="left">
                 <v-ons-icon icon="fa-bell" :class="(comment_notification_flg? 'goodblue' : 'lightgray') + ' mb-20'"
                             size="24px" @click="toggleNotification()"></v-ons-icon>
