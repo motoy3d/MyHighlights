@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\UserInvitation;
 use App\Member;
+use App\Team;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,25 +71,34 @@ class MemberController extends Controller
 //    Log::info('MemberController#store 3');
 
     $user = null;
+    $team = Team::findOrFail(Cookie::get('current_team_id'));
     // ユーザー作成
     if ($request->invitationFlg == "1") {
-      $password = str_random(10);
-      $user = User::create([
-        "name" => $request->name,
-        "name_kana" => $request->nameKana,
-        "email" => $request->email,
-        "password" => Hash::make($password),
-        "mail_notification_flg" => true,
+      $existingUser = User::where('email', $request->email)->first();
+      if ($existingUser) {
+        // 追加登録招待メール送信
+        $fromUser = User::findOrFail(Auth::id());
+        Mail::to($request->email)->send(new UserInvitation($fromUser, $existingUser, $team->name, null));
+        $user = $existingUser;
+      } else {
+        $password = str_random(10);
+        $user = User::create([
+          "name" => $request->name,
+          "name_kana" => $request->nameKana,
+          "email" => $request->email,
+          "password" => Hash::make($password),
+          "mail_notification_flg" => true,
 //        "status" => 'invited',
-        "created_id" => Auth::id(),
-        "updated_id" => Auth::id()
-      ]);
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
 //      Log::info('ユーザー作成：' . $user->mail_notification_flg);
 
-      // 招待メール送信
-      $fromUser = User::findOrFail(Auth::id());
-      Mail::to($request->email)->send(
-        new UserInvitation($fromUser, $user, $password));
+        // 新規登録招待メール送信
+        $fromUser = User::findOrFail(Auth::id());
+        Mail::to($request->email)->send(
+          new UserInvitation($fromUser, $user, $team->name, $password));
+      }
     }
 
     //TODO validate

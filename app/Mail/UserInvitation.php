@@ -15,6 +15,7 @@ class UserInvitation extends Mailable
 
   public $fromUser;
   public $newUser;
+  public $teamName;
   public $password;
 
   /**
@@ -22,10 +23,11 @@ class UserInvitation extends Mailable
    *
    * @return void
    */
-  public function __construct(User $fromUser, User $newUser, $password)
+  public function __construct(User $fromUser, User $newUser, $teamName, $password)
   {
     $this->fromUser = $fromUser;
     $this->newUser = $newUser;
+    $this->teamName = $teamName;
     $this->password = $password;
   }
 
@@ -37,13 +39,18 @@ class UserInvitation extends Mailable
   public function build()
   {
     Log::info('build. name=' . $this->fromUser->name);
+    $viewName = 'emails.user_invitation';
+    if (!$this->password) {
+      $viewName = 'emails.user_invitation_add_team';
+    }
     return $this
       ->subject($this->fromUser->name .
         'さんから、横浜SCつばさ用アプリ「' . env('APP_NAME', 'Tsubasa⬆︎UP') . '」へ招待されました')
-      ->view('emails.user_invitation')
+      ->view($viewName)
       ->with([
         'name' => $this->newUser->name,
-        'team_name' => env('APP_NAME', 'Tsubasa⬆︎UP'),
+        'app_name' => env('APP_NAME', 'Tsubasa⬆︎UP'),
+        'team_name' => $this->teamName,
         'site_link' => env('APP_URL', 'https://tsubasa.smartj.mobi'),
         'email' => $this->newUser->email,
         'password' => $this->password
