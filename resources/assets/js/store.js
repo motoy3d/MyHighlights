@@ -258,7 +258,6 @@ export default {
       },
       actions: {
         load(context, $http) {
-          console.log('calendar/load');
           context.commit('setLoading', true);
           var yearMonth = window.fn.dateFormat.format(new Date(), 'yyyyMM');
           $http.get('/api/schedules?month=' + yearMonth)

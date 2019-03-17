@@ -339,7 +339,10 @@
         this.$store.commit('edit_schedule/setSchedule', schedule);
         this.$store.commit('navigator/push', {
           extends: EditSchedule,
-          onsNavigatorOptions: {animation: 'lift'}
+          onsNavigatorOptions: {animation: 'lift'},
+          onsNavigatorProps: {
+            reloadSchedules : this.loadSchedules
+          }
         });
       },
       formatTime(time) {

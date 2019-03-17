@@ -72,8 +72,8 @@ Vue.use(require('vue-moment'), {
   moment
 });
 
-Vue.filter('truncate', function(value, length, omission) {
-  var length = length ? parseInt(length, 10) : 70;
+Vue.filter('truncate', function(value, len, omission) {
+  var length = len ? parseInt(len, 10) : 70;
   var ommision = omission ? omission.toString() : '...';
   if(value.length <= length) {
     return value;
@@ -82,6 +82,7 @@ Vue.filter('truncate', function(value, length, omission) {
     return value.substring(0, length) + ommision;
   }
 });
+console.warn('>>>>>>>> アプリ起動');
 
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({

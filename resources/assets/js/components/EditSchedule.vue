@@ -78,7 +78,7 @@
         <!--</div>-->
         <div class="space">
           <v-ons-button id="postBtn" class="mtb-20" modifier="large"
-                        @click="save()" :disabled="posting">
+                        @click="save();" :disabled="posting">
             <v-ons-icon icon="fa-spinner" spin v-if="posting"></v-ons-icon>
             保存
           </v-ons-button>
@@ -90,7 +90,15 @@
 
 <script>
   export default {
+    props: {
+      reloadSchedules: {
+        type: Function,
+        required: false
+      }
+    },
     created() {
+      // this.reloadSchedules();
+
       let schedule = this.$store.state.edit_schedule.schedule;
       this.$http.get('/api/schedules/create')
         .then((response)=>{
@@ -197,6 +205,7 @@
             // TODO toastの方がよいか
             this.$ons.notification.alert('保存しました', {title: ''})
               .then(function(){
+                console.log('self.reloadSchedules=' + self.reloadSchedules);
                 self.$store.dispatch('calendar/load', self.$http);
                 self.$store.commit('navigator/pop');
               });

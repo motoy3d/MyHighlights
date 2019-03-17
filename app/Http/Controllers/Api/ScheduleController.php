@@ -111,8 +111,8 @@ class ScheduleController extends Controller
     $schedule->schedule_date = $request->schedule_date;
     $schedule->title = $request->title;
     $schedule->allday_flg = $request->allday_flg == 'true'? true : false;
-    $schedule->time_from = $request->time_from;
-    $schedule->time_to = $request->time_to;
+    $schedule->time_from = $request->time_from == 'null'? null : $request->time_from;
+    $schedule->time_to = $request->time_to == 'null'? null : $request->time_to;
     $schedule->category_id = $request->category_id;
     $schedule->content = $request->contents;
     $schedule->notification_flg = $request->notification_flg == 'true'? true : false;
