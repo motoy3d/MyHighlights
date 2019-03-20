@@ -87,6 +87,8 @@
                   </td>
                 </tr>
               </table>
+              <v-ons-button class="smallBtn" modifier="quiet"
+                            @click="outputQuetionnaireCsv()">全回答をCSV出力する</v-ons-button>
             </div>
           </v-ons-col>
         </v-ons-row>
@@ -436,6 +438,14 @@
             // .finally(() => self.loading = false)
           ;
         });
+      },
+      outputQuetionnaireCsv() {
+        var resultJson = 'aaaa';
+        var downLoadLink = document.createElement("a");
+        downLoadLink.download = 'Q.csv';
+        downLoadLink.href = URL.createObjectURL(new Blob([resultJson], {type: "text.plain"}));
+        downLoadLink.dataset.downloadurl = ["text/plain", downLoadLink.download, downLoadLink.href].join(":");
+        downLoadLink.click();
       },
       isImage(fileExtension) {
         if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
