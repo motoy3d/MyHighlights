@@ -440,12 +440,14 @@
         });
       },
       outputQuetionnaireCsv() {
-        var resultJson = 'aaaa';
-        var downLoadLink = document.createElement("a");
-        downLoadLink.download = 'Q.csv';
-        downLoadLink.href = URL.createObjectURL(new Blob([resultJson], {type: "text.plain"}));
-        downLoadLink.dataset.downloadurl = ["text/plain", downLoadLink.download, downLoadLink.href].join(":");
-        downLoadLink.click();
+        var blob = new Blob(["username1, answer1, ◯"], {type: "text/plain;charset=utf-8"});
+        FileSaver.saveAs(blob, "result.csv");
+        // var resultJson = 'aaaa';
+        // var downLoadLink = document.createElement("a");
+        // downLoadLink.download = 'Q.csv';
+        // downLoadLink.href = URL.createObjectURL(new Blob([resultJson], {type: "text.plain"}));
+        // downLoadLink.dataset.downloadurl = ["text/plain", downLoadLink.download, downLoadLink.href].join(":");
+        // downLoadLink.click();
       },
       isImage(fileExtension) {
         if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
