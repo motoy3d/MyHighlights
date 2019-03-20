@@ -440,6 +440,7 @@
         });
       },
       outputQuetionnaireCsv() {
+        const FileSaver = require('file-saver');  //ファイルダウンロード
         var blob = new Blob(["username1, answer1, ◯"], {type: "text/plain;charset=utf-8"});
         FileSaver.saveAs(blob, "result.csv");
         // var resultJson = 'aaaa';

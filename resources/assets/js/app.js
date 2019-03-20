@@ -59,7 +59,6 @@ window.fn.replaceATag =
     return span.text().replace(exp, "<a href='$1' target='_blank'>$1</a>");
   };
 
-const FileSaver = require('file-saver');
 import Vue from 'vue';
 import Vuex from 'vuex';
 import storeLike from './store.js';
