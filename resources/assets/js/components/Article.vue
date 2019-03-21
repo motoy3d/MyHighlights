@@ -89,7 +89,7 @@
               </table>
               <!--<v-ons-button class="smallBtn" modifier="quiet"-->
                             <!--@click="outputQuetionnaireCsv()">全回答をCSV出力する</v-ons-button>-->
-              <a :href="'questionnaire_download/' + questionnaire.id">全回答をCSV出力する</a>
+              <a :href="'questionnaire_download/' + questionnaire.id">全回答結果を見る</a>
             </div>
           </v-ons-col>
         </v-ons-row>
