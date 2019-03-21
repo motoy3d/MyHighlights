@@ -55,7 +55,7 @@ class ICalendarController extends Controller
       if ($schedule->time_from) {
         $start = new Carbon($schedule->schedule_date . ' ' . $schedule->time_from);
       }
-//      Log::info('----> start ' .$start->format('Y-m-d H:i:s'));
+      Log::info('----> start ' . $start . ' ' . $start->getTimezone()->getName());
 
       $end = new Carbon($schedule->schedule_date);
       if ($schedule->time_to) {
