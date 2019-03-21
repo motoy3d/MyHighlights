@@ -64,6 +64,7 @@ class ICalendarController extends Controller
 
       $event = new \Eluceo\iCal\Component\Event();
       $event->setUseTimezone(true);
+      $event->setUseUtc(false);
       $event
         ->setDtStart(new Carbon($start))
         ->setDtEnd(new Carbon($end))
