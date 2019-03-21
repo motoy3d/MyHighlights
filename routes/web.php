@@ -29,3 +29,5 @@
   Route::get('/home', 'HomeController@index')->name('home');
 
   Route::get('/ical/{ical_id}', 'ICalendarController@make')->name('ical');
+
+  Route::get('questionnaire_download/{questionnaire_id}', 'QuestionnaireCsvController')->name('questionnaire_download');

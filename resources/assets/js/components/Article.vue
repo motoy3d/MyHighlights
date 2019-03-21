@@ -89,6 +89,7 @@
               </table>
               <v-ons-button class="smallBtn" modifier="quiet"
                             @click="outputQuetionnaireCsv()">全回答をCSV出力する</v-ons-button>
+              <a :href="'questionnaire_download/' + questionnaire.id">全回答をCSV出力する</a>
             </div>
           </v-ons-col>
         </v-ons-row>
@@ -440,15 +441,9 @@
         });
       },
       outputQuetionnaireCsv() {
-        const FileSaver = require('file-saver');  //ファイルダウンロード
+        const FileSaver = require('file-saver');
         var blob = new Blob(["username1, answer1, ◯"], {type: "text/plain;charset=utf-8"});
         FileSaver.saveAs(blob, "result.csv");
-        // var resultJson = 'aaaa';
-        // var downLoadLink = document.createElement("a");
-        // downLoadLink.download = 'Q.csv';
-        // downLoadLink.href = URL.createObjectURL(new Blob([resultJson], {type: "text.plain"}));
-        // downLoadLink.dataset.downloadurl = ["text/plain", downLoadLink.download, downLoadLink.href].join(":");
-        // downLoadLink.click();
       },
       isImage(fileExtension) {
         if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
