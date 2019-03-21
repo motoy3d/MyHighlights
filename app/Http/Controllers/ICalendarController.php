@@ -51,15 +51,29 @@ class ICalendarController extends Controller
 
     // iCal作成
     foreach($schedules as $schedule) {
+      $start = new Carbon($schedule->schedule_date);
+      if ($schedule->time_from) {
+        $start = new Carbon($schedule->schedule_date . ' ' . $schedule->time_from);
+      }
+//      Log::info('----> start ' .$start->format('Y-m-d H:i:s'));
+
+      $end = new Carbon($schedule->schedule_date);
+      if ($schedule->time_to) {
+        $end = new Carbon($schedule->schedule_date . ' ' . $schedule->time_to);
+      }
+
       $event = new \Eluceo\iCal\Component\Event();
       $event->setUseTimezone(true);
       $event
-        ->setDtStart(new Carbon($schedule->schedule_date))
-        ->setDtEnd(new Carbon($schedule->schedule_date))
-        ->setNoTime(true)
+        ->setDtStart(new Carbon($start))
+        ->setDtEnd(new Carbon($end))
         ->setSummary($schedule->title)
       ;
+      if (!$schedule->time_from) {
+        $event->setNoTime(true);
+      }
       $calendar->addComponent($event);
+//      Log::info('event: ' . $event);
     }
 
     header('Content-Type: text/calendar; charset=utf-8');
