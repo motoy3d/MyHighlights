@@ -109,7 +109,7 @@ class MemberController extends Controller
       "name" => $request->name,
       "name_kana" => $request->nameKana,
       "type" => $request->memberTypeSegment + 1,
-      "admin_flg" => null,
+      "admin_flg" => $request->adminFlg? 1 : 0,
       "birthday" => $request->birthday,
       "backno" => $request->backno,
       "prof_img_filename" => $request->selectedAvatarFilename,
@@ -174,7 +174,7 @@ class MemberController extends Controller
     $member->prof_img_filename = $request->selectedAvatarFilename;
     $member->admin_flg = $request->adminFlg;
     $member->updated_id = Auth::id();
-    $member = $member->save();
+    $member->save();
     //usersテーブルで保持するデータもある
     if ($userId) {
       Log::info("★" . $userId);
@@ -189,26 +189,40 @@ class MemberController extends Controller
     }
     // 招待
     if ($request->invitationFlg == "1") {
-      $password = str_random(10);
-      $user = User::create([
-        "name" => $request->name,
-        "name_kana" => $request->nameKana,
-        "email" => $request->email,
-        "password" => Hash::make($password),
-//        "status" => 'invited',
-        "created_id" => Auth::id(),
-        "updated_id" => Auth::id()
-      ]);
+      $existingUser = User::where('email', $request->email)->first();
+      if ($existingUser) {
+        // 追加登録招待メール送信
+        $fromUser = User::findOrFail(Auth::id());
+        Log::info('-----------------------');
+        Log::info($member);
+        Log::info($member->team_id);
+        $team = Team::findOrFail($member->team_id);
+        Log::info($team);
+        Mail::to($request->email)->send(
+          new UserInvitation($fromUser, $existingUser, $team->name, null));
+        $user = $existingUser;
+      } else {
+        $password = str_random(10);
+        $user = User::create([
+          "name" => $request->name,
+          "name_kana" => $request->nameKana,
+          "email" => $request->email,
+          "password" => Hash::make($password),
+          //        "status" => 'invited',
+          "created_id" => Auth::id(),
+          "updated_id" => Auth::id()
+        ]);
 
-      // 招待メール送信
-      Log::info('Auth::user ' . Auth::user());
-      $fromUser = User::findOrFail(Auth::id());
-      Mail::to($request->email)->send(
-        new UserInvitation($fromUser, $user, $password));
+        // 招待メール送信
+        $fromUser = User::findOrFail(Auth::id());
+        $team = Team::find(Cookie::get('current_team_id'));
+        Mail::to($request->email)->send(
+          new UserInvitation($fromUser, $user, $team->name, $password));
+      }
       // members更新
       $member = Member::find($id);
       $member->user_id = $user->id;
-      $member = $member->save();
+      $member->save();
     }
     return Response::json($member);
   }

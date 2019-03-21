@@ -19,9 +19,11 @@ class UserInvitation extends Mailable
   public $password;
 
   /**
-   * Create a new message instance.
-   *
-   * @return void
+   * UserInvitation constructor.
+   * @param User $fromUser 登録操作をしたユーザー
+   * @param User $newUser 追加するユーザー
+   * @param $teamName
+   * @param $password
    */
   public function __construct(User $fromUser, User $newUser, $teamName, $password)
   {
