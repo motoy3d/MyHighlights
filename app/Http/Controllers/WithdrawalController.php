@@ -31,12 +31,11 @@ class WithdrawalController extends Controller
    */
   public function __invoke(Request $request)
   {
-    //TODO 他ユーザーを退会させる場合は管理者チェック
     $user_id = $request->user_id;
     $team_id = $request->team_id;
 
     $user = User::findOrFail($user_id);
-    if (!$user || $user->id != $user_id) { //ユーザーが自分のみ退会可能。管理者からの退会はTODO
+    if (!$user || $user->id != $user_id) { //ユーザーが自分のみ退会可能。
       return response()->json(null, 404);
     }
     // 有効な(退会していない)member取得

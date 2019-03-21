@@ -8,6 +8,7 @@ use App\Member;
 use App\Team;
 use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
@@ -235,12 +236,38 @@ class MemberController extends Controller
    */
   public function destroy($id)
   {
-    $member = Member::findOrFail($id);
-    //TODO 管理者権限チェック
-    if (!$member || $member->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
+    // 管理者権限チェック
+    $loginMember = Member::where('user_id', Auth::id())
+      ->whereNull('withdrawal_date')
+      ->whereNull('deleted_at')
+      ->where('admin_flg', 1)
+      ->first();
+    if (!$loginMember) { //このチームの管理者でない場合は404
       return response()->json(null, 404);
     }
-    $count = $member->delete();
+
+    $deletedMember = Member::findOrFail($id);
+    if (!$loginMember || !$deletedMember || $deletedMember->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
+      return response()->json(null, 404);
+    }
+
+    // memberの退会日時を更新
+    $deletedMember->withdrawal_date = Carbon::now();
+    $count = $deletedMember->save();
+
+    // 他チーム所属の有効な(退会していない)memberが残っているか確認
+    $otherTeamMember = Member::where('user_id', $deletedMember->user_id)
+      ->whereNull('withdrawal_date')
+      ->whereNull('deleted_at')
+      ->first();
+    // 有効なmemberが残っていなければ、userも退会とする
+    if (!$otherTeamMember) {
+      // 退会日時を更新
+      $user = User::findOrFail($deletedMember->user_id);
+      $user->withdrawal_date = Carbon::now();
+      $user->save();
+    }
+
     $result = ["deleted_count" => $count];
     return Response::json($result);
   }

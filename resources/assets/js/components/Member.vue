@@ -11,6 +11,7 @@
         <span>メンバー情報</span>
       </div>
     </v-ons-toolbar>
+    <div class="page__background" style="background-color: white;"></div>
     <div class="bg-white">
       <div class="center pt-10">
         <img v-if="avatarFileName" :src="'/storage/prof/' + avatarFileName" class="prof_img_main">
@@ -90,6 +91,15 @@
         <div class="space">
           <v-ons-button class="mtb-20" modifier="large" @click="save()">保存</v-ons-button>
         </div>
+        <v-ons-row v-if="$store.state.navigator.user.currentTeamAdminFlg">
+          <v-ons-col class="space">
+            <v-ons-button class="mtb-20 red" modifier="large--quiet"
+                          @click="confirmDeleteMember()" :disabled="deleting">
+              <v-ons-icon icon="fa-spinner" spin v-if="deleting" class="gray"></v-ons-icon>
+              このメンバーを削除する
+            </v-ons-button>
+          </v-ons-col>
+        </v-ons-row>
       </form>
     </div>
     <!-- アイコンpopover -->
@@ -184,6 +194,7 @@
         selectedAvatarFilename: "",
         avatarPopoverTarget: null,
         avatarPopoverVisible: false,
+        deleting: false,
       }
     },
     computed: {
@@ -227,6 +238,43 @@
         ;
         this.$store.dispatch('members/load', this.$http);
         this.$store.commit('navigator/pop');
+      },
+      confirmDeleteMember() {
+        let self = this;
+        this.$ons.notification.confirm("このメンバーを削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
+                .then(function(ok) {
+                  if(!ok) {return;}
+                  self.deleteMember();
+                });
+      },
+      deleteMember() {
+        this.deleting = true;
+        let member_id = this.member.id;
+        let self = this;
+        self.$http.delete('/api/members/' + member_id)
+                .then((response)=>{
+                  // console.log(response.data);
+                  this.$ons.notification.alert('削除しました', {title: ''})
+                          .then(function(){
+                            self.afterDelete();
+                          });
+                  self.deleting = false;
+                })
+                .catch(error => {
+                  console.log(error);
+                  self.errored = true;
+                  if (error.response.status === 401) {
+                    window.location.href = "/login"; return;
+                  }
+                  self.deleting = false;
+                })
+        // .finally(() => self.deleting = false)
+        ;
+      },
+      afterDelete() {
+        this.deleting = false;
+        this.$store.commit('navigator/pop');
+        this.$store.dispatch('members/load', this.$http);
       }
     }
   };
