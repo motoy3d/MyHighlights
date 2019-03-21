@@ -77,7 +77,11 @@ class QuestionnaireCsvController extends Controller
       ->orderBy('members.id')
       ->get();
 
-    $csv = '';
+    $itemTitles = [];
+    for ($i=0; $i<count($items); $i++) {
+      array_push($itemTitles, $items[$i]->text);
+    }
+    $csv = '氏名,' . join(',', $itemTitles) . "\n";
     Log::info('answers-----------------------------');
     foreach ($answers as $answer) {
       $csv .= ($answer->answer_row . "\n");
