@@ -63,7 +63,7 @@ class LineNotifyController extends Controller
       ]
     ]);
     Log::info('tokenレスポンス------------');
-    Log::info($response);
+    Log::info($response->getBody());
     $message = '';
     if ($response->getStatusCode() == 200) {
       // LINE通知に必要なユーザーごとのアクセストークン。DBに保存する。
