@@ -36,5 +36,3 @@
     Route::get('ical/config', 'ICalendarController@getConfig')->name('ical');
   });
 
-  Route::get('line_auth_error', 'Api\LineNotifyController@authError');
-
