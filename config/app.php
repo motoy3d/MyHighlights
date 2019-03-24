@@ -219,6 +219,6 @@
     'test_ip' => env('TEST_IP', '192.168.11.3'),
     'line_notify_client_id' => env('LINE_NOTIFY_CLIENT_ID'),
     'line_notify_client_secret' => env('LINE_NOTIFY_CLIENT_SECRET'),
-    'line_notify_callback_URI' => env('LINE_NOTIFY_CALLBACK_URI')
+    'line_notify_callback_uri' => env('LINE_NOTIFY_CALLBACK_URI')
 
   ];
