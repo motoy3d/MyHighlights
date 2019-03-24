@@ -78,10 +78,10 @@ class LineNotifyController extends Controller
     if ($response->getStatusCode() == 200) {
       // LINE通知に必要なユーザーごとのアクセストークン。DBに保存する。
       $access_token = json_decode($response->getBody())->access_token;
-      Log::info('ログインユーザー:' . Auth::id());
-//      $user = User::findOrFail(Auth::id());
-//      $user->line_notification_flg = true;
-//      $user->line_access_token = $access_token;
+//      Log::info('ログインユーザー:' . Auth::id());
+      $user = User::findOrFail(Auth::id());
+      $user->line_notification_flg = true;
+      $user->line_access_token = $access_token;
       $message = 'LINEで通知する設定が完了しました。';
     } else {
       $message = 'LINEの通知設定に失敗しました。';

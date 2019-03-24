@@ -49,8 +49,18 @@ class UserController extends Controller
     $member = Member::where('user_id', Auth::id())
       ->where('team_id', $currentTeamId)
       ->first();
-    Auth::user()->currentTeamAdminFlg = $member->admin_flg;
-    return Response::json(Auth::user());
+//    Auth::user()->currentTeamAdminFlg = $member->admin_flg;
+    $user = [
+      'id' => Auth::id(),
+      'name' => Auth::user()->name,
+      'name_kana' => Auth::user()->name_kana,
+      'email' => Auth::user()->email,
+      'currentTeamAdminFlg' => $member->admin_flg,
+      'mail_notification_flg' => Auth::user()->mail_notification_flg,
+      'line_notification_flg' => Auth::user()->line_notification_flg,
+      'myTeams' => $teams
+    ];
+    return Response::json($user);
   }
   /**
    * ユーザー名の更新。
