@@ -31,8 +31,8 @@ class LineNotifyController extends Controller
   {
     $uri = self::LINE_NOTIFY_AUTH_URL . '?' .
       'response_type=code&' .
-      'client_id=' . env('LINE_NOTIFY_CLIENT_ID') . '&' .
-      'redirect_uri=' . env('LINE_NOTIFY_CLIENT_CALLBACK_URI') . '&' .
+      'client_id=' . config('app.line_notify_client_id') . '&' .
+      'redirect_uri=' . config('app.line_notify_callback_uri') . '&' .
       'scope=notify&' .
       'state=' . csrf_token() . '&' .
       'response_mode=form_post';
@@ -57,9 +57,9 @@ class LineNotifyController extends Controller
       'form_params' => [
         'grant_type'    => 'authorization_code',
         'code'          => $request->code,
-        'redirect_uri'  => env('LINE_NOTIFY_CLIENT_CALLBACK_URI'),
-        'client_id'     => env('LINE_NOTIFY_CLIENT_ID'),
-        'client_secret' => env('LINE_NOTIFY_CLIENT_SECRET')
+        'redirect_uri'  => config('app.line_notify_callback_uri'),
+        'client_id'     => config('app.line_notify_client_id'),
+        'client_secret' => config('app.line_notify_client_secret')
       ]
     ]);
     Log::info('tokenレスポンス------------');

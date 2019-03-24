@@ -213,4 +213,12 @@
       'FeedReader' => Awjudd\FeedReader\Facades\FeedReader::class,
     ],
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+    'schedule_data_loading_months' => env('SCHEDULE_DATA_LOADING_MONTHS', 12),
+    'timeline_load_posts' => env('TIMELINE_LOAD_POSTS', 10),
+    'test_ip' => env('TEST_IP', '192.168.11.3'),
+    'line_notify_client_id' => env('LINE_NOTIFY_CLIENT_ID'),
+    'line_notify_client_secret' => env('LINE_NOTIFY_CLIENT_SECRET'),
+    'line_notify_callback_URI' => env('LINE_NOTIFY_CALLBACK_URI')
+
   ];
