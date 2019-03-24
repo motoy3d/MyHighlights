@@ -24,6 +24,16 @@ class LineNotifyController extends Controller
   const LINE_NOTIFY_TOKEN_URL = 'https://notify-bot.line.me/oauth/token';
 
   /**
+   * Create a new controller instance.
+   *
+   * @return void
+   */
+  public function __construct()
+  {
+    $this->middleware('auth');
+  }
+
+  /**
    * LINE Notifyの認証画面へリダイレクトする。ユーザーはそこでLINEログインし、Tsubasa⬆UPの連携を許可する設定をする。
    * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
    */
@@ -69,9 +79,9 @@ class LineNotifyController extends Controller
       // LINE通知に必要なユーザーごとのアクセストークン。DBに保存する。
       $access_token = json_decode($response->getBody())->access_token;
       Log::info('ログインユーザー:' . Auth::id());
-      $user = User::findOrFail(Auth::id());
-      $user->line_notification_flg = true;
-      $user->line_access_token = $access_token;
+//      $user = User::findOrFail(Auth::id());
+//      $user->line_notification_flg = true;
+//      $user->line_access_token = $access_token;
       $message = 'LINEで通知する設定が完了しました。';
     } else {
       $message = 'LINEの通知設定に失敗しました。';
