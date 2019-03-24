@@ -35,10 +35,17 @@
         <br>
         <v-ons-list>
           <v-ons-list-item >
-            メール通知を受け取る
+            メールで通知を受け取る
             <div class="right">
               <v-ons-switch v-model="mailNotificationFlg"
                             @click="updateMailNotificationFlg()"></v-ons-switch>
+            </div>
+          </v-ons-list-item>
+          <v-ons-list-item >
+            LINEで通知を受け取る
+            <div class="right">
+              <v-ons-switch v-model="lineNotificationFlg"
+                            @click="updateLINENotificationFlg()"></v-ons-switch>
             </div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openICal()">
@@ -54,7 +61,7 @@
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
         </v-ons-list>
-        <br>
+        <br><br>
         <v-ons-list>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
             ログアウト
@@ -108,6 +115,10 @@
       mailNotificationFlg: {
         get() {return this.$store.state.navigator.user.mail_notification_flg == 1},
         set(mailNotificationFlg) {this.$store.state.navigator.user.mail_notification_flg = mailNotificationFlg;}
+      },
+      lineNotificationFlg: {
+        get() {return this.$store.state.navigator.user.line_notification_flg == 1},
+        set(lineNotificationFlg) {this.$store.state.navigator.user.line_notification_flg = lineNotificationFlg;}
       }
     },
     methods: {
@@ -243,8 +254,16 @@
           this.loading = false; this.posting = false;
         });
         this.$http.get('/api/me').then((response)=>{
-          // globalにユーザー情報セット
-          // console.log('⭐me=' + response.data);
+          this.$store.commit('navigator/setUser', response.data);
+        });
+      },
+      updateLINENotificationFlg() {
+        if (this.lineNotificationFlg) {
+          window.location.href = '/goto_line_auth';
+        } else {
+          //TODO 通知解除
+        }
+        this.$http.get('/api/me').then((response)=>{
           this.$store.commit('navigator/setUser', response.data);
         });
       },
