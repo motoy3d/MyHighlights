@@ -33,3 +33,4 @@
   Route::get('questionnaire_download/{questionnaire_id}', 'QuestionnaireCsvController')->name('questionnaire_download');
 
   Route::get('goto_line_auth', 'Api\LineNotifyController@redirectToProvider');
+  Route::post('line_auth_code', 'Api\LineNotifyController@handleProviderCallback');

@@ -34,7 +34,6 @@
     Route::post('questionnaires/answer', 'Api\QuestionnaireController@store');
     Route::get('blog', 'Api\BlogController@index');
     Route::get('ical/config', 'ICalendarController@getConfig')->name('ical');
-    Route::post('line_auth_code', 'Api\LineNotifyController@handleProviderCallback');
   });
 
   Route::get('line_auth_error', 'Api\LineNotifyController@authError');
