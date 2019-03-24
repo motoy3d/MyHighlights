@@ -82,12 +82,13 @@ class LineNotifyController extends Controller
       $user = User::findOrFail(Auth::id());
       $user->line_notification_flg = true;
       $user->line_access_token = $access_token;
+      $user->save();
       $message = 'LINEで通知する設定が完了しました。';
     } else {
       $message = 'LINEの通知設定に失敗しました。';
     }
     Log::info('結果メッセージ：' . $message);
-    return view('home', ['message' => $message]);
+    return redirect('/home');
   }
 
   /**
