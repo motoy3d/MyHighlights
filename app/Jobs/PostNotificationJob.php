@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\PostNotification;
 use App\Member;
 use App\Team;
+use GuzzleHttp\Client;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,10 +14,16 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * 投稿、コメント等の通知を行う。通知方法はメールまたはLINE。
+ * Class PostNotificationJob
+ * @package App\Jobs
+ */
 class PostNotificationJob implements ShouldQueue
 {
   use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+  const LINE_NOTIFY_SEND_URL = 'https://notify-api.line.me/api/notify';
   public $timeout = 3600; // タイムアウト設定１時間
   public $fromUser;
   public $post;
@@ -42,17 +49,25 @@ class PostNotificationJob implements ShouldQueue
    */
   public function handle()
   {
+    $this->sendMail();
+    $this->sendLINE();
+  }
+
+  /**
+   * メールを送信する。
+   */
+  private function sendMail()
+  {
     $startTime = microtime(true);
     // 送信先取得（投稿のチームに所属していて、退会していなくて、メール通知オンのユーザーのアドレスリスト取得）
-    $users = Member::select(['users.email'])
+    $mailUsers = Member::select(['users.email'])
       ->join('users', 'users.id', '=', 'members.user_id')
       ->where('members.team_id', $this->post->team_id)
       ->whereNull('members.withdrawal_date')
       ->whereNull('users.withdrawal_date')
       ->where('users.mail_notification_flg', 1)
       ->get();
-    Log::info('メール送信開始 ' . count($users) . '件');
-    $i = 1;
+    Log::info('メール送信開始 ' . count($mailUsers) . '件');
     $team = Team::findOrFail($this->post->team_id);
 
     // タイトルと本文
@@ -66,8 +81,10 @@ class PostNotificationJob implements ShouldQueue
     Log::info('タイトル：' . $title);
 
     // 一人ずつ間隔を空けながら送信
-    foreach ($users as $user) {
-      Log::info('メール送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
+    $totalCount = count($mailUsers);
+    $no = 1;
+    foreach ($mailUsers as $user) {
+      Log::info('メール送信(' . $no . '/' . $totalCount . ') ' . $user->email);
       try {
         if (!$user->email) {
           Log::info('メールアドレスなし.ユーザーID=' . $user->id);
@@ -76,12 +93,73 @@ class PostNotificationJob implements ShouldQueue
         // メール送信実行
         Mail::to($user->email)->send(
           new PostNotification($this->fromUser, $title, $content, $team));
-        sleep(2);
+        sleep(1);
       } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
       }
     }
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール送信処理時間: ' . $runningTime . ' [s]');
+  }
+
+  /**
+   * LINEメッセージを送信する。
+   */
+  private function sendLINE()
+  {
+    $startTime = microtime(true);
+    // 送信先取得（投稿のチームに所属していて、退会していなくて、LINE通知オンのユーザーのアドレスリスト取得）
+    $lineUsers = Member::select(['line_access_token'])
+      ->join('users', 'users.id', '=', 'members.user_id')
+      ->where('members.team_id', $this->post->team_id)
+      ->whereNull('members.withdrawal_date')
+      ->whereNull('users.withdrawal_date')
+      ->where('users.line_notification_flg', 1)
+      ->get();
+    Log::info('LINE送信開始 ' . count($lineUsers) . '件');
+    $team = Team::findOrFail($this->post->team_id);
+
+    // タイトルと本文
+    $title = $this->post->title . ($this->postComment? ' へのコメント' : '');
+    $content = '';
+    if ($this->postComment) {
+      $content = $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
+    } else {
+      $content = $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
+    }
+    Log::info('タイトル：' . $title);
+
+    // 一人ずつ間隔を空けながら送信
+    $totalCount = count($lineUsers);
+    $no = 1;
+    foreach ($lineUsers as $user) {
+      Log::info('LINE送信(' . $no . '/' . $totalCount . ') ');
+      try {
+        if (!$user->line_access_token) {
+          Log::info('access_tokenなし.ユーザーID=' . $user->id);
+          continue;
+        }
+        // LINE送信実行
+        $message = $title . "\n" . $content;
+        if (1 < count($user->teams())) {  //複数チームに所属している場合はチーム名を入れる。
+          $message = '[' . $team->name . '] ' . $message;
+        }
+        $client = new Client();
+        $client->post(self::LINE_NOTIFY_SEND_URL, [
+          'headers' => [
+            'Content-Type'  => 'application/x-www-form-urlencoded',
+            'Authorization' => 'Bearer ' . $user->line_access_token
+          ],
+          'form_params' => [
+            'message' => $message
+          ]
+        ]);
+        sleep(1);
+      } catch(\Exception $ex) {
+        Log::error('LINE送信エラー: ' . $ex->getMessage());
+      }
+    }
+    $runningTime =  microtime(true) - $startTime;
+    Log::info('LINE送信処理時間: ' . $runningTime . ' [s]');
   }
 }

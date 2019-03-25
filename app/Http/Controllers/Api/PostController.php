@@ -432,7 +432,9 @@ Log::info("post=");
   }
 
   /**
-   * 投稿時の通知メールをグループ内の各メンバーに送る。（通知設定オンのメンバーのみ）
+   * 投稿時の通知メールまたはLINEをグループ内の各メンバーに送る。（通知設定オンのメンバーのみ）
+   * ここではジョブの登録のみ行う。通知の処理実行はサーバ側で起動したジョブ実行ワーカーが行う。
+   * sudo php artisan queue:work --timeout=3600 --sleep=120
    * @param $post
    */
   private function sendMail($post) {
