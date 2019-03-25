@@ -246,6 +246,9 @@
         let formData = new FormData();
         formData.append('mail_notification_flg', this.mailNotificationFlg? 1 : 0);
         this.$http.post('/api/users/updateMailNotificationFlg', formData).then(response => {
+          this.$http.get('/api/me').then((response)=>{
+            this.$store.commit('navigator/setUser', response.data);
+          });
           this.loading = false; this.posting = false;
         })
         .catch(error => {
@@ -253,19 +256,26 @@
           if (error.response.status === 401) {window.location.href = "/login";}
           this.loading = false; this.posting = false;
         });
-        this.$http.get('/api/me').then((response)=>{
-          this.$store.commit('navigator/setUser', response.data);
-        });
       },
       updateLINENotificationFlg() {
         if (this.lineNotificationFlg) {
           window.location.href = '/goto_line_auth';
         } else {
-          //TODO 通知解除
+          //通知解除
+          let formData = new FormData();
+          formData.append('line_notification_flg', this.lineNotificationFlg? 1 : 0);
+          this.$http.post('/api/users/updateLINENotificationFlg', formData).then(response => {
+            this.$http.get('/api/me').then((response)=>{
+              this.$store.commit('navigator/setUser', response.data);
+            });
+            this.loading = false; this.posting = false;
+          })
+          .catch(error => {
+            console.log(error);
+            if (error.response.status === 401) {window.location.href = "/login";}
+            this.loading = false; this.posting = false;
+          });
         }
-        this.$http.get('/api/me').then((response)=>{
-          this.$store.commit('navigator/setUser', response.data);
-        });
       },
       logout() {
         $('#logout-form').submit();

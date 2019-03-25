@@ -30,6 +30,7 @@
     Route::post('users/updateEmail', 'Api\UserController@updateEmail');
     Route::post('users/updatePassword', 'Api\UserController@updatePassword');
     Route::post('users/updateMailNotificationFlg', 'Api\UserController@updateMailNotificationFlg');
+    Route::post('users/updateLINENotificationFlg', 'Api\UserController@updateLINENotificationFlg');
     Route::resource('members', 'Api\MemberController');
     Route::post('questionnaires/answer', 'Api\QuestionnaireController@store');
     Route::get('blog', 'Api\BlogController@index');

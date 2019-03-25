@@ -116,16 +116,17 @@ class PostNotificationJob implements ShouldQueue
       ->whereNull('users.withdrawal_date')
       ->where('users.line_notification_flg', 1)
       ->get();
-    Log::info('LINE送信開始 ' . count($lineUsers) . '件');
+    Log::info('★LINE送信開始 ' . count($lineUsers) . '件');
     $team = Team::findOrFail($this->post->team_id);
 
     // タイトルと本文
-    $title = $this->post->title . ($this->postComment? ' へのコメント' : '');
+    $title = $this->post->title;
     $message = '';
     if ($this->postComment) {
-      $message = $title . 'に' . $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
+      $message = $this->fromUser->name . "さんが" . '「' . $title . "」にコメントしました。\n\n"
+        . $this->postComment->comment_text;
     } else {
-      $message = $title . "\n" . $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
+      $message = $this->fromUser->name . "さんが投稿しました。\n「" . $title . "」\n" . $this->post->content;
     }
     Log::info('タイトル：' . $title);
 

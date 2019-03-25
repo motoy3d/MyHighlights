@@ -159,12 +159,35 @@ class UserController extends Controller
    */
   public function updateMailNotificationFlg(Request $request)
   {
-    //TODO validate
+    if (!in_array($request->mail_notification_flg, ['0', '1'])) {
+      return response()->json(['message' => 'invalid',], 400);
+    }
     Log::info("メール通知フラグ " . $request->mail_notification_flg);
     $user = Auth::user();
     $user->mail_notification_flg = $request->mail_notification_flg;
     $user->save();
-
     return Response::json($user);
   }
+
+  /**
+   * ユーザーのLINE通知フラグの更新。
+   *
+   * @param  \Illuminate\Http\Request  $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function updateLINENotificationFlg(Request $request)
+  {
+    if (!in_array($request->line_notification_flg, ['0', '1'])) {
+      return response()->json(['message' => 'invalid',], 400);
+    }
+    Log::info("LINE通知フラグ " . $request->line_notification_flg);
+    $user = Auth::user();
+    $user->line_notification_flg = $request->line_notification_flg;
+    if (!$request->line_notification_flg) {
+      $user->line_access_token = null;
+    }
+    $user->save();
+    return Response::json($user);
+  }
+
 }

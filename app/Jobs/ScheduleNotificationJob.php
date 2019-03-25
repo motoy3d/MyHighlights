@@ -68,12 +68,7 @@ class ScheduleNotificationJob implements ShouldQueue
     $team = Team::findOrFail($this->schedule->team_id);
 
     // タイトルと本文
-    $date = Carbon::createFromFormat('Y-m-d', $this->schedule->schedule_date);
-    $weekday = array( "日", "月", "火", "水", "木", "金", "土" );
-    $title = $date->format('n/j')
-      . '(' . $weekday[$date->format("w")] . ') '
-      . $this->schedule->title
-      . ($this->scheduleComment? ' へのコメント' : '');
+    $title = $this->makeTitle($this->schedule) . ($this->scheduleComment? ' へのコメント' : '');
     $content = '';
     if ($this->scheduleComment) {
       $content = $this->fromUser->name . "さんが「" . $this->schedule->title . "」にコメントしました。\n\n"
@@ -117,16 +112,12 @@ class ScheduleNotificationJob implements ShouldQueue
       ->whereNull('users.withdrawal_date')
       ->where('users.line_notification_flg', 1)
       ->get();
-    Log::info('LINE送信開始 ' . count($users) . '件');
+    Log::info('>>LINE送信開始 ' . count($users) . '件');
     $i = 1;
     $team = Team::findOrFail($this->schedule->team_id);
 
     // タイトルと本文
-    $date = Carbon::createFromFormat('Y-m-d', $this->schedule->schedule_date);
-    $weekday = array( "日", "月", "火", "水", "木", "金", "土" );
-    $title = $date->format('n/j')
-      . '(' . $weekday[$date->format("w")] . ') '
-      . $this->schedule->title;
+    $title = $this->makeTitle($this->schedule);
     $message = '';
     if ($this->scheduleComment) {
       $message = $this->fromUser->name . "さんが「" . $title . "」にコメントしました。\n\n"
@@ -134,7 +125,7 @@ class ScheduleNotificationJob implements ShouldQueue
     } else {
       $message = $this->fromUser->name . "さんが予定を登録しました。\n\n" . $title;
     }
-    Log::info('タイトル：' . $title);
+    Log::info('>>タイトル：' . $title);
 
     // 一人ずつ間隔を空けながら送信
     foreach ($users as $user) {
@@ -162,5 +153,16 @@ class ScheduleNotificationJob implements ShouldQueue
     }
     $runningTime =  microtime(true) - $startTime;
     Log::info('LINE送信処理時間: ' . $runningTime . ' [s]');
+  }
+
+
+  private function makeTitle($schedule)
+  {
+    $date = Carbon::createFromFormat('Y-m-d', $schedule->schedule_date);
+    $weekday = array( "日", "月", "火", "水", "木", "金", "土" );
+    $title = $date->format('n/j')
+      . '(' . $weekday[$date->format("w")] . ') '
+      . $this->schedule->title;
+    return $title;
   }
 }
