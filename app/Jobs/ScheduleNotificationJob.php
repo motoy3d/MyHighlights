@@ -46,7 +46,7 @@ class ScheduleNotificationJob implements ShouldQueue
   public function handle()
   {
     $this->sendMail();
-
+    $this->sendLINE();
   }
 
   /**
