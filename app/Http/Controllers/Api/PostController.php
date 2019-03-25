@@ -162,7 +162,7 @@ class PostController extends Controller
     // 添付ファイルの登録
     $this->saveAttachment($request, $post);
     // メール配信
-    $this->sendMail($post);
+    $this->sendMailAndLINE($post);
 
     return Response::json($post);
   }
@@ -437,12 +437,12 @@ Log::info("post=");
    * sudo php artisan queue:work --timeout=3600 --sleep=120
    * @param $post
    */
-  private function sendMail($post) {
+  private function sendMailAndLINE($post) {
     $startTime = microtime(true);
     $fromUser = User::findOrFail(Auth::id());
     $this->dispatch(new PostNotificationJob($fromUser, $post, null));
     $runningTime =  microtime(true) - $startTime;
-    Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
+    Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
   }
 
 }

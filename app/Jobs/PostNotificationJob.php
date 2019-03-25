@@ -121,11 +121,11 @@ class PostNotificationJob implements ShouldQueue
 
     // タイトルと本文
     $title = $this->post->title . ($this->postComment? ' へのコメント' : '');
-    $content = '';
+    $message = '';
     if ($this->postComment) {
-      $content = $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
+      $message = $title . 'に' . $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
     } else {
-      $content = $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
+      $message = $title . "\n" . $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
     }
     Log::info('タイトル：' . $title);
 
@@ -140,7 +140,6 @@ class PostNotificationJob implements ShouldQueue
           continue;
         }
         // LINE送信実行
-        $message = $title . "\n" . $content;
 //        if (1 < count($user->teams())) {  //複数チームに所属している場合はチーム名を入れる。
 //          $message = '[' . $team->name . '] ' . $message;
 //        }

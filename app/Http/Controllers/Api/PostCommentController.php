@@ -72,7 +72,7 @@ class PostCommentController extends Controller
       $fromUser = User::findOrFail(Auth::id());
       $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult));
       $runningTime =  microtime(true) - $startTime;
-      Log::info('メール送信キュー入れ処理時間: ' . $runningTime . ' [s]');
+      Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
     }
     return Response::json($postCommentResult);
   }
