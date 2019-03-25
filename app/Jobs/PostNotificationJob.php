@@ -141,9 +141,9 @@ class PostNotificationJob implements ShouldQueue
         }
         // LINE送信実行
         $message = $title . "\n" . $content;
-        if (1 < count($user->teams())) {  //複数チームに所属している場合はチーム名を入れる。
-          $message = '[' . $team->name . '] ' . $message;
-        }
+//        if (1 < count($user->teams())) {  //複数チームに所属している場合はチーム名を入れる。
+//          $message = '[' . $team->name . '] ' . $message;
+//        }
         $client = new Client();
         $client->post(self::LINE_NOTIFY_SEND_URL, [
           'headers' => [
