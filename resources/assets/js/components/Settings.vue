@@ -35,21 +35,21 @@
         <br>
         <v-ons-list>
           <v-ons-list-item >
-            メールで通知を受け取る
+            <v-ons-icon icon="fa-envelope" size="20px" class="gray mr-5"></v-ons-icon> メールで通知を受け取る
             <div class="right">
               <v-ons-switch v-model="mailNotificationFlg"
                             @click="updateMailNotificationFlg()"></v-ons-switch>
             </div>
           </v-ons-list-item>
           <v-ons-list-item >
-            LINEで通知を受け取る
+            <v-ons-icon icon="fa-line" size="22px" class="mr-5" style="color:#00B900"></v-ons-icon> LINEで通知を受け取る
             <div class="right">
               <v-ons-switch v-model="lineNotificationFlg"
                             @click="updateLINENotificationFlg()"></v-ons-switch>
             </div>
           </v-ons-list-item>
           <v-ons-list-item modifier="chevron" @click="openICal()">
-            カレンダー同期
+            <v-ons-icon icon="fa-calendar-alt" size="20px" class="gray mr-5"></v-ons-icon> カレンダー同期
           </v-ons-list-item>
           <!--<v-ons-list-item modifier="chevron">-->
             <!--テーマカラー <div class="right">スカイブルー</div>-->
@@ -64,7 +64,7 @@
         <br><br>
         <v-ons-list>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
-            ログアウト
+            <v-ons-icon icon="fa-sign-out-alt" size="20px" class="gray mr-5"></v-ons-icon>ログアウト
           </v-ons-list-item>
         </v-ons-list>
         <br><br><br><br>
