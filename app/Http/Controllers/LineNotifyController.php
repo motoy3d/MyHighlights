@@ -92,13 +92,13 @@ class LineNotifyController extends Controller
   }
 
   /**
-   * https://notify-bot.line.me/oauth/authorize へのリクエスト時にエラーが発生した場合のリダイレクト先。
+   * https://notify-bot.line.me/oauth/authorize へのリクエスト時にキャンセルまたはエラーが発生した場合のリダイレクト先。
    * @param Request $request
    */
   public function authError(Request $request)
   {
-    Log::error("LINE Notify authorize error. errorcode=" . $request->error);
-    return Response::json(["error" => $request->error]);
+    Log::error("LINE Notify authorize error or canceled. errorcode=" . $request->error);
+    return redirect('/home');
   }
 
 }
