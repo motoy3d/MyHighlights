@@ -42,7 +42,7 @@
             </div>
           </v-ons-list-item>
           <v-ons-list-item >
-            <v-ons-icon icon="fa-line" size="22px" class="mr-5" style="color:#00B900"></v-ons-icon> LINEで通知を受け取る
+            <img src="/img/LINE_APP.png" style="width:22px" class="mr-5"> LINEで通知を受け取る
             <div class="right">
               <v-ons-switch v-model="lineNotificationFlg"
                             @click="updateLINENotificationFlg()"></v-ons-switch>
