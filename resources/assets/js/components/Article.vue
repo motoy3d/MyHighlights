@@ -409,7 +409,7 @@
         document.querySelector('ons-modal').hide();
       },
       showQuestionnaireActionSheet(question, index) {
-        let selections = ['◯', '△', '✕', 'キャンセル'];
+        let selections = ['◯', '△', '✕', '回答削除', '閉じる'];
         let self = this;
         let answer = this.$ons.openActionSheet({
           title: question,
@@ -417,7 +417,7 @@
           buttons: selections
         })
         .then(function(answer){
-          if (answer === undefined || answer < 0 || 2 < answer) {return;}
+          if (answer === undefined || answer < 0 || 3 < answer) {return;}
           let form = new FormData();
           form.append('post_id', self.post.id);
           form.append('questionnaire_id', self.questionnaire.id);

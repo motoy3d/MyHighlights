@@ -40,22 +40,28 @@ class QuestionnaireController extends Controller
         'message' => 'not found',
       ], 404);
     }
-    Log::info("----store ");
-    $answer = QuestionnaireAnswer::updateOrCreate(
-      [
-        'questionnaire_id' => $request->questionnaire_id,
-        'user_id' => Auth::id(),
-        'question_no' => $request->question_no
-      ],
-      [
-        'answer' => $request->answer,
-        'created_id' => Auth::id(), //更新時に更新するのは本来NGだがアンケート回答は本人がする(create)はずなので許容
-        'updated_id' => Auth::id()
-      ]);
-//    $answer->answer = $request->answer;
-//    $answer->created_id = Auth::id();
-//    $answer->updated_id = Auth::id();
-//    $answer->save();
-    return Response::json($answer);
+    Log::info("----store " . $request->answer);
+    $result = null;
+    if ($request->answer === '回答削除') {
+      $deletedCount = QuestionnaireAnswer::where('questionnaire_id', $request->questionnaire_id)
+        ->where('user_id', Auth::id())
+        ->where('question_no', $request->question_no)
+        ->delete();
+      $result = $deletedCount;
+    } else {
+      $answer = QuestionnaireAnswer::updateOrCreate(
+        [
+          'questionnaire_id' => $request->questionnaire_id,
+          'user_id' => Auth::id(),
+          'question_no' => $request->question_no
+        ],
+        [
+          'answer' => $request->answer,
+          'created_id' => Auth::id(), //更新時に更新するのは本来NGだがアンケート回答は本人がする(create)はずなので許容
+          'updated_id' => Auth::id()
+        ]);
+      $result = $answer;
+    }
+    return Response::json($result);
   }
 }

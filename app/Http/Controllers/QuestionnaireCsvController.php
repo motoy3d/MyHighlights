@@ -82,10 +82,10 @@ class QuestionnaireCsvController extends Controller
       array_push($itemTitles, $items[$i]->text);
     }
     $csv = '氏名,' . join(',', $itemTitles) . "\n";
-    Log::info('answers-----------------------------');
+//    Log::info('answers-----------------------------');
     foreach ($answers as $answer) {
       $csv .= ($answer->answer_row . "\n");
-      Log::info($csv);
+//      Log::info($csv);
     }
     $filename = 'result.csv';
     $headers = [
