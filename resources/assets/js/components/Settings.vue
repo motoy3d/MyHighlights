@@ -61,6 +61,15 @@
             <!--利用規約 <div class="right"></div>-->
           <!--</v-ons-list-item>-->
         </v-ons-list>
+        <br>
+        <v-ons-list>
+          <v-ons-list-item modifier="chevron">
+            <a href="mailto:motoy3d@gmail.com?subject=ツバサップ問い合わせ" target="_blank"
+               style="text-decoration: none; color:#1f1f21;">
+              <v-ons-icon icon="fa-info-circle" size="20px" class="gray mr-5"></v-ons-icon>問い合わせ・バグ報告・ご感想
+            </a>
+          </v-ons-list-item>
+        </v-ons-list>
         <br><br>
         <v-ons-list>
           <v-ons-list-item modifier="chevron" onclick="$('#logout_dialog').show()">
