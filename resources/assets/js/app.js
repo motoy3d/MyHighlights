@@ -95,10 +95,10 @@ var vm = new Vue({
     Vue.prototype.moment = moment;
 
     // iPhone X系用レイアウト自動調整
-    if (this.$ons.platform.isIPhoneX()) {
-      document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
-      document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
-    }
+    // if (this.$ons.platform.isIPhoneX()) {
+    //   document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
+    //   document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
+    // }
     // this.$ons.disableAutoStatusBarFill();
   }
 });
