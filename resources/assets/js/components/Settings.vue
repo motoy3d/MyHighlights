@@ -63,9 +63,12 @@
         </v-ons-list>
         <br>
         <v-ons-list>
-          <v-ons-list-item modifier="chevron" @click="openMail()">
-            <v-ons-icon icon="fa-info-circle" size="20px" class="gray mr-5"></v-ons-icon>問い合わせ・バグ報告・ご感想
-          </v-ons-list-item>
+          <a href="mailto:motoy3d@gmail.com?subject=ツバサップ問い合わせ" target="_blank"
+          style="text-decoration: none; color:#1f1f21;">
+            <v-ons-list-item modifier="chevron">
+                <v-ons-icon icon="fa-info-circle" size="20px" class="gray mr-5"></v-ons-icon>問い合わせ・バグ報告・ご感想
+            </v-ons-list-item>
+          </a>
         </v-ons-list>
         <br><br>
         <v-ons-list>
@@ -282,9 +285,6 @@
             this.loading = false; this.posting = false;
           });
         }
-      },
-      openMail() {
-        window.open('mailto:motoy3d@gmail.com?subject=ツバサップ問い合わせ');
       },
       logout() {
         $('#logout-form').submit();
