@@ -95,7 +95,7 @@ var vm = new Vue({
     Vue.prototype.moment = moment;
 
     // iPhone X系用レイアウト自動調整
-    if (ons.platform.isIPhoneX()) {
+    if (this.$ons.platform.isIPhoneX()) {
       document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
       document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
     }
