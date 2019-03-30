@@ -94,8 +94,8 @@ var vm = new Vue({
     Vue.prototype.md = this.$ons.platform.isAndroid();
     Vue.prototype.moment = moment;
 
-    // Set iPhoneX flag based on URL
-    if (window.location.search.match(/iphonex/i)) {
+    // iPhone X系用レイアウト自動調整
+    if (ons.platform.isIPhoneX()) {
       document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
       document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
     }
