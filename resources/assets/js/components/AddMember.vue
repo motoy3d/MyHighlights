@@ -74,7 +74,7 @@
             <img src="/storage/prof/preset_tofu.png" id="preset_tofu.png" @click="changeAvatar($event)"
                  :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_tofu.png'? 'prof_imgelected' : '')">
             <img src="/storage/prof/preset_obake.png" id="preset_obake.png" @click="changeAvatar($event)"
-                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_imgelected' : '')"
+                 :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_imgelected' : '')">
             <img src="/storage/prof/preset_zombi.png" id="preset_zombi.png" @click="changeAvatar($event)"
                  :class="'prof_img ' + (selectedAvatarFilenameComputed === 'preset_zombi.png'? 'prof_imgelected' : '')">
             <img src="/storage/prof/preset_greenmonster.png" id="preset_greenmonster.png" @click="changeAvatar($event)"

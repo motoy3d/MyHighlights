@@ -10,7 +10,7 @@
             <v-ons-select id="teamSelection" v-model="currentTeamId" modifier="underbar"
                           class="mt-5 bold" @change="changeCurrentTeam()">
               <option v-for="team in $store.state.navigator.user.myTeams" :value="team.id"
-                      class="bold black">
+                      class="bold black" :key="team.id">
                 {{ team.name }}
               </option>
             </v-ons-select>
@@ -43,7 +43,7 @@
         </div>
         <div class="mt-20 mlr-10">
           <v-ons-select v-model="searchCategoryId" modifier="underbar" class="w-100p">
-            <option v-for="cate in categories" :value="cate.id">
+            <option v-for="cate in categories" :value="cate.id" :key="cate.id">
               {{ cate.name }}
             </option>
           </v-ons-select>

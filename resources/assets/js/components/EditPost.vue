@@ -25,7 +25,7 @@
             </div>
             <div class="space">
               <v-ons-select v-model="selected_category">
-                <option v-for="cate in categories" :value="cate.id">
+                <option v-for="cate in categories" :value="cate.id" :key="cate.id">
                   {{ cate.name }}
                 </option>
               </v-ons-select>
@@ -37,7 +37,7 @@
             <!--既存ファイル一覧-->
             <div class="space mb-20" v-if="0 < post_attachments.length">
               <template v-for="att in post_attachments">
-                <div v-if="isImage(att.file_type)" class="mt-30">
+                <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
@@ -46,7 +46,7 @@
                     </a>
                   </div>
                 </div>
-                <div v-else class="mt-30">
+                <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
@@ -60,7 +60,7 @@
               <!--今回アップファイル一覧-->
               <div class="mb-10" v-if="0 < fileNames.length">
                 <ul>
-                  <li v-for="(file, index) in fileNames" class="mtb-10 break">
+                  <li v-for="(file, index) in fileNames" class="mtb-10 break" :key="index">
                     <span>{{ file }}
                       <v-ons-icon icon="fa-trash" class="gray ml-5"
                                   @click="deleteFile(index);"></v-ons-icon>
@@ -83,7 +83,7 @@
                 <div>
                   <table class="questionnaire_table">
                     <tr><th></th><th>◯</th><th>△</th><th>✕</th></tr>
-                    <tr v-for="(q, index) in questionnaire.items">
+                    <tr v-for="(q, index) in questionnaire.items" :key="index">
                       <td>{{ q.text }}</td>
                       <td class="answer">
                         <span v-if="q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </span>

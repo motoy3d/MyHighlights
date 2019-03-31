@@ -51,7 +51,7 @@
           <!-- v-ons-selectだと画面表示時にselected_category_idがプルダウンに反映されない。OnsenUIのバグ？ -->
           <select v-model="selected_category_id" class="select-input">
             <!-- ↓だと画面表示時にselected_category_idがプルダウンに反映されない -->
-            <option v-for="cate in categories" :value="cate.id">
+            <option v-for="cate in categories" :value="cate.id" :key="cate.id">
               {{ cate.name }}
             </option>
           </select>
@@ -62,7 +62,7 @@
         </div>
         <div class="mb-10" v-if="0 < fileNames.length">
           <ul>
-            <li v-for="(file, index) in fileNames" class="mtb-10 break">
+            <li v-for="(file, index) in fileNames" class="mtb-10 break" :key="index">
               {{ file }}
             </li>
           </ul>

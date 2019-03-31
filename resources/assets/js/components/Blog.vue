@@ -21,7 +21,7 @@
           <v-ons-col>
             <!--<v-ons-page :infinite-scroll="loadMore">-->
               <v-ons-list>
-                <v-ons-list-item v-for="(entry,index) in entries" :key="entry.link"
+                <v-ons-list-item v-for="entry in entries" :key="entry.link"
                                  modifier="chevron" tappable @click="openEntry(entry.link)">
                   <div class="blog_row">
                     <p class="blog_entry_date">{{ entry.date }}</p>

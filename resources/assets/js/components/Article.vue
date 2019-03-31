@@ -37,7 +37,7 @@
             </div>
             <div class="entry_content"><span class="entry_text" v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
-                <div v-if="isImage(att.file_type)" class="mt-30">
+                <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
@@ -46,7 +46,7 @@
                     </a>
                   </div>
                 </div>
-                <div v-else class="mt-30">
+                <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
@@ -65,7 +65,7 @@
             <div>
               <table class="questionnaire_table">
                 <tr><th></th><th>◯</th><th>△</th><th>✕</th><th></th></tr>
-                <tr v-for="(q, index) in questionnaire.items">
+                <tr v-for="(q, index) in questionnaire.items" :key="index">
                   <td>{{ q.text }}</td>
                   <td class="answer" @click="showAnswerModal(q, '◯')">
                     <a href="#" v-if="q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </a>
@@ -134,7 +134,7 @@
         <!-- コメント -->
         <v-ons-row class="space lastspace" v-if="comments">
           <v-ons-col>
-            <div class="mt-10 ml-15" v-for="(comment, index) in comments" :key="comment.id">
+            <div class="mt-10 ml-15" v-for="comment in comments" :key="comment.id">
               <!--<hr class="mt-15">-->
               <div>
                 <span class="bold">
@@ -156,7 +156,7 @@
                     <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                       @click="confirmDeleteComment(comment.id)"></v-ons-icon>
                   </span>
-                  <p v-for="att in comment.attachments">
+                  <p v-for="att in comment.attachments" :key="att.id">
                     <a :href="att.file_path">
                       <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
                       <span class="break">{{ att.original_file_name }}</span>
@@ -198,7 +198,7 @@
               {{ modal.question }} - {{ modal.answer }} {{ modal.count }}件
             </div>
             <div class="scroller mt-15">
-                <div v-for="user in modal.users">{{ user.name }}</div>
+                <div v-for="user in modal.users" :key="user.name">{{ user.name }}</div>
             </div>
           </div>
         </div>

@@ -37,7 +37,7 @@
                 <td v-bind:data-date="days[n-1].date"
                     v-bind:class="'day' + (n-1) + ' ' +
                     (days[n-1].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)">
                   <span v-html="days[n-1].text"></span>
                 </td>
               </tr>
@@ -45,7 +45,7 @@
                 <td v-bind:data-date="days[(n-1)+7].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+7].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)+7">
                   <span v-html="days[(n-1)+7].text"></span>
                 </td>
               </tr>
@@ -53,7 +53,7 @@
                 <td v-bind:data-date="days[(n-1)+14].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+14].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)+14">
                   <span v-html="days[(n-1)+14].text"></span>
                 </td>
               </tr>
@@ -61,7 +61,7 @@
                 <td v-bind:data-date="days[(n-1)+21].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+21].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)+21">
                   <span v-html="days[(n-1)+21].text"></span>
                 </td>
               </tr>
@@ -69,7 +69,7 @@
                 <td v-bind:data-date="days[(n-1)+28].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+28].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)+28">
                   <span v-html="days[(n-1)+28].text"></span>
                 </td>
               </tr>
@@ -77,7 +77,7 @@
                 <td v-bind:data-date="days[(n-1)+35].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')"
-                    v-for="n in 7">
+                    v-for="n in 7" :key="(n-1)+35">
                   <span v-html="days[(n-1)+35].text"></span>
                 </td>
               </tr>
@@ -92,7 +92,7 @@
           {{ selectedDateText }}
         </v-ons-list-header>
         <template v-for="(schedule, index) in selectedDateSchedules">
-          <ons-list-item :id="'scheduleListItem' + index" expandable><!-- v-ons-list-itemにするとexpandableが効かないのでons-list-item -->
+          <ons-list-item :id="'scheduleListItem' + index" expandable :key="index"><!-- v-ons-list-itemにするとexpandableが効かないのでons-list-item -->
             <div class="left">
               <template v-if="!schedule.allday_flg">
                 {{ formatTime(schedule.time_from) }}-{{ formatTime(schedule.time_to) }}
@@ -137,7 +137,7 @@
               <!-- コメント一覧 -->
               <v-ons-row class="space lastspace" v-if="schedule.comments">
                 <v-ons-col>
-                  <div class="mt-10 ml-15" v-for="(comment, index) in schedule.comments" :key="comment.id">
+                  <div class="mt-10 ml-15" v-for="comment in schedule.comments" :key="comment.id">
                     <!--<hr class="mt-15">-->
                     <div>
                       <span class="bold">
@@ -159,7 +159,7 @@
                           <v-ons-icon icon="fa-trash" class="delete_comment_icon"
                                       @click="confirmDeleteComment(schedule.id, comment.id)"></v-ons-icon>
                         </span>
-                        <p v-for="att in comment.attachments">
+                        <p v-for="(att, index) in comment.attachments" :key="index">
                           <a :href="att.file_path">
                             <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
                             <span>{{ att.original_file_name }}</span>

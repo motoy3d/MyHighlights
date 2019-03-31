@@ -21,7 +21,7 @@
           </div>
           <div class="space">
             <v-ons-select v-model="selected_category" class="category_select">
-              <option v-for="cate in categories" :value="cate.id">
+              <option v-for="cate in categories" :value="cate.id" :key="cate.id">
                 {{ cate.name }}
               </option>
             </v-ons-select>
@@ -32,7 +32,7 @@
           </div>
           <div class="mb-10" v-if="0 < fileNames.length">
             <ul>
-              <li v-for="(file, index) in fileNames" class="mtb-10 break">
+              <li v-for="(file, index) in fileNames" class="mtb-10 break" :key="index">
                 <span>{{ file }}
                   <v-ons-icon icon="fa-trash" class="gray ml-5"
                               @click="deleteFile(index);"></v-ons-icon>
@@ -51,7 +51,7 @@
               <div class="mt-5">
                 <table class="questionnaire_table">
                   <template v-for="(q, index) in questionnaire_selections">
-                    <tr v-if="q.text">
+                    <tr v-if="q.text" :key="index">
                       <td>{{ q.text }}</td>
                       <td class="questionnaire_results">◯　△　✕</td>
                     </tr>
@@ -104,7 +104,7 @@
                              class="w-100p" v-model="questionnaire_title_tmp"></v-ons-input>
               </div>
               <template v-for="(selection, index) in questionnaire_selections_tmp">
-                <div :class="index === 0? 'mt-30' : 'mt-10'">
+                <div :class="index === 0? 'mt-30' : 'mt-10'" :key="index">
                   <v-ons-input modifier="border" :placeholder="'選択肢' + (index+1)" class="w-90p"
                                v-model="selection.text"></v-ons-input>
                   <v-ons-icon icon="fa-trash" class="delete_selection_icon"

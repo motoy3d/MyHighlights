@@ -135,7 +135,7 @@
         <img src="/storage/prof/preset_tofu.png" id="preset_tofu.png" @click="changeAvatar($event)"
              :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_tofu.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_obake.png" id="preset_obake.png" @click="changeAvatar($event)"
-             :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_img_selected' : '')"
+             :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_obake.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_zombi.png" id="preset_zombi.png" @click="changeAvatar($event)"
              :class="'prof_img_s ' + (selectedAvatarFilenameComputed === 'preset_zombi.png'? 'prof_img_selected' : '')">
         <img src="/storage/prof/preset_greenmonster.png" id="preset_greenmonster.png" @click="changeAvatar($event)"

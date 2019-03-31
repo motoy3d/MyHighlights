@@ -49,7 +49,7 @@
         </v-ons-row>
         <div class="space">
           <v-ons-select v-model="selected_category" class="category_select">
-            <option v-for="cate in categories" :value="cate.id">
+            <option v-for="cate in categories" :value="cate.id" :key="cate.id">
               {{ cate.name }}
             </option>
           </v-ons-select>
@@ -60,7 +60,7 @@
         </div>
         <div class="mb-10" v-if="0 < fileNames.length">
           <ul>
-            <li v-for="(file, index) in fileNames" class="mtb-10 break">
+            <li v-for="(file, index) in fileNames" class="mtb-10 break" :key="index">
               {{ file }}
             </li>
           </ul>
