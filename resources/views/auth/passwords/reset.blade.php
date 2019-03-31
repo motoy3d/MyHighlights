@@ -109,6 +109,6 @@
     </div>
   </div>
 </ons-page>
-<script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/onsen/2.10.6/js/onsenui.min.js"></script>
 </body>
 </html>
