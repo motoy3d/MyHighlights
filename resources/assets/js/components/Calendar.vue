@@ -296,13 +296,6 @@
         }
         this.selectedDate = td.getAttribute('data-date');
         this.loadSchedules();
-
-        // let scheduleListItem0 = document.querySelector('#scheduleListItem0');
-        // console.log('selectDate');
-        // console.log(scheduleListItem0);
-        // if (scheduleListItem0) {
-        //   scheduleListItem0.showExpansion();
-        // }
       },
       loadSchedules() {
         this.selectedDateSchedules = [];
@@ -326,6 +319,13 @@
                 });
             }
           }
+          setTimeout(function() {
+            // 予定の内容を展開する
+            let scheduleListItem0 = document.querySelector('#scheduleListItem0');
+            if (scheduleListItem0 && !scheduleListItem0.expanded) {
+              scheduleListItem0.showExpansion();
+            }
+          }, 150);
         }
       },
       openAddSchedule() {
