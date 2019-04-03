@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -29,6 +30,11 @@ class HomeController extends Controller
   {
     Log::info("HomeController#index ------------------------ " . Auth::user()->name);
     $teams = Auth::user()->teams()->orderBy('created_at')->get();
+    if (count($teams) == 0) { // 退会済みユーザがログインしたまま開いた場合ログアウトさせる
+      $logoutController = app()->make(LoginController::class);
+      $logoutController->logout($request);
+      return view('login');
+    }
     $needMakingCookie = true;
     // Cookieにcurrent_team_idがある場合、所属チームに該当するかチェック
     if (Cookie::get('current_team_id')) {
