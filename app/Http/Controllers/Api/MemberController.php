@@ -97,6 +97,7 @@ class MemberController extends Controller
 
         // 新規登録招待メール送信
         $fromUser = User::findOrFail(Auth::id());
+        Log::info('招待メール送信:' . $request->email);
         Mail::to($request->email)->send(
           new UserInvitation($fromUser, $user, $team->name, $password));
       }
