@@ -134,7 +134,7 @@ class PostNotificationJob implements ShouldQueue
     $totalCount = count($lineUsers);
     $no = 1;
     foreach ($lineUsers as $user) {
-      Log::info('LINE送信(' . $no++ . '/' . $totalCount . ') ');
+      Log::info('LINE送信(' . $no++ . '/' . $totalCount . ') ' . $user->id);
       try {
         if (!$user->line_access_token) {
           Log::info('access_tokenなし.ユーザーID=' . $user->id);

@@ -129,7 +129,7 @@ class ScheduleNotificationJob implements ShouldQueue
 
     // 一人ずつ間隔を空けながら送信
     foreach ($users as $user) {
-      Log::info('LINE送信(' . $i++ . '/' . count($users) . ') ' . $user->email);
+      Log::info('LINE送信(' . $i++ . '/' . count($users) . ') ' . $user->id);
       try {
         if (!$user->line_access_token) {
           Log::info('LINEアクセストークンなし.ユーザーID=' . $user->id);
