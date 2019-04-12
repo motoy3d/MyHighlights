@@ -24,17 +24,17 @@ class LogController extends Controller
   /**
    * ログを保存する
    *
-   * @param string string $path
+   * @param string string $content
    * @return Log $log
    */
-  public function storeLogs($path)
+  public function storeLogs($content)
   {
     $log = Log::create([
       'log_timestamp' => DB::raw('now()'),
       'level' => 'info',
       'user_agent' => $_SERVER['HTTP_USER_AGENT'],
       'ipaddress' => $_SERVER['REMOTE_ADDR'],
-      'content' => $path,
+      'content' => $content,
       'user_id' => Auth::id(),
       'created_id' => Auth::id(),
       'updated_id' => Auth::id()

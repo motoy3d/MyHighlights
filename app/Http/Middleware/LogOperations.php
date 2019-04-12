@@ -17,9 +17,10 @@ class LogOperations
   public function handle($request, Closure $next)
   {
     $response = $next($request);
+    $method = $_SERVER['REQUEST_METHOD'];
     $path = $_SERVER['REQUEST_URI'];
     $logCtrl = new LogController();
-    $logCtrl->storeLogs($path);
+    $logCtrl->storeLogs($method . ' ' . $path);
     return $response;
   }
 }
