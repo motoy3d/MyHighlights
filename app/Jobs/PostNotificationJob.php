@@ -84,7 +84,7 @@ class PostNotificationJob implements ShouldQueue
     $totalCount = count($mailUsers);
     $no = 1;
     foreach ($mailUsers as $user) {
-      Log::info('メール送信(' . $no . '/' . $totalCount . ') ' . $user->email);
+      Log::info('メール送信(' . $no++ . '/' . $totalCount . ') ' . $user->email);
       try {
         if (!$user->email) {
           Log::info('メールアドレスなし.ユーザーID=' . $user->id);
@@ -109,7 +109,7 @@ class PostNotificationJob implements ShouldQueue
   {
     $startTime = microtime(true);
     // 送信先取得（投稿のチームに所属していて、退会していなくて、LINE通知オンのユーザーのアドレスリスト取得）
-    $lineUsers = Member::select(['line_access_token'])
+    $lineUsers = Member::select(['users.id', 'line_access_token'])
       ->join('users', 'users.id', '=', 'members.user_id')
       ->where('members.team_id', $this->post->team_id)
       ->whereNull('members.withdrawal_date')

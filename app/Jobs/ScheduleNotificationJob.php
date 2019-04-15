@@ -105,7 +105,7 @@ class ScheduleNotificationJob implements ShouldQueue
   {
     $startTime = microtime(true);
     // 送信先取得（投稿のチームに所属していて、退会していなくて、LINE通知オンのユーザーのアドレスリスト取得）
-    $users = Member::select(['users.line_access_token'])
+    $users = Member::select(['users.id', 'users.line_access_token'])
       ->join('users', 'users.id', '=', 'members.user_id')
       ->where('members.team_id', $this->schedule->team_id)
       ->whereNull('members.withdrawal_date')
