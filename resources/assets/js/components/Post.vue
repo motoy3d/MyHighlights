@@ -27,7 +27,7 @@
             </v-ons-select>
           </div>
           <div class="space">
-            <textarea class="textarea w-100p" rows="12" placeholder="本文"
+            <textarea class="textarea w-100p" rows="16" placeholder="本文"
             v-model="contents"></textarea>
           </div>
           <div class="mb-10" v-if="0 < fileNames.length">

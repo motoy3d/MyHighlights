@@ -31,7 +31,7 @@
               </v-ons-select>
             </div>
             <div class="space">
-              <textarea class="textarea w-100p" rows="10" placeholder="本文"
+              <textarea class="textarea w-100p" rows="16" placeholder="本文"
               v-model="contents"></textarea>
             </div>
             <!--既存ファイル一覧-->
