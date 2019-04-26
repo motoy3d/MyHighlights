@@ -3,29 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Category;
-use App\Config;
+use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
-use App\Mail\PostNotification;
-use App\Member;
 use App\Post;
 use App\PostAttachment;
-use App\PostComment;
-use App\PostCommentAttachment;
 use App\PostResponse;
 use App\Questionnaire;
 use App\User;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
 
 /**
  * Class PostController
@@ -34,6 +26,7 @@ use Illuminate\Support\Facades\Session;
  */
 class PostController extends Controller
 {
+  use ResizeImage;
   /**
    * ユーザーのチームの投稿リストを返す。
    *
@@ -186,7 +179,7 @@ class PostController extends Controller
       ->select(['posts.*', 'create_user.name as created_name',
         'update_user.name as updated_name', 'categories.name as category_name'])
       ->where('posts.id',$id)
-      ->where('posts.team_id',Cookie::get('current_team_id'))
+      ->where('posts.team_id', Cookie::get('current_team_id'))
       ->first();
     if (!$post) {// ヒットしない場合は404
       return response()->json(null, 404);
@@ -280,9 +273,13 @@ class PostController extends Controller
     // コメント&コメント添付
     $comments = DB::table('post_comments')
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
+      ->leftJoin('members', function($join) {
+        $join->on('post_comments.user_id', '=', 'members.user_id')
+        ->where('team_id', Cookie::get('current_team_id'));
+      })
       ->select(
         'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
-        'like_user_ids', 'post_comments.user_id', 'users.name')
+        'like_user_ids', 'post_comments.user_id', 'users.name', 'members.prof_img_filename')
       ->where('post_id', $post->id)
       ->orderByDesc('post_comments.created_at')
       ->get();
@@ -350,8 +347,6 @@ class PostController extends Controller
     $post->notification_flg = $request->notification_flg;
     $post->updated_id = Auth::id();
     $post->save();
-Log::info("post=");
-    Log::info($post);
 
     $this->saveAttachment($request, $post);
     return Response::json($post);
@@ -415,6 +410,11 @@ Log::info("post=");
         $originalFilename = $file->getClientOriginalName();
         // ファイル保存
         $filePath = $file->storePublicly('public/post_attachment');
+        // 画像リサイズ
+        $extensions = ['jpg','jpeg','png','gif','bmp'];
+        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+          $this->resizeImage($filePath);
+        }
         // URLのために置換
         $filePath = str_replace('public/', 'storage/', $filePath);
         Log::info("saveAttachmnt");
