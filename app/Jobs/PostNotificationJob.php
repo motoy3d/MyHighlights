@@ -137,29 +137,46 @@ class PostNotificationJob implements ShouldQueue
       Log::info('LINE送信(' . $no++ . '/' . $totalCount . ') ' . $user->id);
       try {
         if (!$user->line_access_token) {
-          Log::info('access_tokenなし.ユーザーID=' . $user->id);
+          Log::error('access_tokenなし.ユーザーID=' . $user->id);
           continue;
         }
         // LINE送信実行
 //        if (1 < count($user->teams())) {  //複数チームに所属している場合はチーム名を入れる。
 //          $message = '[' . $team->name . '] ' . $message;
 //        }
-        $client = new Client();
-        $client->post(self::LINE_NOTIFY_SEND_URL, [
-          'headers' => [
-            'Content-Type'  => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Bearer ' . $user->line_access_token
-          ],
-          'form_params' => [
-            'message' => $message
-          ]
-        ]);
+        $this->postLINE($user, $message);
         sleep(1);
       } catch(\Exception $ex) {
-        Log::error('LINE送信エラー: ' . $ex->getMessage());
+        Log::error('LINE送信エラー1: ' . $ex->getMessage());
+        // エラー発生したら10秒置いて１回だけリトライ
+        try {
+          sleep(10);
+          $this->postLINE($user, $message);
+        } catch(\Exception $ex) {
+          Log::error('LINE送信エラー2: ' . $ex->getMessage());
+        }
       }
     }
     $runningTime =  microtime(true) - $startTime;
     Log::info('LINE送信処理時間: ' . $runningTime . ' [s]');
+  }
+
+  /**
+   * LINEへの送信のためにAPIにPOSTする。
+   * @param $user
+   * @param string $message
+   */
+  private function postLINE($user, string $message): void
+  {
+    $client = new Client();
+    $client->post(self::LINE_NOTIFY_SEND_URL, [
+      'headers' => [
+        'Content-Type' => 'application/x-www-form-urlencoded',
+        'Authorization' => 'Bearer ' . $user->line_access_token
+      ],
+      'form_params' => [
+        'message' => $message
+      ]
+    ]);
   }
 }
