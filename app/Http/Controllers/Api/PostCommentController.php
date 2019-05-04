@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
 use App\Post;
 use App\PostComment;
@@ -13,11 +14,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Intervention\Image\Facades\Image;
 
 class PostCommentController extends Controller
 {
+  use ResizeImage;
   /**
    * 投稿に対するコメントをpost_commentテーブルに保存する。
    *
@@ -40,13 +44,24 @@ class PostCommentController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
-
+Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
     if ($request->allFiles()) { //添付がある場合
+//      $allowedfileExtension=['pdf','jpg','jpeg','png','gif','xlsx','docx'];
       $files = $request->file('comment_files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
+//        $extension = $file->getClientOriginalExtension();
+//        if (!in_array($extension,$allowedfileExtension)) {
+//
+//        }
         // ファイル保存
         $filePath = $file->storePublicly('public/comment_attachment');
+        // 画像リサイズ
+        $extensions = ['jpg','jpeg','png','gif','bmp'];
+        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+          $this->resizeImage($filePath);
+        }
+
         // URLのために置換
         $filePath = str_replace('public/', 'storage/', $filePath);
         $postCommentAttachment = PostCommentAttachment::create([
@@ -102,5 +117,4 @@ class PostCommentController extends Controller
     $post->save();
     return Response::json($count);
   }
-
 }

@@ -136,19 +136,17 @@ class ScheduleNotificationJob implements ShouldQueue
           continue;
         }
         // LINE送信実行
-        $client = new Client();
-        $client->post(self::LINE_NOTIFY_SEND_URL, [
-          'headers' => [
-            'Content-Type'  => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Bearer ' . $user->line_access_token
-          ],
-          'form_params' => [
-            'message' => $message
-          ]
-        ]);
+        $this->postLINE($user, $message);
         sleep(1);
       } catch(\Exception $ex) {
         Log::error('LINE送信エラー: ' . $ex->getMessage());
+        // エラー発生したら10秒置いて１回だけリトライ
+        try {
+          sleep(10);
+          $this->postLINE($user, $message);
+        } catch(\Exception $ex) {
+          Log::error('LINE送信エラー2: ' . $ex->getMessage());
+        }
       }
     }
     $runningTime =  microtime(true) - $startTime;
@@ -164,5 +162,24 @@ class ScheduleNotificationJob implements ShouldQueue
       . '(' . $weekday[$date->format("w")] . ') '
       . $this->schedule->title;
     return $title;
+  }
+
+  /**
+   * LINEへの送信のためにAPIにPOSTする。
+   * @param $user
+   * @param string $message
+   */
+  private function postLINE($user, string $message): void
+  {
+    $client = new Client();
+    $client->post(self::LINE_NOTIFY_SEND_URL, [
+      'headers' => [
+        'Content-Type' => 'application/x-www-form-urlencoded',
+        'Authorization' => 'Bearer ' . $user->line_access_token
+      ],
+      'form_params' => [
+        'message' => $message
+      ]
+    ]);
   }
 }
