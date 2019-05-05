@@ -139,14 +139,14 @@ class ScheduleNotificationJob implements ShouldQueue
         $this->postLINE($user, $message);
         sleep(1);
       } catch(\Exception $ex) {
-        Log::error('LINE送信エラー: ' . $ex->getMessage());
-        // エラー発生したら10秒置いて１回だけリトライ
-        try {
-          sleep(10);
-          $this->postLINE($user, $message);
-        } catch(\Exception $ex) {
-          Log::error('LINE送信エラー2: ' . $ex->getMessage());
-        }
+        Log::error('LINE送信エラー1: ' . $ex->getMessage());
+//        // エラー発生したら10秒置いて１回だけリトライ
+//        try {
+//          sleep(10);
+//          $this->postLINE($user, $message);
+//        } catch(\Exception $ex) {
+//          Log::error('LINE送信エラー2: ' . $ex->getMessage());
+//        }
       }
     }
     $runningTime =  microtime(true) - $startTime;
