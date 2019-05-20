@@ -55,7 +55,9 @@ class QuestionnaireCsvController extends Controller
     $answersBuilder = DB::table('users')
       ->join('members', function(JoinClause $join) use ($quetionnare, $post) {
         $join->on('users.id', '=', 'members.user_id')
-        ->where('members.team_id', '=', $post->team_id);
+        ->where('members.team_id', '=', $post->team_id)
+        ->whereNull('users.withdrawal_date')
+        ->whereNull('members.withdrawal_date');
       });
 
     $quetionnare_id = $quetionnare->id;
