@@ -139,18 +139,23 @@
                 <v-ons-col>
                   <div class="mt-10 ml-15" v-for="comment in schedule.comments" :key="comment.id">
                     <!--<hr class="mt-15">-->
-                    <div>
-                      <span class="bold">
-                        {{ comment.created_name }}
-                      </span>
-                      <span class="updated_at">
-                        <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
-                          {{ comment.created_at | moment("from") }}　
-                        </template>
-                        <template v-else>
-                          {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
-                        </template>
-                      </span>
+                    <div class="mb-10">
+                      <div class="fl-left">
+                        <img :src="'/storage/prof/' + comment.prof_img_filename" class="prof_img_xs">
+                      </div>
+                      <div>
+                        <span class="bold">
+                          {{ comment.created_name }}
+                        </span>
+                        <span class="updated_at">
+                          <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
+                            {{ comment.created_at | moment("from") }}　
+                          </template>
+                          <template v-else>
+                            {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
+                          </template>
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <div class="speech-bubble">
