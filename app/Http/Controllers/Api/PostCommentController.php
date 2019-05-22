@@ -57,7 +57,7 @@ Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
         // ファイル保存
         $filePath = $file->storePublicly('public/comment_attachment');
         // 画像リサイズ
-        $extensions = ['jpg','jpeg','png','gif','bmp'];
+        $extensions = ['jpg','JPG','jpeg','JPEG','png','PNG','gif','GIF','bmp','BMP'];
         if (in_array($file->getClientOriginalExtension(), $extensions)) {
           $this->resizeImage($filePath);
         }
