@@ -86,20 +86,21 @@
                     <tr v-for="(q, index) in questionnaire.items" :key="index">
                       <td>{{ q.text }}</td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </span>
                         <span v-else>0</span>
                       </td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['△']"> {{ q.answerCounts['△'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['△']"> {{ q.answerCounts['△'] }} </span>
                         <span v-else>0</span>
                       </td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['✕']"> {{ q.answerCounts['✕'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['✕']"> {{ q.answerCounts['✕'] }} </span>
                         <span v-else>0</span>
                       </td>
                     </tr>
                   </table>
                 </div>
+                <a href="#" class="mt-5 fl-right" @click="showQuestionnaireModal()">アンケート選択肢追加</a>
               </v-ons-col>
             </v-ons-row>
 
@@ -120,6 +121,51 @@
         </template>
       </div>
     </div>
+
+    <!-- アンケート項目追加画面Modal -->
+    <v-ons-modal id="questionnaireModal" v-if="questionnaire">
+      <form id="createQuestionnaireForm" action="#" method="POST" v-on:submit.prevent="post">
+        <div class="questionnaire_container p-10">
+          <div class="row">
+            <div class="col space">
+              <div class="right">
+                <v-ons-icon icon="fa-close" size="24px" class="gray"
+                            @click="hideQuestionnaireModal();"></v-ons-icon>
+              </div>
+              <h4 class="mt-5">アンケート選択肢追加</h4>
+              <div>
+                <table class="questionnaire_table">
+                  <tr v-for="(q, index) in questionnaire.items" :key="index">
+                    <td class="left">{{ q.text }}</td>
+                  </tr>
+                </table>
+              </div>
+              <template v-for="(selection, index) in added_questionnaire_selections_tmp">
+                <div :class="index === 0? 'mt-30' : 'mt-10'" :key="index">
+                  <v-ons-input modifier="border" :placeholder="'選択肢'" class="w-90p"
+                               v-model="selection.text"></v-ons-input>
+                  <v-ons-icon icon="fa-trash" class="delete_selection_icon"
+                              @click="deleteQuestionnaireSelection(index);"></v-ons-icon>
+                </div>
+              </template>
+              <div class="mt-10 left" v-if="added_questionnaire_selections_tmp.length <= 7">
+                <v-ons-button class="small"  modifier="quiet" ripple
+                              @click="addQuestionnaireSelection()">
+                  <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
+                  選択肢追加
+                </v-ons-button>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-10">
+            <div class="space">
+              <v-ons-button class="plr-30"
+                            @click="saveQuestionnaire();">OK</v-ons-button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </v-ons-modal>
   </v-ons-page>
 </template>
 
@@ -174,6 +220,9 @@
         post_attachments: [],
         questionnaire: null,
         user: {},
+        questionnaire_title: null,
+        added_questionnaire_selections_tmp: [{text:''}],
+        added_questionnaire_selections: null,
         maxFiles: 20
       }
     },
@@ -200,9 +249,9 @@
         formData.append('contents', this.contents);
         formData.append('category_id', this.selected_category_id);
         formData.append('notification_flg', this.notification_flg? 1 : 0);
-        if (this.questionnaire_title) {
+        if (this.questionnaire) {
           formData.append('questionnaire_title', this.questionnaire_title);
-          formData.append('questionnaire_selections', JSON.stringify(this.questionnaire_selections));
+          formData.append('added_questionnaire_selections', JSON.stringify(this.added_questionnaire_selections));
         }
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
@@ -231,6 +280,7 @@
         ;
       },
       afterPost() {
+        this.added_questionnaire_selections = null;
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/load', this.$http);
       },
@@ -264,8 +314,27 @@
         }
         return false;
       },
+      showQuestionnaireModal() {
+        $('#questionnaireModal').show();
+      },
+      hideQuestionnaireModal() {
+        $('#questionnaireModal').hide();
+      },
+      saveQuestionnaire() {
+        // モーダルを閉じる。DB保存は投稿編集画面で「保存」を押した時に実行される。
+        // ディープコピー
+        this.added_questionnaire_selections = JSON.parse(JSON.stringify(this.added_questionnaire_selections_tmp));
+        this.questionnaire.items = this.questionnaire.items.concat(this.added_questionnaire_selections);
+        console.log(this.questionnaire.items);
+        this.hideQuestionnaireModal();
+      },
+      addQuestionnaireSelection() {
+        this.added_questionnaire_selections_tmp.push({text: ''});
+      },
+      deleteQuestionnaireSelection(index) {
+        this.added_questionnaire_selections_tmp.splice(index, 1);
+      },
       deleteQuestionnaire() {
-        this.questionnaire = null;
       }
     }
   };
