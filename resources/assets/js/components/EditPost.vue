@@ -40,6 +40,8 @@
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
+                    <v-ons-icon icon="fa-trash" class="fl-right gray mt-5 ml-15 mr-10"
+                                @click="deleteFileDb(att.id);"></v-ons-icon>
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
@@ -48,6 +50,8 @@
                 </div>
                 <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
+                  <v-ons-icon icon="fa-trash" class="fl-right gray mt-5 ml-15 mr-10"
+                              @click="deleteFileDb(att.id);"></v-ons-icon>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                 size="22px"></v-ons-icon>
@@ -86,20 +90,21 @@
                     <tr v-for="(q, index) in questionnaire.items" :key="index">
                       <td>{{ q.text }}</td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['◯']"> {{ q.answerCounts['◯'] }} </span>
                         <span v-else>0</span>
                       </td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['△']"> {{ q.answerCounts['△'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['△']"> {{ q.answerCounts['△'] }} </span>
                         <span v-else>0</span>
                       </td>
                       <td class="answer">
-                        <span v-if="q.answerCounts['✕']"> {{ q.answerCounts['✕'] }} </span>
+                        <span v-if="q.answerCounts && q.answerCounts['✕']"> {{ q.answerCounts['✕'] }} </span>
                         <span v-else>0</span>
                       </td>
                     </tr>
                   </table>
                 </div>
+                <a href="#" class="mt-5 fl-right" @click="showQuestionnaireModal()">アンケート選択肢追加</a>
               </v-ons-col>
             </v-ons-row>
 
@@ -120,43 +125,58 @@
         </template>
       </div>
     </div>
+
+    <!-- アンケート項目追加画面Modal -->
+    <v-ons-modal id="questionnaireModal" v-if="questionnaire">
+      <form id="createQuestionnaireForm" action="#" method="POST" v-on:submit.prevent="post">
+        <div class="questionnaire_container p-10">
+          <div class="row">
+            <div class="col space">
+              <div class="right">
+                <v-ons-icon icon="fa-close" size="24px" class="gray"
+                            @click="hideQuestionnaireModal();"></v-ons-icon>
+              </div>
+              <h4 class="mt-5">アンケート選択肢追加</h4>
+              <div>
+                <table class="questionnaire_table">
+                  <tr v-for="(q, index) in questionnaire.items" :key="index">
+                    <td class="left">{{ q.text }}</td>
+                  </tr>
+                </table>
+              </div>
+              <template v-for="(selection, index) in added_questionnaire_selections_tmp">
+                <div :class="index === 0? 'mt-30' : 'mt-10'" :key="index">
+                  <v-ons-input modifier="border" :placeholder="'選択肢'" class="w-90p"
+                               v-model="selection.text"></v-ons-input>
+                  <v-ons-icon icon="fa-trash" class="delete_selection_icon"
+                              @click="deleteQuestionnaireSelection(index);"></v-ons-icon>
+                </div>
+              </template>
+              <div class="mt-10 left" v-if="added_questionnaire_selections_tmp.length <= 7">
+                <v-ons-button class="small"  modifier="quiet" ripple
+                              @click="addQuestionnaireSelection()">
+                  <v-ons-icon icon="fa-plus" class="mr-5"></v-ons-icon>
+                  選択肢追加
+                </v-ons-button>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-10">
+            <div class="space">
+              <v-ons-button class="plr-30"
+                            @click="saveQuestionnaire();">OK</v-ons-button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </v-ons-modal>
   </v-ons-page>
 </template>
 
 <script>
   export default {
-    beforeCreate() {
-      this.loading = true;
-      // console.log('start load');
-      let post_id = this.$store.state.article.post_id;
-      this.$http.get('/api/posts/' + post_id)
-        .then((response)=>{
-          let post = response.data.post;
-          console.log(post);
-          this.title = post.title;
-          this.categories = response.data.categories;
-          for (let i=0; i<this.categories.length; i++) {
-            let cat = this.categories[i];
-            console.log(cat.id + ":" + post.category_id);
-            if (cat.id === post.category_id) {
-              this.selected_category = cat.id;
-            }
-          }
-          this.contents = post.content;
-          this.notification_flg = post.notification_flg === 1;
-          this.post_attachments = response.data.post_attachments;
-          this.questionnaire = response.data.questionnaire;
-          this.user = response.data.user;
-          this.loading = false;
-        })
-        .catch(error => {
-          console.log(error);
-          this.errored = true;
-          if (error.response.status === 401) {window.location.href = "/login";}
-          this.loading = false;
-        })
-        // .finally(() => this.loading = false);
-      ;
+    mounted() {
+      this.load();
     },
     data() {
       return {
@@ -174,15 +194,52 @@
         post_attachments: [],
         questionnaire: null,
         user: {},
+        questionnaire_title: null,
+        added_questionnaire_selections_tmp: [{text:''}],
+        added_questionnaire_selections: null,
         maxFiles: 20
       }
     },
+    props: ['reloadArticle'],
     computed: {
       postBtnColor: {
         get() {return this.posting? "white" : "";}
       }
     },
     methods: {
+      load() {
+        this.loading = true;
+        // console.log('start load');
+        let post_id = this.$store.state.article.post_id;
+        this.$http.get('/api/posts/' + post_id)
+          .then((response)=>{
+            let post = response.data.post;
+            // console.log(post);
+            this.title = post.title;
+            this.categories = response.data.categories;
+            for (let i=0; i<this.categories.length; i++) {
+              let cat = this.categories[i];
+              // console.log(cat.id + ":" + post.category_id);
+              if (cat.id === post.category_id) {
+                this.selected_category = cat.id;
+              }
+            }
+            this.contents = post.content;
+            this.notification_flg = post.notification_flg === 1;
+            this.post_attachments = response.data.post_attachments;
+            this.questionnaire = response.data.questionnaire;
+            this.user = response.data.user;
+            this.loading = false;
+          })
+          .catch(error => {
+            console.log(error);
+            this.errored = true;
+            if (error.response.status === 401) {window.location.href = "/login";}
+            this.loading = false;
+          })
+        // .finally(() => this.loading = false);
+        ;
+      },
       update() {
         //TODO validate
         if (this.posting) {
@@ -200,9 +257,9 @@
         formData.append('contents', this.contents);
         formData.append('category_id', this.selected_category_id);
         formData.append('notification_flg', this.notification_flg? 1 : 0);
-        if (this.questionnaire_title) {
+        if (this.questionnaire) {
           formData.append('questionnaire_title', this.questionnaire_title);
-          formData.append('questionnaire_selections', JSON.stringify(this.questionnaire_selections));
+          formData.append('added_questionnaire_selections', JSON.stringify(this.added_questionnaire_selections));
         }
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
@@ -231,8 +288,10 @@
         ;
       },
       afterPost() {
+        this.added_questionnaire_selections = null;
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/load', this.$http);
+        this.reloadArticle();
       },
       // ファイルが選択された時
       onFileSet(event) {
@@ -254,9 +313,33 @@
           this.fileNames.push(upFiles[i].name);
         }
       },
+      // 今回追加したがアップロード前のファイルを削除
       deleteFile(index) {
         this.files.splice(index, 1);
         this.fileNames.splice(index, 1);
+      },
+      // すでにアップ済み&DB登録済みのファイルを削除
+      deleteFileDb(post_attachment_id) {
+        let self = this;
+        this.$ons.notification.confirm("このファイルを削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.$http.delete('/api/post_attachments/' + post_attachment_id)
+              .then((response)=>{
+                console.log(response.data);
+                self.load();
+                self.loading = false;
+                self.reloadArticle(); //Article画面リロード
+              })
+              .catch(error => {
+                console.log(error);
+                self.errored = true;
+                if (error.response.status === 401) {
+                  window.location.href = "/login"; return;
+                }
+                self.loading = false;
+              })
+          });
       },
       isImage(fileExtension) {
         if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
@@ -264,8 +347,27 @@
         }
         return false;
       },
+      showQuestionnaireModal() {
+        $('#questionnaireModal').show();
+      },
+      hideQuestionnaireModal() {
+        $('#questionnaireModal').hide();
+      },
+      saveQuestionnaire() {
+        // モーダルを閉じる。DB保存は投稿編集画面で「保存」を押した時に実行される。
+        // ディープコピー
+        this.added_questionnaire_selections = JSON.parse(JSON.stringify(this.added_questionnaire_selections_tmp));
+        this.questionnaire.items = this.questionnaire.items.concat(this.added_questionnaire_selections);
+        console.log(this.questionnaire.items);
+        this.hideQuestionnaireModal();
+      },
+      addQuestionnaireSelection() {
+        this.added_questionnaire_selections_tmp.push({text: ''});
+      },
+      deleteQuestionnaireSelection(index) {
+        this.added_questionnaire_selections_tmp.splice(index, 1);
+      },
       deleteQuestionnaire() {
-        this.questionnaire = null;
       }
     }
   };

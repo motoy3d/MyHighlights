@@ -320,30 +320,28 @@ class PostController extends Controller
    */
   public function update(Request $request, $id)
   {
-    //TODO validate
-    $questionnaire = null;
-    Log::info("questionnaire_selections:" . $request->questionnaire_selections);
-    if ($request->questionnaire_title && $request->questionnaire_selections) {
-      $questionnaire = Questionnaire::create([
-        "title" => $request->questionnaire_title,
-        "items" => $request->questionnaire_selections, // json形式 [{"text":"質問1"},{"text":"質問2"}]
-        "created_id" => Auth::id(),
-        "updated_id" => Auth::id()
-      ]);
-      Log::info('アンケート');
-      Log::info($questionnaire);
-    }
-
     $post = Post::findOrFail($id);
     if (!$post || $post->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
+
+    //TODO validate
+    $questionnaire = null;
+    Log::info("added_questionnaire_selections:" . $request->added_questionnaire_selections);
+    if ($request->added_questionnaire_selections && $request->added_questionnaire_selections != 'null') {
+      $questionnaire = Questionnaire::find($post->questionnaire_id);
+      // 追加の選択肢を結合
+      $questionnaire->items = json_encode(
+        array_merge(json_decode($questionnaire->items), json_decode($request->added_questionnaire_selections))
+      );
+      $questionnaire->updated_id = Auth::id();
+      $count = $questionnaire->save();
+      Log::info('アンケート更新:' . $count);
+    }
+
     $post->title = $request->title;
     $post->content = $request->contents;
     $post->category_id = $request->category_id;
-    if ($questionnaire) { //新規アンケート作成の場合のみセット。
-      $post->questionnaire_id = $questionnaire->id;
-    }
     $post->notification_flg = $request->notification_flg;
     $post->updated_id = Auth::id();
     $post->save();

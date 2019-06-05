@@ -33,7 +33,11 @@ class ScheduleCommentController extends Controller
     $scheduleComments = DB::table('schedule_comments')
       ->leftJoin('users as create_user',
         'schedule_comments.created_id', '=', 'create_user.id')
-      ->select(['schedule_comments.*', 'create_user.name as created_name'])
+      ->leftJoin('members', function($join) {
+        $join->on('schedule_comments.user_id', '=', 'members.user_id')
+          ->where('team_id', Cookie::get('current_team_id'));
+      })
+      ->select(['schedule_comments.*', 'create_user.name as created_name','members.prof_img_filename'])
       ->where('schedule_comments.schedule_id', $schedule_id)
       ->orderBy('schedule_comments.created_at', 'desc')
       ->get();

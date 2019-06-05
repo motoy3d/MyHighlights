@@ -136,26 +136,38 @@
           <v-ons-col>
             <div class="mt-10 ml-15" v-for="comment in comments" :key="comment.id">
               <!--<hr class="mt-15">-->
-              <div>
-                <span class="bold">
-                  {{ comment.name }}
-                </span>
-                <span class="updated_at">
-                  <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
-                    {{ comment.created_at | moment("from")}}　
-                  </template>
-                  <template v-else>
-                    {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
-                  </template>
-                </span>
+              <div class="mb-10">
+                <div class="fl-left">
+                  <img :src="'/storage/prof/' + comment.prof_img_filename" class="prof_img_xs">
+                </div>
+                <div>
+                  <span class="bold">
+                    {{ comment.name }}
+                  </span>
+                  <span class="updated_at">
+                    <template v-if="moment(new Date()).diff(moment(comment.created_at), 'days') <= 2">
+                      {{ comment.created_at | moment("from")}}　
+                    </template>
+                    <template v-else>
+                      {{ comment.created_at | moment('Y.M.D(dd) H:mm') }}
+                    </template>
+                  </span>
+                </div>
               </div>
               <div>
                 <div class="speech-bubble">
                   <span class="comment break" v-html="replaceATag(comment.comment_text)"></span>
-                  <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
-                    <v-ons-icon icon="fa-trash" class="delete_comment_icon"
-                      @click="confirmDeleteComment(comment.id)"></v-ons-icon>
-                  </span>
+                  <!--<div class="mt-5">-->
+                    <!--<v-ons-icon icon="fa-heart" class="heart" :style="isHeartOn? '' : 'font-weight:400'"-->
+                                <!--@click="toggleHeart();">-->
+                      <!--&lt;!&ndash;<span class="ml-5 small gray">いいね</span>&ndash;&gt;-->
+                      <!--<span class="like-count small ml-5">{{ 10 }}</span>-->
+                    <!--</v-ons-icon>-->
+                    <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
+                      <v-ons-icon icon="fa-trash" class="delete_comment_icon mt-5"
+                                @click="confirmDeleteComment(comment.id)"></v-ons-icon>
+                    </span>
+                  <!--</div>-->
                   <p v-for="att in comment.attachments" :key="att.id">
                     <a :href="att.file_path">
                       <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
@@ -353,7 +365,8 @@
       openEditPost() {
         this.$store.commit('navigator/push', {
           extends: EditPost,
-          onsNavigatorOptions: {animation: 'lift'}
+          onsNavigatorOptions: {animation: 'lift'},
+          onsNavigatorProps: {reloadArticle: this.load} //編集画面で編集して戻る時にリロードするために渡す
         });
       },
       toggleHeart() {
@@ -602,18 +615,17 @@
     font-size: 16px;
   }
   .like_off {
-    color: #cccccc;
-    font-size: 24px;
+    color: #606060;
+    font-size: 18px;
     margin-top: 5px;
   }
   .like_on {
     color: #ff6060;
-    font-size: 24px;
+    font-size: 18px;
     margin-top: 5px;
   }
   .like-count {
     font-size: 13px;
-    margin: 0 0 0 6px;
   }
   .comment {
     font-size: 14px;
@@ -687,5 +699,11 @@
     -webkit-overflow-scrolling: touch;
     -ms-overflow-style: none;
     -ms-scroll-snap-type: mandatory;
+  }
+  .prof_img_xs {
+    width: 24px;
+    height: 24px;
+    margin-left: 5px;
+    margin-right: 3px;
   }
 </style>
