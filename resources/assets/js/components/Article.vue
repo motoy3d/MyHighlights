@@ -365,7 +365,8 @@
       openEditPost() {
         this.$store.commit('navigator/push', {
           extends: EditPost,
-          onsNavigatorOptions: {animation: 'lift'}
+          onsNavigatorOptions: {animation: 'lift'},
+          onsNavigatorProps: {reloadArticle: this.load} //編集画面で編集して戻る時にリロードするために渡す
         });
       },
       toggleHeart() {

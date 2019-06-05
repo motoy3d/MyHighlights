@@ -40,6 +40,8 @@
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
                   <div>
+                    <v-ons-icon icon="fa-trash" class="fl-right gray mt-5 ml-15 mr-10"
+                                @click="deleteFileDb(att.id);"></v-ons-icon>
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
@@ -48,6 +50,8 @@
                 </div>
                 <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
+                  <v-ons-icon icon="fa-trash" class="fl-right gray mt-5 ml-15 mr-10"
+                              @click="deleteFileDb(att.id);"></v-ons-icon>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                 size="22px"></v-ons-icon>
@@ -171,38 +175,8 @@
 
 <script>
   export default {
-    beforeCreate() {
-      this.loading = true;
-      // console.log('start load');
-      let post_id = this.$store.state.article.post_id;
-      this.$http.get('/api/posts/' + post_id)
-        .then((response)=>{
-          let post = response.data.post;
-          console.log(post);
-          this.title = post.title;
-          this.categories = response.data.categories;
-          for (let i=0; i<this.categories.length; i++) {
-            let cat = this.categories[i];
-            console.log(cat.id + ":" + post.category_id);
-            if (cat.id === post.category_id) {
-              this.selected_category = cat.id;
-            }
-          }
-          this.contents = post.content;
-          this.notification_flg = post.notification_flg === 1;
-          this.post_attachments = response.data.post_attachments;
-          this.questionnaire = response.data.questionnaire;
-          this.user = response.data.user;
-          this.loading = false;
-        })
-        .catch(error => {
-          console.log(error);
-          this.errored = true;
-          if (error.response.status === 401) {window.location.href = "/login";}
-          this.loading = false;
-        })
-        // .finally(() => this.loading = false);
-      ;
+    mounted() {
+      this.load();
     },
     data() {
       return {
@@ -226,12 +200,46 @@
         maxFiles: 20
       }
     },
+    props: ['reloadArticle'],
     computed: {
       postBtnColor: {
         get() {return this.posting? "white" : "";}
       }
     },
     methods: {
+      load() {
+        this.loading = true;
+        // console.log('start load');
+        let post_id = this.$store.state.article.post_id;
+        this.$http.get('/api/posts/' + post_id)
+          .then((response)=>{
+            let post = response.data.post;
+            // console.log(post);
+            this.title = post.title;
+            this.categories = response.data.categories;
+            for (let i=0; i<this.categories.length; i++) {
+              let cat = this.categories[i];
+              // console.log(cat.id + ":" + post.category_id);
+              if (cat.id === post.category_id) {
+                this.selected_category = cat.id;
+              }
+            }
+            this.contents = post.content;
+            this.notification_flg = post.notification_flg === 1;
+            this.post_attachments = response.data.post_attachments;
+            this.questionnaire = response.data.questionnaire;
+            this.user = response.data.user;
+            this.loading = false;
+          })
+          .catch(error => {
+            console.log(error);
+            this.errored = true;
+            if (error.response.status === 401) {window.location.href = "/login";}
+            this.loading = false;
+          })
+        // .finally(() => this.loading = false);
+        ;
+      },
       update() {
         //TODO validate
         if (this.posting) {
@@ -283,6 +291,7 @@
         this.added_questionnaire_selections = null;
         this.$store.commit('navigator/pop');
         this.$store.dispatch('timeline/load', this.$http);
+        this.reloadArticle();
       },
       // ファイルが選択された時
       onFileSet(event) {
@@ -304,9 +313,33 @@
           this.fileNames.push(upFiles[i].name);
         }
       },
+      // 今回追加したがアップロード前のファイルを削除
       deleteFile(index) {
         this.files.splice(index, 1);
         this.fileNames.splice(index, 1);
+      },
+      // すでにアップ済み&DB登録済みのファイルを削除
+      deleteFileDb(post_attachment_id) {
+        let self = this;
+        this.$ons.notification.confirm("このファイルを削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
+          .then(function(ok) {
+            if(!ok) {return;}
+            self.$http.delete('/api/post_attachments/' + post_attachment_id)
+              .then((response)=>{
+                console.log(response.data);
+                self.load();
+                self.loading = false;
+                self.reloadArticle(); //Article画面リロード
+              })
+              .catch(error => {
+                console.log(error);
+                self.errored = true;
+                if (error.response.status === 401) {
+                  window.location.href = "/login"; return;
+                }
+                self.loading = false;
+              })
+          });
       },
       isImage(fileExtension) {
         if (['jpg','jpeg','png','gif','bmp'].includes(fileExtension.toLowerCase())) {
