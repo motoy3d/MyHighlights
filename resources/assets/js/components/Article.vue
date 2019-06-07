@@ -39,7 +39,7 @@
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
-                  <div>
+                  <div v-if="isEnableImageDownloadButton">
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
@@ -230,6 +230,7 @@
         post: {},
         post_responses: {},
         post_attachments: {},
+        isEnableImageDownloadButton: !this.$ons.platform.isIOS(),
         questionnaire: {},
         questionnaire_answers: [],
         answer_user_names: [],
@@ -681,6 +682,7 @@
   }
   .image_in_post {
     max-width: 100%;
+    -webkit-touch-callout: default !important;
   }
   .messageBtn {
     width: 20px;
