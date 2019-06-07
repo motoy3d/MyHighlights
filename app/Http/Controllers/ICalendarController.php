@@ -60,6 +60,8 @@ class ICalendarController extends Controller
       $end = new Carbon($schedule->schedule_date);
       if ($schedule->time_to) {
         $end = new Carbon($schedule->schedule_date . ' ' . $schedule->time_to);
+      } else if ($schedule->time_from) {//time_fromが設定されていてtime_toが設定されていない場合
+        $end = $start;
       }
 
       $event = new \Eluceo\iCal\Component\Event();
