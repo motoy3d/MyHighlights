@@ -525,7 +525,7 @@
         this.$store.commit('navigator/push', {
           extends: IFrameWindow,
           onsNavigatorOptions: {animation: 'lift'},
-          onsNavigatorProps: {url: filePath}
+          onsNavigatorProps: {url: filePath, originalFileName: originalFileName}
         });
       }
     }
