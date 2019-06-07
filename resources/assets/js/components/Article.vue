@@ -48,6 +48,8 @@
                 </div>
                 <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
+                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"
+                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
@@ -221,6 +223,7 @@
 
 <script>
   import EditPost from './EditPost.vue';
+  import IFrameWindow from './IFrameWindow.vue';
   export default {
     mounted() {
       this.load();
@@ -517,6 +520,13 @@
       },
       replaceATag(text) {
         return window.fn.replaceATag(text);
+      },
+      openFile(filePath, originalFileName) {
+        this.$store.commit('navigator/push', {
+          extends: IFrameWindow,
+          onsNavigatorOptions: {animation: 'lift'},
+          onsNavigatorProps: {url: filePath}
+        });
       }
     }
   };
