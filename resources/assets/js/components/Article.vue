@@ -35,11 +35,11 @@
                 {{ post.created_at | moment('Y.M.D(dd) H:mm') }}
                 　{{ post.created_name }}</p>
             </div>
-            <div class="entry_content"><span class="entry_text" v-html="replaceATag(post.content)"></span>
+            <div class="entry_content2"><span class="entry_text" v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
-                  <div>
+                  <div v-if="isEnableImageDownloadButton">
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
@@ -48,10 +48,14 @@
                 </div>
                 <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
+<!--                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"-->
+<!--                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>-->
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
+<!-- iOSだと横幅が大きくなってしまう -->
+<!--                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>-->
                 </div>
               </template>
             </div>
@@ -221,6 +225,7 @@
 
 <script>
   import EditPost from './EditPost.vue';
+  import IFrameWindow from './IFrameWindow.vue';
   export default {
     mounted() {
       this.load();
@@ -230,6 +235,7 @@
         post: {},
         post_responses: {},
         post_attachments: {},
+        isEnableImageDownloadButton: !this.$ons.platform.isIOS(),
         questionnaire: {},
         questionnaire_answers: [],
         answer_user_names: [],
@@ -516,6 +522,13 @@
       },
       replaceATag(text) {
         return window.fn.replaceATag(text);
+      },
+      openFile(filePath, originalFileName) {
+        this.$store.commit('navigator/push', {
+          extends: IFrameWindow,
+          onsNavigatorOptions: {animation: 'lift'},
+          onsNavigatorProps: {url: filePath, originalFileName: originalFileName}
+        });
       }
     }
   };
@@ -540,10 +553,11 @@
     /*font-size: 15px;*/
     /*margin: 0 0 0 5px;*/
   }
-  .entry_content {
+  .entry_content2 {
     font-size: 16px;
     text-align:left;
-    margin: 5px 0 0 5px;
+    margin: 5px 5px 0 5px;
+    width: 98%;
   }
   .entry_text {
     white-space: pre-wrap;
@@ -681,6 +695,7 @@
   }
   .image_in_post {
     max-width: 100%;
+    -webkit-touch-callout: default !important;
   }
   .messageBtn {
     width: 20px;

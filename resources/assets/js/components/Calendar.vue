@@ -628,4 +628,10 @@
   .messageBtn {
     width: 20px;
   }
+  .prof_img_xs {
+    width: 24px;
+    height: 24px;
+    margin-left: 5px;
+    margin-right: 3px;
+  }
 </style>

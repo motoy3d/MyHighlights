@@ -39,7 +39,7 @@
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
-                  <div>
+                  <div v-if="isEnableImageDownloadButton">
                     <v-ons-icon icon="fa-trash" class="fl-right gray mt-5 ml-15 mr-10"
                                 @click="deleteFileDb(att.id);"></v-ons-icon>
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
@@ -189,6 +189,7 @@
         selected_category_id: null,
         contents: "",
         notification_flg: false,
+        isEnableImageDownloadButton: !this.$ons.platform.isIOS(),
         files: [],
         fileNames: [],
         post_attachments: [],
