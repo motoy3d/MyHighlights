@@ -35,7 +35,7 @@
                 {{ post.created_at | moment('Y.M.D(dd) H:mm') }}
                 　{{ post.created_name }}</p>
             </div>
-            <div class="entry_content"><span class="entry_text" v-html="replaceATag(post.content)"></span>
+            <div class="entry_content2"><span class="entry_text" v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post">
@@ -54,7 +54,7 @@
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
-                  <iframe :src="att.file_path" width="100vw" height="480px"></iframe>
+                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>
                 </div>
               </template>
             </div>
@@ -552,10 +552,11 @@
     /*font-size: 15px;*/
     /*margin: 0 0 0 5px;*/
   }
-  .entry_content {
+  .entry_content2 {
     font-size: 16px;
     text-align:left;
-    margin: 5px 0 0 5px;
+    margin: 5px 5px 0 5px;
+    width: 100%;
   }
   .entry_text {
     white-space: pre-wrap;
