@@ -54,7 +54,7 @@
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
-                  <iframe :src="att.file_path" width="100%" height="480px"></iframe>
+                  <iframe :src="att.file_path" width="100vw" height="480px"></iframe>
                 </div>
               </template>
             </div>
