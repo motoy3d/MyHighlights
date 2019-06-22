@@ -48,12 +48,13 @@
                 </div>
                 <div v-else class="mt-30" :key="att.id">
                   <span class="break">{{ att.original_file_name }}</span>
-                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"
-                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>
+<!--                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"-->
+<!--                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>-->
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
+                  <iframe :src="att.file_path" width="100%" height="480px"></iframe>
                 </div>
               </template>
             </div>
