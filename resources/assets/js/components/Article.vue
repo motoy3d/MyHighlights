@@ -54,7 +54,8 @@
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
-                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>
+<!-- iOSだと横幅が大きくなってしまう -->
+<!--                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>-->
                 </div>
               </template>
             </div>
@@ -556,7 +557,7 @@
     font-size: 16px;
     text-align:left;
     margin: 5px 5px 0 5px;
-    width: 100%;
+    width: 98%;
   }
   .entry_text {
     white-space: pre-wrap;
