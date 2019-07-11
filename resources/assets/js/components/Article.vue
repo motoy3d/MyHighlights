@@ -47,15 +47,14 @@
                   </div>
                 </div>
                 <div v-else class="mt-30" :key="att.id">
-                  <span class="break">{{ att.original_file_name }}</span>
-<!--                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"-->
-<!--                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>-->
+                  <span class="break"><a href="#" @click="openFile('https://docs.google.com/viewer?url='
+                  + encodeURIComponent(app_url + '/' + att.file_path) + '&embedded=true'
+                  , att.original_file_name)">
+                  {{ att.original_file_name }}</a></span>
                   <a :href="att.file_path">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
-<!-- iOSだと横幅が大きくなってしまう -->
-<!--                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>-->
                 </div>
               </template>
             </div>
@@ -256,7 +255,8 @@
         },
         loading: false,
         deleting: false,
-        errored: false
+        errored: false,
+        app_url: null
       }
     },
     computed: {
@@ -293,6 +293,7 @@
             this.likes_count = this.likes? this.likes.length : 0;
             this.user = response.data.user;
             this.loading = false;
+            this.app_url = response.data.app_url;
           })
           .catch(error => {
             console.log(error);

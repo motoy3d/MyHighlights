@@ -307,7 +307,8 @@ class PostController extends Controller
       'comments' => $comments,
       'likes' => $likes,
       'categories' => $categories,
-      'user' => Auth::user()
+      'user' => Auth::user(),
+      'app_url' => env('APP_URL')
     ]);
   }
 

@@ -13,7 +13,7 @@
     </v-ons-toolbar>
     <!--<div class="h-100p w-100p">-->
     <div>
-      <iframe :src="url" width="100%" height="100%"></iframe>
+      <iframe :src="url" :width="iframeWidth" :height="iframeHeight"></iframe>
     </div>
   </v-ons-page>
 </template>
@@ -27,6 +27,12 @@
     },
     props: ['url', 'originalFileName'],
     computed: {
+      iframeWidth() {
+        return document.documentElement.clientWidth;
+      },
+      iframeHeight() {
+        return document.documentElement.clientHeight - 100;
+      }
     },
     methods: {
     }
