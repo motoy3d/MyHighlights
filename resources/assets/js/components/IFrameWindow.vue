@@ -27,7 +27,7 @@
         return document.documentElement.clientWidth;
       },
       iframeHeight() {
-        return document.documentElement.clientHeight - 100;
+        return document.documentElement.clientHeight;
       }
     },
     methods: {
