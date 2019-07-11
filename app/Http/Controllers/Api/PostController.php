@@ -14,6 +14,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -308,7 +309,7 @@ class PostController extends Controller
       'likes' => $likes,
       'categories' => $categories,
       'user' => Auth::user(),
-      'app_url' => env('APP_URL')
+      'app_url' => Config::get('app.url')
     ]);
   }
 
