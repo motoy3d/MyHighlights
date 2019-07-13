@@ -96,10 +96,12 @@ var vm = new Vue({
 
     // iPhone X系用レイアウト自動調整
     const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX()) {
+    if (this.$ons.platform.isIPhoneX() && this.$ons.isWebView()) {
+      alert('iPhoneX用設定')
       html.setAttribute('onsflag-iphonex-portrait', '');
       html.setAttribute('onsflag-iphonex-landscape', '');
     }
+    this.$ons.enableAutoStatusBarFill();
     // this.$ons.disableAutoStatusBarFill();
   }
 });
