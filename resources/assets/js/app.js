@@ -96,7 +96,8 @@ var vm = new Vue({
 
     // iPhone X系用レイアウト自動調整
     const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX() && this.$ons.isWebView()) {
+    if (this.$ons.platform.isIPhoneX() &&
+        (this.$ons.isWebView() || window.location.indexOf('launcher') != -1)) {
       alert('iPhoneX用設定')
       html.setAttribute('onsflag-iphonex-portrait', '');
       html.setAttribute('onsflag-iphonex-landscape', '');
