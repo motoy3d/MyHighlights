@@ -172,10 +172,32 @@
                     </span>
                   <!--</div>-->
                   <p v-for="att in comment.attachments" :key="att.id">
-                    <a :href="att.file_path">
-                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
-                      <span class="break">{{ att.original_file_name }}</span>
-                    </a>
+                    <span v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
+                      <img :src="att.file_path" class="image_in_post">
+                      <div v-if="isEnableImageDownloadButton">
+                        <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
+                          <v-ons-icon icon="fa-download" class="fl-right lightgray"
+                                      size="22px"></v-ons-icon>
+                        </a>
+                      </div>
+                    </span>
+                    <span v-else class="mt-30" :key="att.id">
+                      <span class="break">
+                        <a href="#" @click="openFile('https://docs.google.com/viewer?url='
+                          + encodeURIComponent(app_url + '/' + att.file_path) + '&embedded=true'
+                          , att.original_file_name)">
+                          {{ att.original_file_name }}
+                        </a>
+                      </span>
+                      <a :href="att.file_path">
+                        <v-ons-icon icon="fa-download" class="fl-right lightgray"
+                                    size="22px"></v-ons-icon>
+                      </a>
+                    </span>
+<!--                    <a :href="att.file_path">-->
+<!--                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">-->
+<!--                      <span class="break">{{ att.original_file_name }}</span>-->
+<!--                    </a>-->
                   </p>
                 </div>
               </div>
