@@ -27,7 +27,7 @@
         return document.documentElement.clientWidth;
       },
       iframeHeight() {
-        return document.documentElement.clientHeight;
+        return document.documentElement.clientHeight - 45; // 45はツールバーの分
       }
     },
     methods: {
