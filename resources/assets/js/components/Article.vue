@@ -47,15 +47,14 @@
                   </div>
                 </div>
                 <div v-else class="mt-30" :key="att.id">
-                  <span class="break">{{ att.original_file_name }}</span>
-<!--                  <v-ons-icon icon="fa-file" class="fl-right lightgray ml-15"-->
-<!--                              size="22px" @click="openFile(att.file_path, att.original_file_name)"></v-ons-icon>-->
-                  <a :href="att.file_path">
+                  <span class="break"><a href="#" @click="openFile('https://docs.google.com/viewer?url='
+                  + encodeURIComponent(app_url + '/' + att.file_path) + '&embedded=true'
+                  , att.original_file_name)">
+                  {{ att.original_file_name }}</a></span>
+                  <a :href="att.file_path" v-if="isEnableFileDownloadButton">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
-<!-- iOSだと横幅が大きくなってしまう -->
-<!--                  <iframe :src="att.file_path" style="width:96vw" height="480px"></iframe>-->
                 </div>
               </template>
             </div>
@@ -173,10 +172,32 @@
                     </span>
                   <!--</div>-->
                   <p v-for="att in comment.attachments" :key="att.id">
-                    <a :href="att.file_path">
-                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">
-                      <span class="break">{{ att.original_file_name }}</span>
-                    </a>
+                    <span v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
+                      <img :src="att.file_path" class="image_in_post">
+                      <div v-if="isEnableFileDownloadButton">
+                        <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
+                          <v-ons-icon icon="fa-download" class="fl-right lightgray"
+                                      size="22px"></v-ons-icon>
+                        </a>
+                      </div>
+                    </span>
+                    <span v-else class="mt-30" :key="att.id">
+                      <span class="break">
+                        <a href="#" @click="openFile('https://docs.google.com/viewer?url='
+                          + encodeURIComponent(app_url + '/' + att.file_path) + '&embedded=true'
+                          , att.original_file_name)">
+                          {{ att.original_file_name }}
+                        </a>
+                      </span>
+                      <a :href="att.file_path">
+                        <v-ons-icon icon="fa-download" v-if="isEnableFileDownloadButton"
+                                    class="fl-right lightgray" size="22px"></v-ons-icon>
+                      </a>
+                    </span>
+<!--                    <a :href="att.file_path">-->
+<!--                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">-->
+<!--                      <span class="break">{{ att.original_file_name }}</span>-->
+<!--                    </a>-->
                   </p>
                 </div>
               </div>
@@ -235,7 +256,7 @@
         post: {},
         post_responses: {},
         post_attachments: {},
-        isEnableImageDownloadButton: !this.$ons.platform.isIOS(),
+        isEnableFileDownloadButton: !this.$ons.platform.isIOS(),
         questionnaire: {},
         questionnaire_answers: [],
         answer_user_names: [],
@@ -256,7 +277,8 @@
         },
         loading: false,
         deleting: false,
-        errored: false
+        errored: false,
+        app_url: null
       }
     },
     computed: {
@@ -293,6 +315,7 @@
             this.likes_count = this.likes? this.likes.length : 0;
             this.user = response.data.user;
             this.loading = false;
+            this.app_url = response.data.app_url;
           })
           .catch(error => {
             console.log(error);

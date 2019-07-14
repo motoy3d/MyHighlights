@@ -2,7 +2,6 @@
   <v-ons-page id="iframe">
     <v-ons-toolbar class="navbar">
       <div class="center navbartitle">
-        <!--<v-ons-icon icon="fa-user-plus" size="20px"></v-ons-icon>-->
         <span>{{ originalFileName }}</span>
       </div>
       <div class="right mr-5">
@@ -11,10 +10,7 @@
         </v-ons-toolbar-button>
       </div>
     </v-ons-toolbar>
-    <!--<div class="h-100p w-100p">-->
-    <div>
-      <iframe :src="url" width="100%" height="100%"></iframe>
-    </div>
+    <iframe :src="url" :width="iframeWidth" :height="iframeHeight"></iframe>
   </v-ons-page>
 </template>
 
@@ -27,6 +23,17 @@
     },
     props: ['url', 'originalFileName'],
     computed: {
+      iframeWidth() {
+        return document.documentElement.clientWidth;
+      },
+      iframeHeight() {
+        var bottomForIPhoneX = 0; //iPhoneX系の場合に下の部分を調整する長さ
+        if (this.$ons.platform.isIPhoneX()
+            && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
+          bottomForIPhoneX = 21;
+        }
+        return document.documentElement.clientHeight - 45 - bottomForIPhoneX; // 45はツールバー
+      }
     },
     methods: {
     }
