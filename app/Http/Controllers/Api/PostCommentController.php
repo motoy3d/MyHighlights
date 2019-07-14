@@ -40,7 +40,7 @@ class PostCommentController extends Controller
     $postCommentResult = PostComment::create([
       "post_id" => $request->post_id,
       "user_id" => Auth::id(),
-      "comment_text" => $request->comment_text,
+      "comment_text" => $request->comment_text == null? '' : $request->comment_text,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
