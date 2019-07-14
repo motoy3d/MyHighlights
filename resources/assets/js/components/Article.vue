@@ -51,7 +51,7 @@
                   + encodeURIComponent(app_url + '/' + att.file_path) + '&embedded=true'
                   , att.original_file_name)">
                   {{ att.original_file_name }}</a></span>
-                  <a :href="att.file_path">
+                  <a :href="att.file_path" v-if="isEnableFileDownloadButton">
                     <v-ons-icon icon="fa-download" class="fl-right lightgray"
                               size="22px"></v-ons-icon>
                   </a>
@@ -174,7 +174,7 @@
                   <p v-for="att in comment.attachments" :key="att.id">
                     <span v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                       <img :src="att.file_path" class="image_in_post">
-                      <div v-if="isEnableImageDownloadButton">
+                      <div v-if="isEnableFileDownloadButton">
                         <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                           <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                       size="22px"></v-ons-icon>
@@ -190,8 +190,8 @@
                         </a>
                       </span>
                       <a :href="att.file_path">
-                        <v-ons-icon icon="fa-download" class="fl-right lightgray"
-                                    size="22px"></v-ons-icon>
+                        <v-ons-icon icon="fa-download" v-if="isEnableFileDownloadButton"
+                                    class="fl-right lightgray" size="22px"></v-ons-icon>
                       </a>
                     </span>
 <!--                    <a :href="att.file_path">-->
@@ -256,7 +256,7 @@
         post: {},
         post_responses: {},
         post_attachments: {},
-        isEnableImageDownloadButton: !this.$ons.platform.isIOS(),
+        isEnableFileDownloadButton: !this.$ons.platform.isIOS(),
         questionnaire: {},
         questionnaire_answers: [],
         answer_user_names: [],

@@ -27,7 +27,12 @@
         return document.documentElement.clientWidth;
       },
       iframeHeight() {
-        return document.documentElement.clientHeight - 45; // 45はツールバーの分
+        var bottomForIPhoneX = 0; //iPhoneX系の場合に下の部分を調整する長さ
+        if (this.$ons.platform.isIPhoneX()
+            && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
+          bottomForIPhoneX = 21;
+        }
+        return document.documentElement.clientHeight - 45 - bottomForIPhoneX; // 45はツールバー
       }
     },
     methods: {

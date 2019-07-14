@@ -109,7 +109,7 @@ var vm = new Vue({
   beforeMount() {
     const html = document.documentElement;
     if (this.$ons.platform.isIPhoneX()
-        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher') != -1)) {
+        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
       document.body.style.marginBottom = '21px';
       // html.setAttribute('onsflag-iphonex-portrait', '');
       // html.setAttribute('onsflag-iphonex-landscape', '');
