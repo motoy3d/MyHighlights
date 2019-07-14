@@ -95,14 +95,24 @@ var vm = new Vue({
     Vue.prototype.moment = moment;
 
     // iPhone X系用レイアウト自動調整
+    // const html = document.documentElement;
+    // // alert(window.location.href.indexOf('launcher'));
+    // if (this.$ons.platform.isIPhoneX()
+    //     && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher') != -1)) {
+    //   alert('iPhoneX用設定')
+    //   html.setAttribute('onsflag-iphonex-portrait', '');
+    //   html.setAttribute('onsflag-iphonex-landscape', '');
+    // }
+    // this.$ons.enableAutoStatusBarFill();
+    // this.$ons.disableAutoStatusBarFill();
+  },
+  beforeMount() {
     const html = document.documentElement;
     if (this.$ons.platform.isIPhoneX()
-        /*&& (this.$ons.isWebView() || window.location.indexOf('launcher') != -1)*/) {
-      // alert('iPhoneX用設定')
+        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher') != -1)) {
+      document.body.style.marginBottom = '21px';
       // html.setAttribute('onsflag-iphonex-portrait', '');
       // html.setAttribute('onsflag-iphonex-landscape', '');
     }
-    this.$ons.enableAutoStatusBarFill();
-    // this.$ons.disableAutoStatusBarFill();
-  }
+  },
 });
