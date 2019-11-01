@@ -21,19 +21,19 @@ class ScheduleNotificationJob implements ShouldQueue
 
   const LINE_NOTIFY_SEND_URL = 'https://notify-api.line.me/api/notify';
   public $timeout = 3600; // タイムアウト設定１時間
-  public $fromUser;
+  public $fromMember;
   public $schedule;
   public $scheduleComment;
 
   /**
    * コンストラクタ。投稿と投稿コメントで共用。$postには必ず値が入り、$postCommentには投稿コメント通知の場合のみ値が入る。
-   * @param $fromUser
+   * @param $fromMember
    * @param $schedule
    * @param $scheduleComment
    */
-  public function __construct($fromUser, $schedule, $scheduleComment)
+  public function __construct($fromMember, $schedule, $scheduleComment)
   {
-    $this->fromUser = $fromUser;
+    $this->fromMember = $fromMember;
     $this->schedule = $schedule;
     $this->scheduleComment = $scheduleComment;
   }
@@ -71,10 +71,10 @@ class ScheduleNotificationJob implements ShouldQueue
     $title = $this->makeTitle($this->schedule) . ($this->scheduleComment? ' へのコメント' : '');
     $content = '';
     if ($this->scheduleComment) {
-      $content = $this->fromUser->name . "さんが「" . $this->schedule->title . "」にコメントしました。\n\n"
+      $content = $this->fromMember->name . "さんが「" . $this->schedule->title . "」にコメントしました。\n\n"
         . $this->scheduleComment->comment_text;
     } else {
-      $content = $this->fromUser->name . "さんが予定を登録しました。\n\n" . $this->schedule->title;
+      $content = $this->fromMember->name . "さんが予定を登録しました。\n\n" . $this->schedule->title;
     }
     Log::info('タイトル：' . $title);
 
@@ -88,7 +88,7 @@ class ScheduleNotificationJob implements ShouldQueue
         }
         // メール送信実行
         Mail::to($user->email)->send(
-          new PostNotification($this->fromUser, $title, $content, $team));
+          new PostNotification($this->fromMember, $title, $content, $team));
         sleep(2);
       } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
@@ -120,10 +120,10 @@ class ScheduleNotificationJob implements ShouldQueue
     $title = $this->makeTitle($this->schedule);
     $message = '';
     if ($this->scheduleComment) {
-      $message = $this->fromUser->name . "さんが「" . $title . "」にコメントしました。\n\n"
+      $message = $this->fromMember->name . "さんが「" . $title . "」にコメントしました。\n\n"
         . $this->scheduleComment->comment_text;
     } else {
-      $message = $this->fromUser->name . "さんが予定を登録しました。\n\n" . $title;
+      $message = $this->fromMember->name . "さんが予定を登録しました。\n\n" . $title;
     }
     Log::info('>>タイトル：' . $title);
 

@@ -31,13 +31,11 @@ class ScheduleCommentController extends Controller
       return response()->json(['message' => 'not found',], 404);
     }
     $scheduleComments = DB::table('schedule_comments')
-      ->leftJoin('users as create_user',
-        'schedule_comments.created_id', '=', 'create_user.id')
       ->leftJoin('members', function($join) {
         $join->on('schedule_comments.user_id', '=', 'members.user_id')
           ->where('team_id', Cookie::get('current_team_id'));
       })
-      ->select(['schedule_comments.*', 'create_user.name as created_name','members.prof_img_filename'])
+      ->select(['schedule_comments.*', 'members.name as created_name','members.prof_img_filename'])
       ->where('schedule_comments.schedule_id', $schedule_id)
       ->orderBy('schedule_comments.created_at', 'desc')
       ->get();
@@ -92,8 +90,9 @@ class ScheduleCommentController extends Controller
     if ($request->comment_notification_flg === 'true' && $request->comment_text) {
       Log::info('コメント通知実行');
       $startTime = microtime(true);
-      $fromUser = User::findOrFail(Auth::id());
-      $this->dispatch(new ScheduleNotificationJob($fromUser, $schedule, $scheduleCommentResult));
+      $fromMember = DB::table('members')->where('user_id', Auth::id())
+        ->where('team_id', $schedule->team_id)->first();
+      $this->dispatch(new ScheduleNotificationJob($fromMember, $schedule, $scheduleCommentResult));
       $runningTime =  microtime(true) - $startTime;
       Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
     }

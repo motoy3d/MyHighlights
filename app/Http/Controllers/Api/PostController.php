@@ -9,7 +9,6 @@ use App\Post;
 use App\PostAttachment;
 use App\PostResponse;
 use App\Questionnaire;
-use App\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -46,19 +45,19 @@ class PostController extends Controller
         $join->on('posts.id', '=', 'post_responses.post_id');
         $join->where('post_responses.user_id', '=', Auth::id());
       })
-      ->leftJoin('users as create_user', function (JoinClause $join) {
-        $join->on('posts.created_id', '=', 'create_user.id');
+      ->leftJoin('members as create_member', function (JoinClause $join) {
+        $join->on('posts.created_id', '=', 'create_member.user_id');
       })
-      ->leftJoin('users as update_user', function (JoinClause $join) {
-        $join->on('posts.updated_id', '=', 'update_user.id');
+      ->leftJoin('members as update_member', function (JoinClause $join) {
+        $join->on('posts.updated_id', '=', 'update_member.user_id');
       })
       ->select([
         'posts.*',
         'post_responses.read_flg',
         'post_responses.like_flg',
         'post_responses.star_flg',
-        'create_user.name as created_name',
-        'update_user.name as updated_name'])
+        'create_member.name as created_name',
+        'update_member.name as updated_name'])
       ->where('posts.team_id', $teamId)
       ->orderByDesc('posts.updated_at');
 
@@ -171,14 +170,14 @@ class PostController extends Controller
   {
     // 投稿
     $post = DB::table('posts')
-      ->leftJoin('users as create_user',
-        'posts.created_id', '=', 'create_user.id')
-      ->leftJoin('users as update_user',
-        'posts.updated_id', '=', 'update_user.id')
+      ->leftJoin('members as create_member',
+        'posts.created_id', '=', 'create_member.user_id')
+      ->leftJoin('members as update_member',
+        'posts.updated_id', '=', 'update_member.user_id')
       ->leftJoin('categories',
         'posts.category_id', '=', 'categories.id')
-      ->select(['posts.*', 'create_user.name as created_name',
-        'update_user.name as updated_name', 'categories.name as category_name'])
+      ->select(['posts.*', 'create_member.name as created_name',
+        'update_member.name as updated_name', 'categories.name as category_name'])
       ->where('posts.id',$id)
       ->where('posts.team_id', Cookie::get('current_team_id'))
       ->first();
@@ -280,7 +279,7 @@ class PostController extends Controller
       })
       ->select(
         'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
-        'like_user_ids', 'post_comments.user_id', 'users.name', 'members.prof_img_filename')
+        'like_user_ids', 'post_comments.user_id', 'members.name', 'members.prof_img_filename')
       ->where('post_id', $post->id)
       ->orderByDesc('post_comments.created_at')
       ->get();
@@ -439,8 +438,9 @@ class PostController extends Controller
    */
   private function sendMailAndLINE($post) {
     $startTime = microtime(true);
-    $fromUser = User::findOrFail(Auth::id());
-    $this->dispatch(new PostNotificationJob($fromUser, $post, null));
+    $fromMember = DB::table('members')->where('user_id', Auth::id())
+      ->where('team_id', $post->team_id)->first();
+    $this->dispatch(new PostNotificationJob($fromMember, $post, null));
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
   }

@@ -2,19 +2,15 @@
 
 namespace App\Mail;
 
-use App\Team;
-use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
 
 class PostNotification extends Mailable
 {
   use Queueable, SerializesModels;
 
-  public $fromUser;
+  public $fromMember;
   public $title;
   public $content;
   public $team;
@@ -24,9 +20,9 @@ class PostNotification extends Mailable
    *
    * @return void
    */
-  public function __construct(User $fromUser, $title, $content, $team)
+  public function __construct($fromMember, $title, $content, $team)
   {
-    $this->fromUser = $fromUser;
+    $this->fromMember = $fromMember;
     $this->title = $title;
     $this->content = $content;
     $this->team = $team;

@@ -23,8 +23,8 @@
     "html-webpack-plugin": "^3.2.0",
     "jquery": "^3.4.1",
     "laravel-mix": "^4.1.2",
-    "lodash": "^4.17.13",
-    "onsenui": "^2.10.8",
+    "lodash": "^4.17.15",
+    "onsenui": "^2.10.10",
     "postcss": "^7.0.17",
     "postcss-base64": "^0.7.1",
     "postcss-loader": "^3.0.0",
@@ -32,21 +32,21 @@
     "postcss-smart-import": "^0.7.6",
     "postcss-url": "^8.0.0",
     "resolve-url-loader": "^2.3.2",
-    "sass": "^1.22.4",
-    "sass-loader": "^7.1.0",
+    "sass": "^1.22.10",
+    "sass-loader": "^7.2.0",
     "style-loader": "^0.23.1",
     "vue": "^2.6.10",
     "vue-loader": "^14.2.4",
     "vue-onsenui": "^2.6.2",
     "vue-template-compiler": "^2.6.10",
     "vuex": "^3.1.1",
-    "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.6"
+    "webpack": "^4.39.2",
+    "webpack-cli": "^3.3.7"
   },
   "dependencies": {
     "clipboard": "^2.0.4",
     "file-saver": "^2.0.2",
-    "js-cookie": "^2.2.0",
+    "js-cookie": "^2.2.1",
     "moment": "^2.24.0",
     "vue-moment": "^4.0.0"
   }
