@@ -25,19 +25,19 @@ class PostNotificationJob implements ShouldQueue
 
   const LINE_NOTIFY_SEND_URL = 'https://notify-api.line.me/api/notify';
   public $timeout = 3600; // タイムアウト設定１時間
-  public $fromUser;
+  public $fromMember;
   public $post;
   public $postComment;
 
   /**
    * コンストラクタ。投稿と投稿コメントで共用。$postには必ず値が入り、$postCommentには投稿コメント通知の場合のみ値が入る。
-   * @param $fromUser
+   * @param $fromMember
    * @param $post
    * @param $postComment
    */
-  public function __construct($fromUser, $post, $postComment)
+  public function __construct($fromMember, $post, $postComment)
   {
-    $this->fromUser = $fromUser;
+    $this->fromMember = $fromMember;
     $this->post = $post;
     $this->postComment = $postComment;
   }
@@ -74,9 +74,9 @@ class PostNotificationJob implements ShouldQueue
     $title = $this->post->title . ($this->postComment? ' へのコメント' : '');
     $content = '';
     if ($this->postComment) {
-      $content = $this->fromUser->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
+      $content = $this->fromMember->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
     } else {
-      $content = $this->fromUser->name . "さんが投稿しました。\n\n" . $this->post->content;
+      $content = $this->fromMember->name . "さんが投稿しました。\n\n" . $this->post->content;
     }
     Log::info('タイトル：' . $title);
 
@@ -92,7 +92,7 @@ class PostNotificationJob implements ShouldQueue
         }
         // メール送信実行
         Mail::to($user->email)->send(
-          new PostNotification($this->fromUser, $title, $content, $team));
+          new PostNotification($this->fromMember, $title, $content, $team));
         sleep(1);
       } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
@@ -123,10 +123,10 @@ class PostNotificationJob implements ShouldQueue
     $title = $this->post->title;
     $message = '';
     if ($this->postComment) {
-      $message = $this->fromUser->name . "さんが" . '「' . $title . "」にコメントしました。\n\n"
+      $message = $this->fromMember->name . "さんが" . '「' . $title . "」にコメントしました。\n\n"
         . $this->postComment->comment_text;
     } else {
-      $message = $this->fromUser->name . "さんが投稿しました。\n「" . $title . "」\n" . $this->post->content;
+      $message = $this->fromMember->name . "さんが投稿しました。\n「" . $title . "」\n" . $this->post->content;
     }
     Log::info('タイトル：' . $title);
 
