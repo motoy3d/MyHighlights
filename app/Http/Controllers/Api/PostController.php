@@ -46,10 +46,14 @@ class PostController extends Controller
         $join->where('post_responses.user_id', '=', Auth::id());
       })
       ->leftJoin('members as create_member', function (JoinClause $join) {
-        $join->on('posts.created_id', '=', 'create_member.user_id');
+        $join->on('posts.created_id', '=', 'create_member.user_id')
+          ->whereNull('create_member.withdrawal_date')
+          ->where('create_member.team_id', Cookie::get('current_team_id'));
       })
       ->leftJoin('members as update_member', function (JoinClause $join) {
-        $join->on('posts.updated_id', '=', 'update_member.user_id');
+        $join->on('posts.updated_id', '=', 'update_member.user_id')
+          ->whereNull('update_member.withdrawal_date')
+          ->where('update_member.team_id', Cookie::get('current_team_id'));
       })
       ->select([
         'posts.*',
@@ -172,8 +176,12 @@ class PostController extends Controller
     $post = DB::table('posts')
       ->leftJoin('members as create_member',
         'posts.created_id', '=', 'create_member.user_id')
+        ->whereNull('create_member.withdrawal_date')
+        ->where('create_member.team_id', Cookie::get('current_team_id'))
       ->leftJoin('members as update_member',
         'posts.updated_id', '=', 'update_member.user_id')
+        ->whereNull('update_member.withdrawal_date')
+        ->where('update_member.team_id', Cookie::get('current_team_id'))
       ->leftJoin('categories',
         'posts.category_id', '=', 'categories.id')
       ->select(['posts.*', 'create_member.name as created_name',
@@ -275,7 +283,8 @@ class PostController extends Controller
       ->leftJoin('users', 'post_comments.user_id', '=', 'users.id')
       ->leftJoin('members', function($join) {
         $join->on('post_comments.user_id', '=', 'members.user_id')
-        ->where('team_id', Cookie::get('current_team_id'));
+          ->where('team_id', Cookie::get('current_team_id'))
+          ->whereNull('members.withdrawal_date');
       })
       ->select(
         'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
