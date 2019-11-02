@@ -253,11 +253,13 @@ class PostController extends Controller
         for ($i=0; $i<count($questionnaire->items); $i++) {
           // 回答集計
           $answers = DB::table('questionnaire_answers')
-            ->leftJoin('users',
-              'questionnaire_answers.user_id', '=', 'users.id')
+            ->leftJoin('members',
+              'questionnaire_answers.user_id', '=', 'members.user_id')
+              ->where('members.team_id', Cookie::get('current_team_id'))
+              ->whereNull('members.withdrawal_date')
             ->select([
               'questionnaire_answers.answer',
-              'users.name'
+              'members.name'
             ])
             ->where('questionnaire_id', $post->questionnaire_id)
             ->where('question_no', $i)
