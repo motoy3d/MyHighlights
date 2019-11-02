@@ -292,9 +292,14 @@ class PostController extends Controller
           ->where('team_id', Cookie::get('current_team_id'))
           ->whereNull('members.withdrawal_date');
       })
+      ->leftJoin('post_comment_responses', function($join) {  //ログインユーザーのいいね
+        $join->on('post_comment_responses.post_comment_id', '=', 'post_comments.id')
+          ->where('post_comment_responses.user_id', Auth::id());
+      })
       ->select(
         'post_comments.id', 'post_comments.comment_text', 'post_comments.created_at',
-        'like_user_ids', 'post_comments.user_id', 'members.name', 'members.prof_img_filename')
+        'post_comments.user_id', 'post_comments.like_count', 'members.name',
+        'members.prof_img_filename', 'post_comment_responses.like_flg')
       ->where('post_id', $post->id)
       ->orderByDesc('post_comments.created_at')
       ->get();
@@ -310,8 +315,6 @@ class PostController extends Controller
     $categories = Category::where('team_id', Cookie::get('current_team_id'))
       ->select(['id', 'name', 'order_no'])
       ->orderBy('order_no')->get();
-
-    //TODO コメントへのいいねリスト
 
     // １つにまとめる
     return Response::json([
