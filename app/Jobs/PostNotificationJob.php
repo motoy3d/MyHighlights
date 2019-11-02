@@ -135,6 +135,9 @@ class PostNotificationJob implements ShouldQueue
     } else {
       $message = $this->fromMember->name . "さんが投稿しました。\n「" . $title . "」\n" . $this->post->content;
     }
+    if ($this->hasAttachment) {
+      $message .= PHP_EOL . '(添付あり)';
+    }
     Log::info('タイトル：' . $title);
 
     // 一人ずつ間隔を空けながら送信
