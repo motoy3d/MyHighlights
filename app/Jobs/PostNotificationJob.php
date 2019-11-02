@@ -28,18 +28,22 @@ class PostNotificationJob implements ShouldQueue
   public $fromMember;
   public $post;
   public $postComment;
+  public $hasAttachment;
 
   /**
-   * コンストラクタ。投稿と投稿コメントで共用。$postには必ず値が入り、$postCommentには投稿コメント通知の場合のみ値が入る。
+   * コンストラクタ。投稿と投稿コメントで共用。$postには必ず値が入り、
+   * $postCommentには投稿コメント通知の場合のみ値が入る。
    * @param $fromMember
    * @param $post
    * @param $postComment
+   * @param $hasAttachment
    */
-  public function __construct($fromMember, $post, $postComment)
+  public function __construct($fromMember, $post, $postComment, $hasAttachment)
   {
     $this->fromMember = $fromMember;
     $this->post = $post;
     $this->postComment = $postComment;
+    $this->hasAttachment = $hasAttachment;
   }
 
   /**
@@ -77,6 +81,9 @@ class PostNotificationJob implements ShouldQueue
       $content = $this->fromMember->name . "さんがコメントしました。\n\n" . $this->postComment->comment_text;
     } else {
       $content = $this->fromMember->name . "さんが投稿しました。\n\n" . $this->post->content;
+    }
+    if ($this->hasAttachment) {
+      $content .= PHP_EOL . '(添付あり)';
     }
     Log::info('タイトル：' . $title);
 
