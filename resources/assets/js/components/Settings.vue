@@ -43,8 +43,10 @@
           </v-ons-list-item>
           <v-ons-list-item >
             <img src="/img/LINE_APP.png" style="width:22px" class="mr-5"> LINEで通知を受け取る
-            <div v-if="isIOSAndPWA">
-              ホーム画面のアイコンから起動している場合は設定できません。Safariから開いて設定してください。
+            <div v-if="true" style="text-align:left">
+              <span class="small gray left">
+              ホーム画面のアイコンから起動している場合は設定できません。<br>Safariから開いて設定してください。
+              </span>
             </div>
             <div class="right">
               <v-ons-switch v-model="lineNotificationFlg"
