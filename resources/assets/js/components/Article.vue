@@ -38,7 +38,7 @@
             <div class="entry_content2"><span class="entry_text" v-html="replaceATag(post.content)"></span>
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
-                  <img :src="att.file_path" class="image_in_post">
+                  <img :src="att.file_path" class="image_in_post" alt="">
                   <div v-if="isEnableImageDownloadButton">
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
@@ -158,28 +158,18 @@
                 </div>
               </div>
               <div>
+                <!-- コメント吹き出し -->
                 <div class="speech-bubble">
                   <span class="comment break" v-html="replaceATag(comment.comment_text)"></span>
-                  <!--<div class="mt-5">-->
-                    <!--<v-ons-icon icon="fa-heart" class="heart" :style="isHeartOn? '' : 'font-weight:400'"-->
-                                <!--@click="toggleHeart();">-->
-                      <!--&lt;!&ndash;<span class="ml-5 small gray">いいね</span>&ndash;&gt;-->
-                      <!--<span class="like-count small ml-5">{{ 10 }}</span>-->
-                    <!--</v-ons-icon>-->
-                    <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
-                      <v-ons-icon icon="fa-trash" class="delete_comment_icon mt-5"
-                                @click="confirmDeleteComment(comment.id)"></v-ons-icon>
-                    </span>
-                  <!--</div>-->
                   <p v-for="att in comment.attachments" :key="att.id">
                     <span v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                       <img :src="att.file_path" class="image_in_post">
-                      <div v-if="isEnableFileDownloadButton">
+                      <span v-if="isEnableFileDownloadButton">
                         <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                           <v-ons-icon icon="fa-download" class="fl-right lightgray"
-                                      size="22px"></v-ons-icon>
+                                      size="22px"></v-ons-icon><br><br>
                         </a>
-                      </div>
+                      </span>
                     </span>
                     <span v-else class="mt-30" :key="att.id">
                       <span class="break">
@@ -194,19 +184,22 @@
                                     class="fl-right lightgray" size="22px"></v-ons-icon>
                       </a>
                     </span>
-<!--                    <a :href="att.file_path">-->
-<!--                      <img :src="att.file_path" v-if="isImage(att.file_type)" class="image_in_post">-->
-<!--                      <span class="break">{{ att.original_file_name }}</span>-->
-<!--                    </a>-->
                   </p>
+                  <!-- コメントへのいいね -->
+                  <div class="mt-5">
+                    <v-ons-icon icon="fa-heart" class="heart_small" :style="comment.like_flg? '' : 'font-weight:400'"
+                                @click="toggleHeartToComment(comment)">
+                      <span class="like-count small" v-if="comment.like_count">
+                        {{ comment.like_count }}</span>
+                    </v-ons-icon>
+                    <span v-if="comment.user_id == user.id"><!-- 型が違うので==使用 -->
+                      <v-ons-icon icon="fa-trash" class="delete_comment_icon mt-5"
+                                  @click="confirmDeleteComment(comment.id)"></v-ons-icon>
+                    </span>
+                  </div>
+
                 </div>
               </div>
-              <!--<div class="right mr-10">-->
-                <!--<v-ons-icon icon="fa-thumbs-up"-->
-                            <!--:class="isLike? 'like_on' : 'like_off'"-->
-                            <!--onclick="toggleLike(this)"></v-ons-icon>-->
-                <!--<span class="like-count">{{ comment.like_user_ids.length }}</span>-->
-              <!--</div>-->
             </div>
           </v-ons-col>
         </v-ons-row>
@@ -426,7 +419,18 @@
             this.errored = true;
           });
       },
-      toggleLike(likeIcon) {
+      toggleHeartToComment(postComment) {
+        if(postComment.like_flg) {
+          postComment.like_flg = 0; postComment.like_count -= 1;
+        } else {
+          postComment.like_flg = 1; postComment.like_count += 1;
+        }
+        let form = new FormData();
+        form.append('like_flg', postComment.like_flg);
+        this.$http.post('/api/post_comment_responses/' + postComment.id, form)
+          .catch(error => {
+            this.errored = true;
+          });
       },
       toggleNotification() {
         this.comment_notification_flg = !this.comment_notification_flg;
@@ -628,6 +632,10 @@
     color: #ff6060;
     font-size: 18px;
     /*  margin: 0 0 0 30px;*/
+  }
+  .heart_small {
+    color: #ff6060;
+    font-size: 15px;
   }
   .heart-count {
     color: red;
