@@ -43,6 +43,11 @@
           </v-ons-list-item>
           <v-ons-list-item >
             <img src="/img/LINE_APP.png" style="width:22px" class="mr-5"> LINEで通知を受け取る
+            <div v-if="isIOSAndPWA" style="text-align:left">
+              <span class="small gray left">
+              ホーム画面のアイコンから起動している場合は設定できません。<br>Safariから開いて設定してください。
+              </span>
+            </div>
             <div class="right">
               <v-ons-switch v-model="lineNotificationFlg"
                             @click="updateLINENotificationFlg()"></v-ons-switch>
@@ -118,6 +123,7 @@
         loading: false,
         errored: false,
         posting: false,
+        isIOSAndPWA: this.$ons.platform.isIOS() && location.href.indexOf('launcher=true') != -1
       }
     },
     computed: {

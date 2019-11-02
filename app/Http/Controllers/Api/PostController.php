@@ -158,8 +158,12 @@ class PostController extends Controller
     ]);
     // 添付ファイルの登録
     $this->saveAttachment($request, $post);
-    // メール配信
-    $this->sendMailAndLINE($post);
+    // メール配信・LINE通知
+    $hasAttachment = false;
+    if ($request->allFiles()) {
+      $hasAttachment = true;
+    }
+    $this->sendMailAndLINE($post, $hasAttachment);
 
     return Response::json($post);
   }
@@ -444,12 +448,13 @@ class PostController extends Controller
    * ここではジョブの登録のみ行う。通知の処理実行はサーバ側で起動したジョブ実行ワーカーが行う。
    * sudo php artisan queue:work --timeout=3600 --sleep=120
    * @param $post
+   * @param $hasAttachment
    */
-  private function sendMailAndLINE($post) {
+  private function sendMailAndLINE($post, $hasAttachment) {
     $startTime = microtime(true);
     $fromMember = DB::table('members')->where('user_id', Auth::id())
       ->where('team_id', $post->team_id)->first();
-    $this->dispatch(new PostNotificationJob($fromMember, $post, null));
+    $this->dispatch(new PostNotificationJob($fromMember, $post, null, $hasAttachment));
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
   }

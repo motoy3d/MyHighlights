@@ -44,7 +44,8 @@ class PostCommentController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
-Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
+    Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
+    $hasAttachment = false;
     if ($request->allFiles()) { //添付がある場合
 //      $allowedfileExtension=['pdf','jpg','jpeg','png','gif','xlsx','docx'];
       $files = $request->file('comment_files');
@@ -73,6 +74,7 @@ Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
           "updated_id" => Auth::id()
         ]);
       }
+      $hasAttachment = true;
     }
 
     // コメント数の更新
@@ -85,7 +87,7 @@ Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
       Log::info('コメント通知実行');
       $startTime = microtime(true);
       $fromUser = User::findOrFail(Auth::id());
-      $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult));
+      $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult, $hasAttachment));
       $runningTime =  microtime(true) - $startTime;
       Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');
     }
