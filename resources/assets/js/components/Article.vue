@@ -165,7 +165,8 @@
                     <span v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                       <img :src="att.file_path" class="image_in_post">
                       <span v-if="isEnableFileDownloadButton">
-                        <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
+                        <a :href="att.file_path" :download="att.original_file_name"
+                           class="break" target="_blank">
                           <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                       size="22px"></v-ons-icon><br><br>
                         </a>
@@ -187,7 +188,7 @@
                   </p>
                   <!-- コメントへのいいね -->
                   <div class="mt-5">
-                    <v-ons-icon icon="fa-heart" class="heart_small" :style="comment.like_flg? '' : 'font-weight:400'"
+                    <v-ons-icon icon="fa-heart" class="heart" :style="comment.like_flg? '' : 'font-weight:400'"
                                 @click="toggleHeartToComment(comment)">
                       <span class="like-count small" v-if="comment.like_count">
                         {{ comment.like_count }}</span>
