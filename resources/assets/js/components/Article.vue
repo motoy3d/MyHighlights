@@ -39,7 +39,7 @@
               <template v-for="att in post_attachments">
                 <div v-if="isImage(att.file_type)" class="mt-30" :key="att.id">
                   <img :src="att.file_path" class="image_in_post" alt="">
-                  <div v-if="isEnableImageDownloadButton">
+                  <div v-if="isEnableFileDownloadButton">
                     <a :href="att.file_path" :download="att.original_file_name" class="break" target="_blank">
                       <v-ons-icon icon="fa-download" class="fl-right lightgray"
                                   size="22px"></v-ons-icon>
