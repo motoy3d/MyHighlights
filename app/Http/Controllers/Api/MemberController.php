@@ -182,10 +182,7 @@ class MemberController extends Controller
       Log::info("★" . $userId);
       $user = User::find($userId);
       if ($user) {
-        $user->name = $request->name;
-        $user->name_kana = $request->nameKana;
         $user->email = $request->email;
-        Log::info("★★" . $user->email);
         $user->save();
       }
     }

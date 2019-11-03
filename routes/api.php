@@ -19,6 +19,7 @@
     Route::post('post_responses/{post_id}', 'Api\PostResponseController@store');
     Route::post('post_comments/{post_id}', 'Api\PostCommentController@store');
     Route::delete('post_comments/{post_id}/{comment_id}', 'Api\PostCommentController@destroy');
+    Route::post('post_comment_responses/{post_comment_id}', 'Api\PostCommentResponseController@store');
     Route::delete('post_attachments/{post_attachment_id}', 'Api\PostAttachmentController@destroy');
 //    Route::post('post_comment_responses/{comment_id}', 'Api\PostCommentResponseController@store');
     Route::resource('schedules', 'Api\ScheduleController');
