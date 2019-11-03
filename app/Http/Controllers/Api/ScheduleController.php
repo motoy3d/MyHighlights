@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Category;
+use App\Holiday;
 use App\Http\Controllers\Controller;
 use App\Schedule;
 use Illuminate\Http\Request;
@@ -44,7 +45,8 @@ class ScheduleController extends Controller
       ->orderBy('schedules.schedule_date')
       ->orderBy('schedules.time_from')
       ->get();
-    return Response::json($schedules);
+    $holidays = Holiday::all('holiday_date', 'name');
+    return Response::json(['schedules'=>$schedules, 'holidays'=>$holidays]);
   }
 
   /**
