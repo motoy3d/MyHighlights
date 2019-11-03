@@ -82,8 +82,8 @@ export default {
         if(Cookies.get('current_team_id') != 36) {
           tabsTemp.splice(2, 1);
         }
-        console.log('tabsTemp------------------');
-        console.log(tabsTemp);
+        // console.log('tabsTemp------------------');
+        // console.log(tabsTemp);
         return tabsTemp;
       }
     }

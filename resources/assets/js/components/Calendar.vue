@@ -35,8 +35,9 @@
               </tr>
               <tr>
                 <td v-bind:data-date="days[n-1].date"
-                    v-bind:class="'day' + (n-1) + ' ' +
-                    (days[n-1].date === selectedDate? 'selectedDate' : '')"
+                    v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[n-1].date) && n!=7? 'holiday ' : '')
+                    + (days[n-1].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)">
                   <span v-html="days[n-1].text"></span>
                 </td>
@@ -44,6 +45,7 @@
               <tr>
                 <td v-bind:data-date="days[(n-1)+7].date"
                     v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[(n-1)+7].date) && n!=7? 'holiday ' : '')
                     + (days[(n-1)+7].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+7">
                   <span v-html="days[(n-1)+7].text"></span>
@@ -52,6 +54,7 @@
               <tr>
                 <td v-bind:data-date="days[(n-1)+14].date"
                     v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[(n-1)+14].date) && n!=7? 'holiday ' : '')
                     + (days[(n-1)+14].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+14">
                   <span v-html="days[(n-1)+14].text"></span>
@@ -60,6 +63,7 @@
               <tr>
                 <td v-bind:data-date="days[(n-1)+21].date"
                     v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[(n-1)+21].date) && n!=7? 'holiday ' : '')
                     + (days[(n-1)+21].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+21">
                   <span v-html="days[(n-1)+21].text"></span>
@@ -68,6 +72,7 @@
               <tr>
                 <td v-bind:data-date="days[(n-1)+28].date"
                     v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[(n-1)+28].date) && n!=7? 'holiday ' : '')
                     + (days[(n-1)+28].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+28">
                   <span v-html="days[(n-1)+28].text"></span>
@@ -76,6 +81,7 @@
               <tr v-if="days[35].text">
                 <td v-bind:data-date="days[(n-1)+35].date"
                     v-bind:class="'day' + (n-1) + ' '
+                    + (getHolidayName(days[(n-1)+35].date)? 'holiday ' : '')
                     + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+35">
                   <span v-html="days[(n-1)+35].text"></span>
@@ -215,13 +221,16 @@
         comment_notification_flg: true,
       }
     },
-    beforeMount() {
+    beforeCreate() {
       // APIからデータ取得(AddSchedule.vueからも呼ばれるのでVuexで処理)
       this.$store.dispatch('calendar/load', this.$http);
     },
     computed: {
       schedules : {
         get() { return this.$store.state.calendar.schedules; }
+      },
+      holidays : {
+        get() { return this.$store.state.calendar.holidays; }
       },
       currentYearMonthText: {
         get() { return this.currentYear + '年' + (this.currentMonth + 1) + '月'; }
@@ -248,7 +257,8 @@
           for (let d=0; d<lastDate; d++) {
             let dateText = this.currentYear + '-' + (('0' + (this.currentMonth + 1)).slice(-2))
               + '-' + (('0' + (d + 1)).slice(-2));
-            dayArray[dayArrayIdx + d] = { date: dateText, text: d + 1 };
+            dayArray[dayArrayIdx + d] = {
+              date: dateText, text: d + 1 + ' ' + this.getHolidayName(dateText) };
             if (this.schedules) {
               for (let s=0; s<this.schedules.length; s++) {
                 let sche = this.schedules[s];
@@ -304,7 +314,7 @@
       },
       loadSchedules() {
         this.selectedDateSchedules = [];
-        console.log('--------------- loadSchedules');
+        // console.log('--------------- loadSchedules');
         if (this.schedules) {
           for (var s=0; s<this.schedules.length; s++) {
             if (this.selectedDate === this.schedules[s].schedule_date) {
@@ -332,6 +342,17 @@
             }
           }, 150);
         }
+      },
+      getHolidayName(date) {
+        if (!date || !this.holidays) {return '';}
+        let holidayName = '';
+        this.holidays.forEach(function(holiday){
+          if (holiday.holiday_date == date) {
+            holidayName = holiday.name;
+            return;
+          }
+        });
+        return holidayName;
       },
       openAddSchedule() {
         this.$store.commit('add_schedule/setSelectedDate', this.selectedDate);
@@ -558,8 +579,7 @@
     background-color:#e9f2ff;
   }
   table.calendar-table tr td.holiday{
-    background-color:#ff0000;
-    color:#ffffff;
+    background-color:#ffcccc;
   }
   table.calendar-table tr td.selectedDate{
     background-color:#fff090;

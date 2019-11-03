@@ -245,12 +245,13 @@ export default {
       namespaced: true,
       state: {
         loading: false,
-        schedules: null
+        schedules: null,
+        holidays: null
       },
       mutations: {
-        set(state, schedules) {
-          console.log('スケジュール読み込み');
-          state.schedules = schedules;
+        set(state, data) {
+          state.schedules = data.schedules;
+          state.holidays = data.holidays;
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
@@ -328,7 +329,7 @@ export default {
       },
       actions: {
         load(context, $http) {
-          console.log('members/load');
+          // console.log('members/load');
           context.commit('setLoading', true);
 
           $http.get('/api/members')
@@ -364,7 +365,7 @@ export default {
       },
       actions: {
         load(context, $http) {
-          console.log('members/load');
+          // console.log('members/load');
           context.commit('setLoading', true);
 
           $http.get('/api/members')
