@@ -178,14 +178,16 @@ class PostController extends Controller
   {
     // 投稿
     $post = DB::table('posts')
-      ->leftJoin('members as create_member',
-        'posts.created_id', '=', 'create_member.user_id')
-        ->whereNull('create_member.withdrawal_date')
-        ->where('create_member.team_id', Cookie::get('current_team_id'))
-      ->leftJoin('members as update_member',
-        'posts.updated_id', '=', 'update_member.user_id')
-        ->whereNull('update_member.withdrawal_date')
-        ->where('update_member.team_id', Cookie::get('current_team_id'))
+      ->leftJoin('members as create_member', function($join) {
+        $join->on('posts.created_id', '=', 'create_member.user_id')
+          ->whereNull('create_member.withdrawal_date')
+          ->where('create_member.team_id', Cookie::get('current_team_id'));
+      })
+      ->leftJoin('members as update_member', function($join) {
+        $join->on('posts.updated_id', '=', 'update_member.user_id')
+          ->whereNull('update_member.withdrawal_date')
+          ->where('update_member.team_id', Cookie::get('current_team_id'));
+      })
       ->leftJoin('categories',
         'posts.category_id', '=', 'categories.id')
       ->select(['posts.*', 'create_member.name as created_name',
