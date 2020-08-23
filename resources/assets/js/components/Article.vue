@@ -129,7 +129,9 @@
               <v-ons-col width="50px" vertical-align="bottom" class="center">
                 <v-ons-button class="ml-5 mt-10 center" ripple
                   @click="postComment()">
-                  <v-ons-icon icon="fa-paper-plane" class="messageBtn"></v-ons-icon></v-ons-button>
+                  <v-ons-icon icon="fa-paper-plane" class="messageBtn" v-if="!posting_comment"></v-ons-icon>
+                  <v-ons-icon icon="fa-spinner" spin v-if="posting_comment"></v-ons-icon>
+                </v-ons-button>
               </v-ons-col>
             </v-ons-row>
           </v-ons-col>
@@ -260,6 +262,7 @@
         comment_text: "",
         comment_files: [],
         comment_notification_flg: true,
+        posting_comment: false,
         likes_count: 0,
         likes: [],
         user: {},
@@ -329,6 +332,10 @@
         if (!this.comment_text && 0 < this.comment_files.length) {
           this.comment_text = '　'; //添付ファイルのみの場合、ダミー
         }
+        if (this.posting_comment) {
+          return;
+        }
+        this.posting_comment = true;
         let post_id = this.$store.state.article.post_id;
         let self = this;
         // 送信フォームデータ準備
@@ -345,6 +352,7 @@
             self.comment_files = [];
             self.load();
             this.loading = false;
+            this.posting_comment = false;
           })
           .catch(error => {
             this.errored = true;
@@ -352,6 +360,7 @@
               window.location.href = "/login"; return;
             }
             this.loading = false;
+            this.posting_comment = false;
           })
           // .finally(() => this.loading = false)
         ;
