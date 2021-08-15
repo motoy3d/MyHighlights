@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Team;
-use Awjudd\FeedReader\Facades\FeedReader;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Response;
 
