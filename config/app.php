@@ -161,7 +161,6 @@
       App\Providers\RouteServiceProvider::class,
 
       'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider',
-      Awjudd\FeedReader\FeedReaderServiceProvider::class,
     ],
 
     /*
@@ -210,7 +209,6 @@
       'URL' => Illuminate\Support\Facades\URL::class,
       'Validator' => Illuminate\Support\Facades\Validator::class,
       'View' => Illuminate\Support\Facades\View::class,
-      'FeedReader' => Awjudd\FeedReader\Facades\FeedReader::class,
     ],
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
