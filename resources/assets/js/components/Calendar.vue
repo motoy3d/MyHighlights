@@ -596,7 +596,7 @@
     vertical-align: top;
   }
   .month_text {
-    font-size: 12px;
+    font-size: 16px;
     vertical-align: top;
   }
   .lastspace {
