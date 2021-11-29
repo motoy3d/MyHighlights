@@ -168,7 +168,8 @@ textarea {
   background-color: #2c74e8; }
 
 .navbartitle {
-  color: white; }
+  color: white;
+  width: 60%; }
 
 .absolute {
   position: absolute;
