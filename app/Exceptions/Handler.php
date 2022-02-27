@@ -37,7 +37,6 @@ class Handler extends ExceptionHandler
      */
     public function report(Exception $exception)
     {
-      dd($exception);
 //ALBを使う場合      $sourceIpKey = env('APP_ENV') == 'production' ? 'HTTP_X_FORWARDED_FOR' : 'REMOTE_ADDR';
       $method = array_key_exists('REQUEST_METHOD', $_SERVER) ? $_SERVER['REQUEST_METHOD'] : '';
       $path = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '';
