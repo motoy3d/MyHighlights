@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: tsubasa-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tsubasa
+      MYSQL_USER: tsubasa
+      MYSQL_PASSWORD: tsubasa
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - /Users/motoy3d/DockerVolumes/mysql5.7:/var/lib/mysql
+      - /Users/motoy3d/DockerVolumes/mysqlconf/my.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - 3306:3306

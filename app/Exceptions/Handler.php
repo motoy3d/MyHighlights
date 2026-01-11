@@ -4,9 +4,11 @@ namespace App\Exceptions;
 
 use App\Log;
 use Exception;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log as Logger;
 
 class Handler extends ExceptionHandler
 {
@@ -71,4 +73,21 @@ class Handler extends ExceptionHandler
     {
         return parent::render($request, $exception);
     }
+
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+      Logger::info('unauthenticated-------------');
+      return $request->expectsJson()
+        ? response()->json(['message' => $exception->getMessage()], 401)
+        : redirect()->guest(route('login'));
+    }
+
+//    protected function unauthenticated($request, AuthenticationException $exception)
+//    {
+//      if ($request->expectsJson()) {
+//        return response()->json(['error' => 'Unauthenticated.'], 401);
+//      }
+//
+//      return redirect()->guest(route('auth.login'));
+//    }
 }
