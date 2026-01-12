@@ -14,7 +14,7 @@ let mix = require('laravel-mix');
 // extractにより自前のjsとライブラリ系を分離して出力できる
 mix.js('resources/assets/js/app.js', 'public/js')
   .sass('resources/assets/sass/app.scss', 'public/css')
-  .extract(['jquery', 'vue', 'vuex', 'onsenui', 'vue-onsenui', 'lodash'
+  .extract(['jquery', 'vue', 'vuex', 'vuetify', 'lodash'
   ,'moment', 'vue-moment','clipboard','js-cookie','file-saver'])
 ;
 

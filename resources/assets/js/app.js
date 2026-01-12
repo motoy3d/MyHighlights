@@ -62,9 +62,13 @@ window.fn.replaceATag =
 import Vue from 'vue';
 import Vuex from 'vuex';
 import storeLike from './store.js';
-import VueOnsen from 'vue-onsenui';
+import Vuetify from 'vuetify';
+import 'vuetify/dist/vuetify.min.css';
+import '@fortawesome/fontawesome-free/css/all.css';
+import platform from './utils/platform.js';
+
 Vue.use(Vuex);
-Vue.use(VueOnsen);
+Vue.use(Vuetify);
 
 const moment = require('moment');
 require('moment/locale/ja');
@@ -85,34 +89,51 @@ Vue.filter('truncate', function(value, len, omission) {
 console.warn('>>>>>>>> アプリ起動');
 
 import AppNavigator from './components/AppNavigator.vue';
+
+// Initialize Vuetify with FontAwesome icons
+const vuetify = new Vuetify({
+  icons: {
+    iconfont: 'fa', // Use FontAwesome
+  },
+  theme: {
+    themes: {
+      light: {
+        primary: '#1976D2',
+        secondary: '#424242',
+        accent: '#82B1FF',
+        error: '#FF5252',
+        info: '#2196F3',
+        success: '#4CAF50',
+        warning: '#FFC107'
+      }
+    }
+  }
+});
+
 var vm = new Vue({
   el: '#app',
+  vuetify,
   render: h => h(AppNavigator),
   store: new Vuex.Store(storeLike),
   beforeCreate() {
-    // Shortcut for Material Design
-    Vue.prototype.md = this.$ons.platform.isAndroid();
+    // TODO: Replace this.$ons.platform.isAndroid() with platform util
+    // Material Design shortcut - kept for backward compatibility
+    Vue.prototype.md = platform.isAndroid();
     Vue.prototype.moment = moment;
+    Vue.prototype.platform = platform;
 
-    // iPhone X系用レイアウト自動調整
-    // const html = document.documentElement;
-    // // alert(window.location.href.indexOf('launcher'));
-    // if (this.$ons.platform.isIPhoneX()
-    //     && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher') != -1)) {
-    //   alert('iPhoneX用設定')
-    //   html.setAttribute('onsflag-iphonex-portrait', '');
-    //   html.setAttribute('onsflag-iphonex-landscape', '');
-    // }
-    // this.$ons.enableAutoStatusBarFill();
-    // this.$ons.disableAutoStatusBarFill();
+    // TODO: Replace Onsen status bar APIs
+    // Previously: this.$ons.enableAutoStatusBarFill() / disableAutoStatusBarFill()
+    // These need to be handled differently in Vuetify or with custom CSS
   },
   beforeMount() {
+    // TODO: Replace this.$ons.platform.isIPhoneX() with platform util
     const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX()
-        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
+    if (platform.isIPhoneX()
+        && (/*platform.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
       document.body.style.marginBottom = '21px';
-      // html.setAttribute('onsflag-iphonex-portrait', '');
-      // html.setAttribute('onsflag-iphonex-landscape', '');
+      // Previously: html.setAttribute('onsflag-iphonex-portrait', '');
+      // TODO: Implement iPhone X layout adjustments for Vuetify
     }
   },
 });
