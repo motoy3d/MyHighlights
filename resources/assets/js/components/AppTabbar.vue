@@ -1,11 +1,37 @@
 <template>
-  <v-ons-page>
-    <v-ons-tabbar
-      position="bottom"
-      :tabs="tabs"
-      :index.sync="index"
-    ></v-ons-tabbar>
-  </v-ons-page>
+  <div>
+    <!-- Main content area with bottom navigation -->
+    <v-main>
+      <component :is="tabs[index].page"></component>
+    </v-main>
+    
+    <!-- Bottom Navigation - replaces v-ons-tabbar -->
+    <v-bottom-navigation
+      v-model="index"
+      color="primary"
+      fixed
+      grow
+      app
+    >
+      <v-btn
+        v-for="(tab, i) in tabs"
+        :key="i"
+        :value="i"
+        height="100%"
+      >
+        <span>{{ tab.label }}</span>
+        <v-badge
+          v-if="tab.badge"
+          :content="tab.badge"
+          color="red"
+          overlap
+        >
+          <v-icon>fa-{{ tab.icon }}</v-icon>
+        </v-badge>
+        <v-icon v-else>fa-{{ tab.icon }}</v-icon>
+      </v-btn>
+    </v-bottom-navigation>
+  </div>
 </template>
 
 <script>
@@ -54,28 +80,28 @@ export default {
         [
           {
             label: 'タイムライン',
-            icon: 'fa-align-justify',
+            icon: 'align-justify',
             page: Timeline,
             badge: this.$store.state.timeline.unreadCount
           },
           {
             label: 'カレンダー',
-            icon: 'fa-calendar-alt',
+            icon: 'calendar-alt',
             page: Calendar
           },
           {
             label: 'ブログ',
-            icon: 'fa-rss',
+            icon: 'rss',
             page: Blog
           },
           {
             label: 'メンバー',
-            icon: 'fa-users',
+            icon: 'users',
             page: Members
           },
           {
             label: '設定',
-            icon: 'fa-cog',
+            icon: 'cog',
             page: Settings
           }
         ];

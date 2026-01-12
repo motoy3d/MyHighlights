@@ -1,11 +1,14 @@
 <template>
-  <v-ons-navigator
-    id="homeNavi" var="homeNavi"
-    swipeable swipe-target-width="50px"
-    :page-stack="pageStack"
-    :pop-page="storePop"
-    :options="options"
-  ></v-ons-navigator>
+  <!-- Vuetify root app wrapper - replaces v-ons-navigator -->
+  <v-app id="homeNavi">
+    <!-- Dynamic component rendering based on page stack -->
+    <component
+      v-for="(page, index) in pageStack"
+      v-show="index === pageStack.length - 1"
+      :is="page"
+      :key="index"
+    ></component>
+  </v-app>
 </template>
 
 <script>
