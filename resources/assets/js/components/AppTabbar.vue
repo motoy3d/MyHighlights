@@ -1,36 +1,39 @@
 <template>
-  <div>
-    <!-- Main content area with bottom navigation -->
-    <v-main>
+  <div class="el-tabbar-container">
+    <!-- Main content area -->
+    <div class="el-tabbar-content">
       <component :is="tabs[index].page"></component>
-    </v-main>
+    </div>
     
-    <!-- Bottom Navigation - replaces v-ons-tabbar -->
-    <v-bottom-navigation
-      v-model="index"
-      color="primary"
-      fixed
-      grow
-      app
+    <!-- Bottom Navigation using Element UI Tabs -->
+    <el-tabs
+      v-model="activeTab"
+      type="card"
+      class="el-bottom-tabs"
+      @tab-click="handleTabClick"
     >
-      <v-btn
+      <el-tab-pane
         v-for="(tab, i) in tabs"
         :key="i"
-        :value="i"
-        height="100%"
+        :name="String(i)"
       >
-        <span>{{ tab.label }}</span>
-        <v-badge
-          v-if="tab.badge"
-          :content="tab.badge"
-          color="red"
-          overlap
-        >
-          <v-icon>fa-{{ tab.icon }}</v-icon>
-        </v-badge>
-        <v-icon v-else>fa-{{ tab.icon }}</v-icon>
-      </v-btn>
-    </v-bottom-navigation>
+        <span slot="label">
+          <el-badge
+            v-if="tab.badge"
+            :value="tab.badge"
+            type="danger"
+            class="el-tab-badge"
+          >
+            <i :class="`fa fa-${tab.icon}`"></i>
+            <span class="tab-label">{{ tab.label }}</span>
+          </el-badge>
+          <span v-else>
+            <i :class="`fa fa-${tab.icon}`"></i>
+            <span class="tab-label">{{ tab.label }}</span>
+          </span>
+        </span>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -42,26 +45,15 @@ import Members from './Members.vue';
 import Settings from './Settings.vue';
 import Cookies from 'js-cookie';
 
-// Just a linear interpolation formula
-const lerp = (x0, x1, t) => parseInt((1 - t) * x0 + t * x1, 10);
-
 export default {
   data () {
     return {
-      animationOptions: {},
-      topPosition: 0
     };
   },
 
   methods: {
-    onSwipe(index, animationOptions) {
-      // Apply the same transition as ons-tabbar
-      this.animationOptions = animationOptions;
-
-      // Interpolate colors and top position
-      const a = Math.floor(index), b = Math.ceil(index), ratio = index % 1;
-      this.colors = this.colors.map((c, i) => lerp(this.tabs[a].theme[i], this.tabs[b].theme[i], ratio));
-      this.topPosition = lerp(this.tabs[a].top || 0, this.tabs[b].top || 0, ratio);
+    handleTabClick(tab) {
+      this.index = parseInt(tab.name);
     }
   },
 
@@ -72,6 +64,14 @@ export default {
       },
       set(index) {
         this.$store.commit('tabbar/setIndex', index)
+      }
+    },
+    activeTab: {
+      get() {
+        return String(this.index);
+      },
+      set(val) {
+        this.index = parseInt(val);
       }
     },
     tabs: {
@@ -108,26 +108,66 @@ export default {
         if(Cookies.get('current_team_id') != 36) {
           tabsTemp.splice(2, 1);
         }
-        // console.log('tabsTemp------------------');
-        // console.log(tabsTemp);
         return tabsTemp;
       }
     }
-    // swipeTheme() {
-    //   return this.md && {
-    //     backgroundColor: `rgb(${this.colors.join(',')})`,
-    //     transition: `all ${this.animationOptions.duration || 0}s ${this.animationOptions.timing || ''}`
-    //   }
-    // },
-    // swipePosition() {
-    //   return this.md && {
-    //     top: this.topPosition + 'px',
-    //     transition: `all ${this.animationOptions.duration || 0}s ${this.animationOptions.timing || ''}`
-    //   }
-    // }
   }
 };
 </script>
 
-<style>
+<style scoped>
+.el-tabbar-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.el-tabbar-content {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 60px; /* Space for fixed tabs */
+}
+
+.el-bottom-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.el-bottom-tabs >>> .el-tabs__header {
+  margin: 0;
+}
+
+.el-bottom-tabs >>> .el-tabs__nav {
+  width: 100%;
+  display: flex;
+}
+
+.el-bottom-tabs >>> .el-tabs__item {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  height: 60px;
+  line-height: 20px;
+}
+
+.tab-label {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.el-bottom-tabs >>> .el-tabs__item i {
+  font-size: 20px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.el-tab-badge >>> .el-badge__content {
+  font-size: 10px;
+}
 </style>

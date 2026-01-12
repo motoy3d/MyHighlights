@@ -1,177 +1,305 @@
 <template>
   <div id="timeline_page">
-    <!-- App Bar - replaces v-ons-toolbar -->
-    <v-app-bar color="primary" dark app>
-      <v-img
-        src="/img/appicon2.png"
-        max-width="32"
-        max-height="32"
-        class="mr-3"
-      ></v-img>
-      
-      <v-toolbar-title>
-        <template v-if="$store.state.navigator.user.myTeams">
-          <template v-if="1 < $store.state.navigator.user.myTeams.length">
-            <v-select
-              id="teamSelection"
-              v-model="currentTeamId"
-              :items="$store.state.navigator.user.myTeams"
-              item-text="name"
-              item-value="id"
-              @change="changeCurrentTeam()"
-              dense
-              dark
-              hide-details
-              class="mt-5"
-            ></v-select>
+    <!-- Header using Element UI -->
+    <el-header class="timeline-header" height="60px">
+      <div class="header-content">
+        <img
+          src="/img/appicon2.png"
+          class="app-icon"
+          alt="icon"
+        />
+        
+        <div class="header-title">
+          <template v-if="$store.state.navigator.user.myTeams">
+            <template v-if="1 < $store.state.navigator.user.myTeams.length">
+              <el-select
+                id="teamSelection"
+                v-model="currentTeamId"
+                @change="changeCurrentTeam()"
+                size="small"
+              >
+                <el-option
+                  v-for="team in $store.state.navigator.user.myTeams"
+                  :key="team.id"
+                  :label="team.name"
+                  :value="team.id"
+                ></el-option>
+              </el-select>
+            </template>
+            <template v-else>
+              <span class="team-name">{{ $store.state.navigator.user.myTeams[0].name }}</span>
+            </template>
           </template>
-          <template v-else>
-            <span class="white--text font-weight-bold">{{ $store.state.navigator.user.myTeams[0].name }}</span>
-          </template>
-        </template>
-      </v-toolbar-title>
-      
-      <v-spacer></v-spacer>
-      
-      <v-btn icon @click="showSearch()">
-        <v-icon>fa-search</v-icon>
-      </v-btn>
-    </v-app-bar>
+        </div>
+        
+        <el-button
+          type="text"
+          icon="el-icon-search"
+          @click="showSearch()"
+          class="search-btn"
+        ></el-button>
+      </div>
+    </el-header>
     
-    <!-- Search Menu - replaces v-ons-popover -->
-    <v-menu
+    <!-- Search Popover -->
+    <el-popover
       v-model="searchPopoverVisible"
-      :close-on-content-click="false"
-      offset-y
-      max-width="300"
+      placement="bottom"
+      width="300"
+      trigger="manual"
     >
-      <v-card>
-        <v-card-text>
-          <v-text-field
-            v-model="searchKeyword"
-            placeholder="キーワード"
-            prepend-icon="fa-search"
-            class="mb-4"
-          ></v-text-field>
-          
-          <v-select
-            v-model="searchCategoryId"
-            :items="categories"
-            item-text="name"
-            item-value="id"
-            label="カテゴリー"
-            class="mb-4"
-          ></v-select>
-          
-          <div class="d-flex align-center mb-4">
-            <span class="mr-2">未読のみ</span>
-            <v-switch
-              v-model="searchUnread"
-              hide-details
-            ></v-switch>
-          </div>
-          
-          <v-btn
-            color="primary"
-            block
-            @click="search()"
-          >検索</v-btn>
-        </v-card-text>
-      </v-card>
-    </v-menu>
+      <div class="search-form">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="キーワード"
+          prefix-icon="el-icon-search"
+          class="mb-3"
+        ></el-input>
+        
+        <el-select
+          v-model="searchCategoryId"
+          placeholder="カテゴリー"
+          class="mb-3 full-width"
+        >
+          <el-option
+            v-for="cat in categories"
+            :key="cat.id"
+            :label="cat.name"
+            :value="cat.id"
+          ></el-option>
+        </el-select>
+        
+        <div class="mb-3">
+          <span>未読のみ</span>
+          <el-switch
+            v-model="searchUnread"
+            class="ml-2"
+          ></el-switch>
+        </div>
+        
+        <el-button
+          type="primary"
+          @click="search()"
+          class="full-width"
+        >検索</el-button>
+      </div>
+    </el-popover>
 
-    <!-- FAB - replaces v-ons-fab -->
-    <v-btn
+    <!-- FAB Button -->
+    <el-button
       v-if="!errored"
-      fab
-      fixed
-      bottom
-      right
-      color="primary"
+      type="primary"
+      icon="el-icon-plus"
+      circle
+      size="large"
       @click="openPost()"
-      class="mb-12"
-    >
-      <v-icon>fa-plus</v-icon>
-    </v-btn>
+      class="timeline-fab"
+    ></el-button>
     
     <section v-if="errored">
-      <v-alert type="error" class="ma-4">
-        ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m
-      </v-alert>
+      <el-alert
+        type="error"
+        title="ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m"
+        :closable="false"
+        class="error-alert"
+      ></el-alert>
     </section>
     <section v-else>
       <div v-if="$store.state.timeline.loading" class="progress-div">
-        <v-progress-circular
-          indeterminate
-          color="primary"
-          class="progress-circular"
-        ></v-progress-circular>
+        <i class="el-icon-loading" style="font-size: 32px; color: #409EFF;"></i>
       </div>
       <template v-else>
-        <!-- TODO: Implement pull-to-refresh for Vuetify (no direct equivalent to v-ons-pull-hook) -->
-        <v-container fluid class="pa-0">
-          <v-list id="timeline_list">
-            <v-list-item
-              v-for="post in posts"
-              :key="post.id"
-              @click="openArticle(post)"
-              two-line
-            >
-              <v-list-item-content>
-                <div class="entry_title_row">
-                  <v-list-item-title class="entry_title">
-                    <v-icon
-                      v-if="!post.read_flg"
-                      color="orange"
-                      small
-                      class="mr-1"
-                    >fa-circle</v-icon>
-                    {{ post.title }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="updated_at">
-                    <template v-if="moment(new Date()).diff(moment(post.updated_at), 'days') <= 2">
-                      {{ post.updated_at | moment("from") }}　
-                    </template>
-                    <template v-else>
-                      {{ post.updated_at | moment('Y.M.D(dd) H:mm') }}
-                    </template>
-                    {{ post.updated_name }}
-                  </v-list-item-subtitle>
-                </div>
-                <div class="entry_content">
-                  <span class="post_content">{{ post.content | truncate}}</span>
-                  <div class="mt-2" v-if="post.comment_count || post.questionnaire_id">
-                    <v-icon
-                      v-if="post.comment_count"
-                      small
-                      class="grey--text mr-2"
-                    >fa-comment</v-icon>
-                    <span v-if="post.comment_count" class="grey--text">{{ post.comment_count }}</span>
-                    <v-icon
-                      v-if="post.questionnaire_id"
-                      small
-                      class="grey--text ml-3"
-                    >fa-list-alt</v-icon>
-                    <span v-if="post.questionnaire_id" class="grey--text">アンケート</span>
-                  </div>
-                </div>
-              </v-list-item-content>
-              <v-list-item-action>
-                <v-icon>fa-chevron-right</v-icon>
-              </v-list-item-action>
-            </v-list-item>
-          </v-list>
+        <!-- TODO: Implement pull-to-refresh for Element UI -->
+        <div class="timeline-content">
+          <el-card
+            v-for="post in posts"
+            :key="post.id"
+            class="timeline-card"
+            @click.native="openArticle(post)"
+            shadow="hover"
+          >
+            <div class="entry_title_row">
+              <div class="entry_title">
+                <i
+                  v-if="!post.read_flg"
+                  class="fa fa-circle"
+                  style="color: orange; font-size: 8px; margin-right: 8px;"
+                ></i>
+                {{ post.title }}
+              </div>
+              <div class="updated_at">
+                <template v-if="moment(new Date()).diff(moment(post.updated_at), 'days') <= 2">
+                  {{ post.updated_at | moment("from") }}　
+                </template>
+                <template v-else>
+                  {{ post.updated_at | moment('Y.M.D(dd) H:mm') }}
+                </template>
+                {{ post.updated_name }}
+              </div>
+            </div>
+            <div class="entry_content">
+              <span class="post_content">{{ post.content | truncate}}</span>
+              <div class="post-meta" v-if="post.comment_count || post.questionnaire_id">
+                <span v-if="post.comment_count" class="meta-item">
+                  <i class="fa fa-comment"></i>
+                  {{ post.comment_count }}
+                </span>
+                <span v-if="post.questionnaire_id" class="meta-item">
+                  <i class="fa fa-list-alt"></i>
+                  アンケート
+                </span>
+              </div>
+            </div>
+            <i class="fa fa-chevron-right chevron-icon"></i>
+          </el-card>
           <div class="after_list" v-if="$store.state.timeline.nextPageUrl">
-            <v-progress-circular
-              indeterminate
-              color="primary"
-            ></v-progress-circular>
+            <i class="el-icon-loading" style="font-size: 24px; color: #409EFF;"></i>
           </div>
-        </v-container>
+        </div>
       </template>
     </section>
   </div>
 </template>
+
+<style scoped>
+.timeline-header {
+  background: #409EFF;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.app-icon {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+}
+
+.header-title {
+  flex: 1;
+}
+
+.team-name {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.search-btn {
+  color: white !important;
+  font-size: 20px;
+}
+
+.search-form {
+  padding: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.timeline-fab {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 99;
+  width: 56px;
+  height: 56px;
+}
+
+.error-alert {
+  margin: 16px;
+}
+
+#timeline_page {
+  padding-top: 60px;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.progress-div {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.timeline-content {
+  padding: 12px;
+}
+
+.timeline-card {
+  margin-bottom: 12px;
+  cursor: pointer;
+  position: relative;
+  padding-right: 30px;
+}
+
+.entry_title_row {
+  margin-bottom: 8px;
+}
+
+.entry_title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.updated_at {
+  font-size: 12px;
+  color: #909399;
+}
+
+.entry_content {
+  font-size: 14px;
+  color: #606266;
+}
+
+.post_content {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.post-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chevron-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #C0C4CC;
+}
+
+.after_list {
+  text-align: center;
+  padding: 20px;
+}
+</style>
 
 <script>
   import Article from './Article.vue';

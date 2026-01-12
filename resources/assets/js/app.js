@@ -62,13 +62,14 @@ window.fn.replaceATag =
 import Vue from 'vue';
 import Vuex from 'vuex';
 import storeLike from './store.js';
-import Vuetify from 'vuetify';
-import 'vuetify/dist/vuetify.min.css';
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
+import locale from 'element-ui/lib/locale/lang/en';
 import '@fortawesome/fontawesome-free/css/all.css';
 import platform from './utils/platform.js';
 
 Vue.use(Vuex);
-Vue.use(Vuetify);
+Vue.use(ElementUI, { locale });
 
 const moment = require('moment');
 require('moment/locale/ja');
@@ -90,50 +91,21 @@ console.warn('>>>>>>>> アプリ起動');
 
 import AppNavigator from './components/AppNavigator.vue';
 
-// Initialize Vuetify with FontAwesome icons
-const vuetify = new Vuetify({
-  icons: {
-    iconfont: 'fa', // Use FontAwesome
-  },
-  theme: {
-    themes: {
-      light: {
-        primary: '#1976D2',
-        secondary: '#424242',
-        accent: '#82B1FF',
-        error: '#FF5252',
-        info: '#2196F3',
-        success: '#4CAF50',
-        warning: '#FFC107'
-      }
-    }
-  }
-});
-
 var vm = new Vue({
   el: '#app',
-  vuetify,
   render: h => h(AppNavigator),
   store: new Vuex.Store(storeLike),
   beforeCreate() {
-    // TODO: Replace this.$ons.platform.isAndroid() with platform util
     // Material Design shortcut - kept for backward compatibility
     Vue.prototype.md = platform.isAndroid();
     Vue.prototype.moment = moment;
     Vue.prototype.platform = platform;
-
-    // TODO: Replace Onsen status bar APIs
-    // Previously: this.$ons.enableAutoStatusBarFill() / disableAutoStatusBarFill()
-    // These need to be handled differently in Vuetify or with custom CSS
   },
   beforeMount() {
-    // TODO: Replace this.$ons.platform.isIPhoneX() with platform util
     const html = document.documentElement;
     if (platform.isIPhoneX()
         && (/*platform.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
       document.body.style.marginBottom = '21px';
-      // Previously: html.setAttribute('onsflag-iphonex-portrait', '');
-      // TODO: Implement iPhone X layout adjustments for Vuetify
     }
   },
 });

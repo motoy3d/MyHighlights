@@ -1,6 +1,6 @@
 <template>
-  <!-- Vuetify root app wrapper - replaces v-ons-navigator -->
-  <v-app id="homeNavi">
+  <!-- Element UI container - replaces v-ons-navigator and v-app -->
+  <div id="homeNavi" class="el-app-container">
     <!-- Dynamic component rendering based on page stack -->
     <component
       v-for="(page, index) in pageStack"
@@ -8,8 +8,15 @@
       :is="page"
       :key="index"
     ></component>
-  </v-app>
+  </div>
 </template>
+
+<style scoped>
+.el-app-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+</style>
 
 <script>
   import AppTabbar from './AppTabbar.vue';
