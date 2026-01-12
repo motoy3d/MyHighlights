@@ -62,9 +62,14 @@ window.fn.replaceATag =
 import Vue from 'vue';
 import Vuex from 'vuex';
 import storeLike from './store.js';
-import VueOnsen from 'vue-onsenui';
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
+import locale from 'element-ui/lib/locale/lang/en';
+import '@fortawesome/fontawesome-free/css/all.css';
+import platform from './utils/platform.js';
+
 Vue.use(Vuex);
-Vue.use(VueOnsen);
+Vue.use(ElementUI, { locale });
 
 const moment = require('moment');
 require('moment/locale/ja');
@@ -85,34 +90,22 @@ Vue.filter('truncate', function(value, len, omission) {
 console.warn('>>>>>>>> アプリ起動');
 
 import AppNavigator from './components/AppNavigator.vue';
+
 var vm = new Vue({
   el: '#app',
   render: h => h(AppNavigator),
   store: new Vuex.Store(storeLike),
   beforeCreate() {
-    // Shortcut for Material Design
-    Vue.prototype.md = this.$ons.platform.isAndroid();
+    // Material Design shortcut - kept for backward compatibility
+    Vue.prototype.md = platform.isAndroid();
     Vue.prototype.moment = moment;
-
-    // iPhone X系用レイアウト自動調整
-    // const html = document.documentElement;
-    // // alert(window.location.href.indexOf('launcher'));
-    // if (this.$ons.platform.isIPhoneX()
-    //     && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher') != -1)) {
-    //   alert('iPhoneX用設定')
-    //   html.setAttribute('onsflag-iphonex-portrait', '');
-    //   html.setAttribute('onsflag-iphonex-landscape', '');
-    // }
-    // this.$ons.enableAutoStatusBarFill();
-    // this.$ons.disableAutoStatusBarFill();
+    Vue.prototype.platform = platform;
   },
   beforeMount() {
     const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX()
-        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
+    if (platform.isIPhoneX()
+        && (/*platform.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
       document.body.style.marginBottom = '21px';
-      // html.setAttribute('onsflag-iphonex-portrait', '');
-      // html.setAttribute('onsflag-iphonex-landscape', '');
     }
   },
 });

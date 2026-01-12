@@ -35,21 +35,21 @@
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNDDCBG"
                     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
-  <ons-page id="login_page">
-    <ons-toolbar class="navbar" class="bg-white">
+  <div id="login_page" class="bg-white" style="min-height: 100vh;">
+    <div class="navbar bg-white" style="display: flex; align-items: center; padding: 10px;">
       <div class="left">
         <img src="/img/appicon2.png" class="logo">
       </div>
-      <div class="center">
+      <div class="center" style="flex: 1; text-align: center;">
         <img src="/img/tsubasa-up-logo.png" width="180" class="mt-5">
       </div>
-    </ons-toolbar>
+    </div>
     <div class="row bg-white h-100p">
       <form method="POST" id="login_form" action="{{ route('login') }}" aria-label="{{ __('Login') }}">
         @csrf
         <div class="col bg-white center" style="padding: 30% 0 0 0">
           <div class="space">
-            <input id="email" type="email" modifier="border" placeholder="メールアドレス"
+            <input id="email" type="email" placeholder="メールアドレス"
                        class="text-input text-input--border login_field form-control{{ $errors->has('email') ? ' is-invalid' : '' }}"
                        name="email" value="{{ old('email') }}" required autofocus>
             </input>
@@ -60,7 +60,7 @@
             @endif
           </div>
           <div class="space">
-            <input id="password" type="password" modifier="border" placeholder="パスワード"
+            <input id="password" type="password" placeholder="パスワード"
                        class="text-input text-input--border login_field form-control{{ $errors->has('password') ? ' is-invalid' : '' }}"
                        name="password" required>
             </input>
@@ -71,8 +71,8 @@
             @endif
           </div>
           <div class="center space mt-20">
-            <ons-button id="login_btn" class="login_btn" modifier="large"
-                        onclick="document.getElementById('login_form').submit()">ログイン</ons-button>
+            <button type="button" id="login_btn" class="login_btn btn btn-primary"
+                         onclick="document.getElementById('login_form').submit()">ログイン</button>
           </div>
           <div class="center mt-20">
             <a href="password/reset" class="gray small">パスワードを忘れた場合はこちら</a>
@@ -82,28 +82,8 @@
           <p class="red small">iOS 9以下では利用できません。PC(Chrome)をご使用ください。</p>
           <p class="small grey">ログインできない方は、<a href="mailto:motoy3d@gmail.com">motoy3d@gmail.com</a> までメールしてください。</p>
         </div>
-        {{--<hr class="login_hr">--}}
-        {{--<div class="row pb-50">--}}
-          {{--<div class="center space">--}}
-            {{--<ons-button id="google_login_btn" class="login_btn" modifier="large">--}}
-              {{--<ons-icon icon="fa-google" size="20px" class="mr-10"></ons-icon>Googleでログイン</ons-button>--}}
-          {{--</div>--}}
-          {{--<div class="center space">--}}
-            {{--<ons-button id="line_login_btn" class="login_btn" modifier="large">--}}
-              {{--<ons-icon icon="fa-line" size="20px" class="mr-10"></ons-icon>LINEでログイン</ons-button>--}}
-          {{--</div>--}}
-          {{--<div class="center space">--}}
-            {{--<ons-button id="facebook_login_btn" class="login_btn" modifier="large">--}}
-              {{--<ons-icon icon="fa-facebook" size="20px" class="mr-10"></ons-icon>facebookでログイン</ons-button>--}}
-          {{--</div>--}}
-          {{--<div class="center space">--}}
-            {{--<ons-button id="twitter_login_btn" class="login_btn" modifier="large">--}}
-              {{--<ons-icon icon="fa-twitter" size="20px" class="mr-10"></ons-icon>twitterでログイン</ons-button>--}}
-          {{--</div>--}}
-        {{--</div>--}}
       </form>
     </div>
-  </ons-page>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/onsen/2.10.6/js/onsenui.min.js"></script>
+  </div>
 </body>
 </html>

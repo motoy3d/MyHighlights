@@ -1,12 +1,22 @@
 <template>
-  <v-ons-navigator
-    id="homeNavi" var="homeNavi"
-    swipeable swipe-target-width="50px"
-    :page-stack="pageStack"
-    :pop-page="storePop"
-    :options="options"
-  ></v-ons-navigator>
+  <!-- Element UI container - replaces v-ons-navigator and v-app -->
+  <div id="homeNavi" class="el-app-container">
+    <!-- Dynamic component rendering based on page stack -->
+    <component
+      v-for="(page, index) in pageStack"
+      v-show="index === pageStack.length - 1"
+      :is="page"
+      :key="index"
+    ></component>
+  </div>
 </template>
+
+<style scoped>
+.el-app-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+</style>
 
 <script>
   import AppTabbar from './AppTabbar.vue';
