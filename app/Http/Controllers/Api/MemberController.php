@@ -9,6 +9,7 @@ use App\Team;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
@@ -82,7 +83,7 @@ class MemberController extends Controller
         Mail::to($request->email)->send(new UserInvitation($fromUser, $existingUser, $team->name, null));
         $user = $existingUser;
       } else {
-        $password = str_random(10);
+        $password = Str::random(10);
         $user = User::create([
           "name" => $request->name,
           "name_kana" => $request->nameKana,
@@ -201,7 +202,7 @@ class MemberController extends Controller
           new UserInvitation($fromUser, $existingUser, $team->name, null));
         $user = $existingUser;
       } else {
-        $password = str_random(10);
+        $password = Str::random(10);
         $user = User::create([
           "name" => $request->name,
           "name_kana" => $request->nameKana,

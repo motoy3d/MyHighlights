@@ -1,11 +1,13 @@
-window._ = require('lodash');
+import _ from 'lodash';
+window._ = _;
 
 /**
  * First we will load all of this project's JavaScript dependencies which
  * includes Vue and other libraries. It is a great starting point when
  * building robust, powerful web applications using Vue and Laravel.
  */
-window.$ = window.jQuery = require('jquery');
+import jQuery from 'jquery';
+window.$ = window.jQuery = jQuery;
 
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
@@ -66,9 +68,10 @@ import VueOnsen from 'vue-onsenui';
 Vue.use(Vuex);
 Vue.use(VueOnsen);
 
-const moment = require('moment');
-require('moment/locale/ja');
-Vue.use(require('vue-moment'), {
+import moment from 'moment';
+import 'moment/locale/ja';
+import VueMoment from 'vue-moment';
+Vue.use(VueMoment, {
   moment
 });
 

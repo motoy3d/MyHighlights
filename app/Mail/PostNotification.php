@@ -40,8 +40,8 @@ class PostNotification extends Mailable
       ->text('emails.post_notification')
       ->with([
         'content' => $this->content,
-        'app_name' => env('APP_NAME', 'Tsubasa⬆︎UP'),
-        'app_link' => env('APP_URL', 'https://tsubasa.smartj.mobi')
+        'app_name' => config('app.name'),
+        'app_link' => config('app.url')
       ]);
   }
 }

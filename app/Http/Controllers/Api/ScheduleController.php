@@ -29,7 +29,7 @@ class ScheduleController extends Controller
    */
   public function index(Request $request)
   {
-    $months = env('SCHEDULE_DATA_LOADING_MONTHS', 12);
+    $months = config('tsubasa.schedule_data_loading_months');
     //TODO validate
     $month = $request->month;
     $fromDate = Carbon::createFromFormat('Ymd', $month . '01')

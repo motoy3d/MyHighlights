@@ -44,9 +44,9 @@ class CustomResetPassword extends Notification
   public function toMail($notifiable)
   {
       return (new MailMessage)
-          ->from(env('MAIL_FROM_ADDRESS', 'system@smartj.mobi'),
-            env('MAIL_FROM_NAME', 'Tsubasa⬆︎UP'))
-          ->subject(env('APP_NAME', 'Tsubasa⬆︎UP') . 'パスワード再設定')
+          ->from(config('mail.from.address'),
+            config('mail.from.name'))
+          ->subject(config('app.name') . 'パスワード再設定')
           ->line('下のボタンをクリックしてパスワードを再設定してください。')
           ->action('パスワード再設定', url(config('app.url')
             .route('password.reset', $this->token, false)))

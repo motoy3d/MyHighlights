@@ -36,10 +36,10 @@ class UserController extends Controller
       $team = $teams[0];
       $currentTeamId = $team->id;
       $currentTeamName = $team->name;
-      $minutes = env('SESSION_LIFETIME', 129600);
+      $minutes = config('session.lifetime');
       $path = "/";
       $domain = "";
-      $secure = env('APP_ENV', 'production') == 'production';
+      $secure = app()->environment('production');
       $httpOnly = false; //jsで扱うために必要
       Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
         $minutes, $path, $domain, $secure, $httpOnly));

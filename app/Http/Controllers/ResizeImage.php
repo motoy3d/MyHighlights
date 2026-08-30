@@ -2,7 +2,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Log;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 trait ResizeImage
 {
@@ -15,21 +16,16 @@ trait ResizeImage
   {
     $uploadedFilePath = storage_path() . '/app/' . $filePath;
     Log::info("resizeImage=$uploadedFilePath");
-    $image = Image::make(file_get_contents($uploadedFilePath));
+
+    // intervention/image 3系はファサードのImage::make()を廃止したためImageManagerを直接使う
+    $image = (new ImageManager(new Driver()))->read($uploadedFilePath);
+
     // 幅か高さどちらかが1000を超えていたらリサイズ
     if ($image->width() < 1000 && $image->height() < 1000) {
       return;
     }
-    $resizeWidth = null;
-    $resizeHeight = null;
-    // 縦横大きい方を1000pxに設定し縦横比維持してリサイズ
-    if ($image->width() < $image->height()) {
-      $resizeHeight = 1000;
-    } else {
-      $resizeWidth = 1000;
-    }
-    $image->resize($resizeWidth, $resizeHeight, function ($constraint) {
-      $constraint->aspectRatio();
-    })->save($uploadedFilePath);
+
+    // 縦横比を保ったまま1000px四方に収める(拡大はしない)
+    $image->scaleDown(width: 1000, height: 1000)->save($uploadedFilePath);
   }
 }

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Http\Controllers\Api\PostController;
 use App\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Debug\Dumper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
@@ -17,12 +16,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
  */
 class PostControllerTest extends TestCase {
 //  use RefreshDatabase;  //データ全部消える
-  public function setUp()
+  protected function setUp(): void
   {
     parent::setUp();
     // Avoid "Session store not set on request." - Exception!
     Session::setDefaultDriver('array');
-    $this->manager = app('session');
   }
 
   // store ----------------------------------------------------

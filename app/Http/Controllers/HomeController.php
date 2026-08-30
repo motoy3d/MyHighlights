@@ -12,16 +12,6 @@ use Illuminate\Support\Facades\Session;
 class HomeController extends Controller
 {
   /**
-   * Create a new controller instance.
-   *
-   * @return void
-   */
-  public function __construct()
-  {
-    $this->middleware('auth');
-  }
-
-  /**
    * Show the application dashboard.
    *
    * @return \Illuminate\Http\Response
@@ -33,7 +23,7 @@ class HomeController extends Controller
     if (count($teams) == 0) { // 退会済みユーザがログインしたまま開いた場合ログアウトさせる
       $logoutController = app()->make(LoginController::class);
       $logoutController->logout($request);
-      return view('login');
+      return redirect()->route('login');
     }
     $needMakingCookie = true;
     // Cookieにcurrent_team_idがある場合、所属チームに該当するかチェック
@@ -50,10 +40,10 @@ class HomeController extends Controller
       $team = $teams[0];
       $currentTeamId = $team->id;
       $currentTeamName = $team->name;
-      $minutes = env('SESSION_LIFETIME', 129600);
+      $minutes = config('session.lifetime');
       $path = "/";
       $domain = "";
-      $secure = env('APP_ENV', 'production') == 'production';
+      $secure = app()->environment('production');
       $httpOnly = false; //jsで扱うために必要
       Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
         $minutes, $path, $domain, $secure, $httpOnly));

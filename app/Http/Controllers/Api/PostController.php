@@ -36,8 +36,8 @@ class PostController extends Controller
   public function index(Request $request)
   {
 //    Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
-    $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
-//    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
+    $perPageCount = config('tsubasa.timeline_load_posts');  //1ページあたりの件数
+//    Log::info('★perPageCount=' . $perPageCount . ', ' . config('tsubasa.timeline_load_posts'));
     Log::info("PostController#index");
     $teamId = Cookie::get('current_team_id');
     $posts = DB::table('posts')

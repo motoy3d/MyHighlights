@@ -1,0 +1,31 @@
+# キューワーカー。旧 supervisord.conf の live_scouter_mp4_batch の置き換え。
+#
+#   sudo cp deploy/tsubasa-queue.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now tsubasa-queue
+#
+[Unit]
+Description=Tsubasa UP queue worker
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=apache
+Group=apache
+WorkingDirectory=/var/www/MyHighlights
+ExecStart=/usr/bin/php artisan queue:work --timeout=3600 --sleep=60 --tries=3
+# デプロイ時に `php artisan queue:restart` を実行すると、ワーカーが
+# 現在のジョブを終えてから自分で終了する。systemdがそれを再起動する。
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+# 最低限のサンドボックス化
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

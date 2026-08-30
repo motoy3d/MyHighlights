@@ -11,19 +11,56 @@ Webアプリケーション。PWA対応していく。基本的にスマホ向�
 
 ## 技術スタック
 - AWS
-- EC2 (Amazon Linux)
-- Apache
-- PHP
-- Laravel
-- MySQL
+- EC2 (Amazon Linux 2023)
+- Apache 2.4
+- PHP 8.4
+- Laravel 13
+- MariaDB 10.11
 - OnsenUI
-- Vue.js
+- Vue.js 2
 - PWA
-- webpack
+- Vite
 - composer
 - npm
 - Amazon SES
 - Amazon S3
+
+## 開発
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+
+# 別ターミナルで
+npm run dev        # Vite開発サーバ
+php artisan serve
+```
+
+## デプロイ
+
+`deploy/` 配下に Amazon Linux 2023 用の資材がある。
+
+| ファイル | 用途 |
+| --- | --- |
+| `deploy/setup-al2023.sh` | 新しいEC2インスタンスの初期構築（一度だけ） |
+| `deploy/deploy.sh` | 通常のデプロイ（`git pull` 後に実行） |
+| `deploy/tsubasa.conf` | Apache vhost。ACMEチャレンジをリダイレクト除外済み |
+| `deploy/tsubasa-queue.service` | キューワーカーのsystemdユニット（旧supervisordの置き換え） |
+
+TLS証明書は certbot で取得する。AL2023 の certbot パッケージは systemd タイマーで
+自動更新されるため、`systemctl list-timers | grep certbot` で有効なことを確認しておく。
+
+```bash
+sudo certbot --apache -d tsubasa.smartj.mobi
+```
+
+## 移行に関するメモ
+
+Amazon Linux 1 / PHP 7.1 / Laravel 5.6 からの移行内容は
+[docs/MIGRATION-al2023.md](docs/MIGRATION-al2023.md) を参照。
 
 ## 連絡先
 motoy3d@gmail.com

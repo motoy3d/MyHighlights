@@ -17,7 +17,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Tsubasa⬆︎UP - ログイン</title>
   <link rel="manifest" href="/manifest.json">
-  <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+  @vite(['resources/assets/sass/app.scss'])
   <link rel="apple-touch-icon" href="appicon.png">
   <link rel="apple-touch-startup-image" href="img/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <link rel="apple-touch-startup-image" href="img/launch-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
