@@ -116,7 +116,24 @@ Vue 2 は据え置いた。`vue-onsenui` の Vue 3 対応版は存在するが�
 
 ## 検証内容
 
-PHP 8.4 + MariaDB 10.11 で以下を確認した。
+### 再現方法
+
+動作確認用のデータは `DevelopmentSeeder` で投入できる。
+
+```bash
+php artisan migrate:fresh --seed
+php artisan serve
+# ログイン: test@example.com / password
+# iCal:     /ical/ical-dev-0001
+```
+
+投入されるのは、チーム2件・ユーザ5件・メンバー5件・カテゴリ4件・
+予定8件（時刻あり／終日／開始のみ の3パターンを含む）・投稿12件・コメント24件。
+`app()->isProduction()` の場合は例外を投げて中断するため、本番では実行できない。
+
+### 確認した項目
+
+PHP 8.4 + MariaDB 10.11 で、`config:cache` などを有効にした本番同等の構成で確認した。
 
 - 全42マイグレーションの実行
 - `config:cache` / `route:cache` / `view:cache` / `event:cache` の生成
@@ -126,6 +143,15 @@ PHP 8.4 + MariaDB 10.11 で以下を確認した。
 - iCal出力（時刻あり／終日／開始のみ の3パターン、VTIMEZONE付き）
 - Vite の本番ビルドとBladeからの読み込み
 - キューワーカーの起動、artisanコマンドの検出
+- API一覧: `/api/me` `/api/posts`（ページング10件）`/api/schedules`
+  `/api/members` `/api/teams` `/api/ical/config` が200、未認証は401
+
+### 移行とは無関係の既存の挙動
+
+`GET /api/schedules` は `month` パラメータが必須で、無しで呼ぶと
+`Carbon::createFromFormat()` が例外を投げて500になる
+（コード上も `//TODO validate` と書かれている）。SPAは常に `month` を
+送るため実害は出ていないが、バリデーションを入れる余地はある。
 
 ### 既知の未対応
 

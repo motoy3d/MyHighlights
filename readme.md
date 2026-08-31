@@ -32,7 +32,9 @@ composer install
 npm install
 cp .env.example .env
 php artisan key:generate
-php artisan migrate
+
+# 動作確認用データつきでDBを作る (test@example.com / password でログインできる)
+php artisan migrate:fresh --seed
 
 # 別ターミナルで
 npm run dev        # Vite開発サーバ
