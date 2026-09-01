@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -127,9 +127,14 @@ return [
     |
     */
 
+    // 移行前は str_slug() で "tsubasaup_session" になっていた。
+    // Laravel 11標準の Str::snake() だと APP_NAME("Tsubasa⬆︎UP")から
+    // 非ASCII文字を含む "tsubasa⬆︎_u_p_session" になってしまい、
+    // 既存セッションが全て無効になるうえCookie名として不正なため、
+    // 従来と同じ値になる Str::slug() を使う。
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::snake((string) env('APP_NAME', 'laravel')).'_session'
+        Str::slug((string) env('APP_NAME', 'laravel'), '_').'_session'
     ),
 
     /*
@@ -199,7 +204,10 @@ return [
     |
     */
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    // 'lax' にすると LINE Notify のコールバック(response_mode=form_post による
+    // 別サイトからのPOST)でセッションCookieが送られず連携が失敗するため、
+    // 移行前と同じ未指定のままにする。
+    'same_site' => env('SESSION_SAME_SITE'),
 
     /*
     |--------------------------------------------------------------------------

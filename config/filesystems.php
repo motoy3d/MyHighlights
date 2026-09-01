@@ -30,10 +30,14 @@ return [
 
     'disks' => [
 
+        // Laravel 11で既定のrootが storage/app から storage/app/private に
+        // 変わったが、添付ファイルは storePublicly('public/...') で保存し
+        // public/storage シンボリックリンク経由で配信しているため、
+        // 移行前と同じ storage/app のままにする必要がある。
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
+            'root' => storage_path('app'),
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

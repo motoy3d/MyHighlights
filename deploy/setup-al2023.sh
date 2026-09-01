@@ -28,6 +28,11 @@ echo "==> MariaDB の起動"
 sudo systemctl enable --now mariadb
 echo "    初期設定がまだなら sudo mariadb-secure-installation を実行すること"
 
+echo "==> PHP-FPM の起動"
+# AL2023の /etc/httpd/conf.d/php.conf は .php を php-fpm のソケットへ渡す設定に
+# なっているため、php-fpm が動いていないとPHPが実行されない
+sudo systemctl enable --now php-fpm
+
 echo "==> Apache の起動"
 sudo systemctl enable --now httpd
 sudo cp "${APP_DIR}/deploy/tsubasa.conf" /etc/httpd/conf.d/tsubasa.conf 2>/dev/null || \

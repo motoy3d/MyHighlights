@@ -97,6 +97,49 @@ Vue 2 / OnsenUI はそのまま据え置いている（後述）。
    `LogController` / `LogOperations` がUser-Agentなどを直接参照していたため、
    ヘッダのないリクエストで例外になり得た。`??` で保護
 
+### 移行作業で一度混入させた不具合（レビューで検出して修正済み）
+
+Laravel 13の標準 `config/*.php` をそのまま採用したことで既定値が変わり、
+本番で実害が出る状態になっていた箇所。いずれも修正のうえ
+`tests/Feature/ConfigInvariantTest.php` で値を固定して再発を防いでいる。
+
+1. **セッションCookie名が変わり、しかも非ASCIIになっていた**
+   Laravel 11標準は `Str::snake(APP_NAME).'_session'` で、
+   `APP_NAME=Tsubasa⬆︎UP` から `tsubasa⬆︎_u_p_session` という
+   非ASCII文字を含む名前になっていた。全ユーザーのログアウトに加え、
+   Cookie名として不正で動作不定になる。移行前と同じ
+   `tsubasaup_session` になるよう `Str::slug()` に戻した
+
+2. **添付ファイルの保存先が変わっていた**
+   Laravel 11で `local` ディスクの既定rootが `storage/app` から
+   `storage/app/private` に変更されている。添付は
+   `storePublicly('public/...')` で保存し `public/storage`
+   シンボリックリンク経由で配信しているため、そのままでは
+   画像リサイズが例外になり、新規添付が全て404になる。
+   rootを `storage/app` に戻した
+
+3. **SameSite=Lax でLINE Notify連携が壊れる**
+   Laravel 11標準は `same_site => 'lax'`。LINE Notifyの認証は
+   `response_mode=form_post` を使うため、別サイトからのPOSTで
+   コールバックされる。Laxではセッションクッキーが送られず
+   `auth` ミドルウェアでログイン画面に飛ばされてしまう。
+   移行前と同じ未指定(null)に戻した
+
+4. **失敗ジョブが記録できない**
+   Laravel 8以降の既定ドライバ `database-uuids` は `failed_jobs.uuid` に
+   書き込むが、このテーブルはLaravel 5.6世代の定義で `uuid` 列が無い。
+   ジョブ失敗時に「Unknown column 'uuid'」になる。
+   列を追加するマイグレーションを足した
+
+5. **セッションドライバの既定が database になっていた**
+   `sessions` テーブルが無いため、`.env` に `SESSION_DRIVER` が
+   無い環境では起動しない。既定を `file` に戻した
+
+6. **php-fpm を起動していなかった**
+   AL2023の `/etc/httpd/conf.d/php.conf` は `.php` を php-fpm の
+   ソケットへ渡す設定になっているため、php-fpm が動いていないと
+   PHPが実行されない。`setup-al2023.sh` に起動処理を追加した
+
 ### 移行作業で一度混入させた不具合（テストで検出して修正済み）
 
 `config/app.php` を Laravel 13 の標準ファイルに差し替えた際、末尾にあった
@@ -201,6 +244,31 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 | その他 | チーム取得、ブログ、LINE Notify連携、ホーム画面のCookie発行 |
 
 いずれのテストも「他チームのデータには触れない」ことを確認している。
+
+### 移行にあたっての確認事項
+
+- **キューワーカーは `QUEUE_CONNECTION` 次第で無意味になる**
+  本番の `.env` が `QUEUE_DRIVER=sync` の場合、通知ジョブはリクエスト内で
+  同期実行され、`tsubasa-queue` サービスは何もしない（移行前のsupervisordも
+  同じ状態だった）。ワーカーを活かすなら `QUEUE_CONNECTION=database` にする
+- **セッションCookieがSecureになる可能性がある**
+  `session.secure` の既定が `false` から未指定に変わり、未指定の場合は
+  リクエストがHTTPSかどうかで自動判定される。HTTPS運用なので問題ないが、
+  明示するなら `.env` に `SESSION_SECURE_COOKIE=true` を入れる
+- **`/api/*` にCORSヘッダが付くようになる**
+  Laravel 11以降は `HandleCors` が標準のグローバルミドルウェアに入っている。
+  既定は `Access-Control-Allow-Origin: *` かつ `supports_credentials: false` で、
+  資格情報付きの読み取りはブラウザが拒否するため実害はない。
+  絞りたい場合は `config/cors.php` を用意する
+- **SQLログの量**
+  `AppServiceProvider` が全クエリを `Log::info` で出力する設定は移行前からの
+  ものをそのまま残している。`logging` の既定は単一ファイルなので、
+  ログが肥大化する場合は `daily` への変更を検討する
+- **APIはCSRFトークンを要求する**
+  移行前はPassportの `TokenGuard` がJWTクッキー内のCSRF値を検証しており、
+  移行後はSanctumの stateful 判定が `X-CSRF-TOKEN` を検証する。
+  どちらもSPAが送っているヘッダで通るため挙動は同じ。
+  実サーバでヘッダあり=成功／なし=419 を確認済み
 
 ### 既知の未対応
 
