@@ -28,14 +28,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'log'])->group(function () {
     Route::get('posts/search_init', [PostController::class, 'searchInit']);
-    Route::resource('posts', PostController::class);
+    // editはコントローラに実装が無いため塞ぐ(SPAからも呼んでいない)
+    Route::resource('posts', PostController::class)->except(['edit']);
     Route::post('post_responses/{post_id}', [PostResponseController::class, 'store']);
     Route::post('post_comments/{post_id}', [PostCommentController::class, 'store']);
     Route::delete('post_comments/{post_id}/{comment_id}', [PostCommentController::class, 'destroy']);
     Route::post('post_comment_responses/{post_comment_id}', [PostCommentResponseController::class, 'store']);
     Route::delete('post_attachments/{post_attachment_id}', [PostAttachmentController::class, 'destroy']);
 
-    Route::resource('schedules', ScheduleController::class);
+    // show/editはコントローラに実装が無いため塞ぐ(SPAからも呼んでいない)
+    Route::resource('schedules', ScheduleController::class)->except(['show', 'edit']);
     Route::get('schedule_comments/{schedule_id}', [ScheduleCommentController::class, 'show']);
     Route::post('schedule_comments/{schedule_id}', [ScheduleCommentController::class, 'store']);
     Route::delete('schedule_comments/{schedule_id}/{comment_id}', [ScheduleCommentController::class, 'destroy']);
@@ -50,7 +52,8 @@ Route::middleware(['auth:api', 'log'])->group(function () {
     Route::post('users/updateMailNotificationFlg', [UserController::class, 'updateMailNotificationFlg']);
     Route::post('users/updateLINENotificationFlg', [UserController::class, 'updateLINENotificationFlg']);
 
-    Route::resource('members', MemberController::class);
+    // create/editはコントローラ側がコメントアウトされているため塞ぐ
+    Route::resource('members', MemberController::class)->except(['create', 'edit']);
     Route::post('questionnaires/answer', [QuestionnaireController::class, 'store']);
     Route::get('blog', [BlogController::class, 'index']);
     Route::get('ical/config', [ICalendarController::class, 'getConfig'])->name('ical.config');

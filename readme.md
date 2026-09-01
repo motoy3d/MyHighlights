@@ -69,6 +69,12 @@ TLS証明書は certbot で取得する。AL2023 の certbot パッケージは 
 sudo certbot --apache -d tsubasa.smartj.mobi
 ```
 
+## 本番移行
+
+切り替え手順と確認項目は
+[docs/PRODUCTION-CUTOVER-CHECKLIST.md](docs/PRODUCTION-CUTOVER-CHECKLIST.md) にまとめてある。
+**本番 `.env` との突き合わせ検証が未実施**なので、切り替え前に必ず実施すること。
+
 ## 移行に関するメモ
 
 Amazon Linux 1 / PHP 7.1 / Laravel 5.6 からの移行内容は

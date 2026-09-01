@@ -270,14 +270,19 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
   どちらもSPAが送っているヘッダで通るため挙動は同じ。
   実サーバでヘッダあり=成功／なし=419 を確認済み
 
-### 既知の未対応
+### 実装の無いリソースルートを塞いだ
 
-`Route::resource()` が生成する以下のルートは、対応するメソッドが
-コントローラに存在しない（`MemberController` は該当箇所がコメントアウト済み）ため
-呼ぶと500になる。SPAからは呼ばれておらず移行前からの状態のため、そのままにしてある。
-`->except(['edit'])` などで塞ぐ余地はある。
+`Route::resource()` は実装が無いアクションのルートも生成するため、
+呼ぶと500になるルートが5件あった（移行前からの状態）。
+SPAからは呼ばれていないことを確認したうえで `->except()` で塞いだ。
 
 - `GET /api/posts/{post}/edit`
+- `GET /api/schedules/{schedule}` … ScheduleControllerに `show()` が無い
 - `GET /api/schedules/{schedule}/edit`
-- `GET /api/members/create`
-- `GET /api/members/{member}/edit`
+- `GET /api/members/create` … コントローラ側がコメントアウト
+- `GET /api/members/{member}/edit` … 同上
+
+`tests/Feature/RouteIntegrityTest.php` で、
+「全ルートが実在するコントローラメソッドを指していること」
+「塞いだルートが復活していないこと」
+「SPAが使う35エンドポイントが揃っていること」を検査している。
