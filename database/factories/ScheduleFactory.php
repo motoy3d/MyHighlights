@@ -14,6 +14,12 @@ class ScheduleFactory extends Factory
     protected $model = Schedule::class;
 
     /**
+     * schedulesは(team_id, schedule_date, title)にユニーク制約があるため、
+     * 連番を付けてタイトルが衝突しないようにする。
+     */
+    private static int $sequence = 0;
+
+    /**
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -21,7 +27,8 @@ class ScheduleFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'schedule_date' => fake()->dateTimeBetween('-1 month', '+2 months')->format('Y-m-d'),
-            'title' => fake()->randomElement(['練習', '練習試合', 'リーグ戦', 'ミーティング']),
+            'title' => fake()->randomElement(['練習', '練習試合', 'リーグ戦', 'ミーティング'])
+                . ' #' . ++self::$sequence,
             'allday_flg' => 0,
             'time_from' => '09:30:00',
             'time_to' => '12:00:00',

@@ -36,8 +36,8 @@ class LineNotifyController extends Controller
   {
     $uri = self::LINE_NOTIFY_AUTH_URL . '?' .
       'response_type=code&' .
-      'client_id=' . config('app.line_notify_client_id') . '&' .
-      'redirect_uri=' . config('app.line_notify_callback_uri') . '&' .
+      'client_id=' . config('tsubasa.line_notify.client_id') . '&' .
+      'redirect_uri=' . config('tsubasa.line_notify.callback_uri') . '&' .
       'scope=notify&' .
       'state=' . csrf_token() . '&' .
       'response_mode=form_post';
@@ -62,9 +62,9 @@ class LineNotifyController extends Controller
       'form_params' => [
         'grant_type'    => 'authorization_code',
         'code'          => $request->code,
-        'redirect_uri'  => config('app.line_notify_callback_uri'),
-        'client_id'     => config('app.line_notify_client_id'),
-        'client_secret' => config('app.line_notify_client_secret')
+        'redirect_uri'  => config('tsubasa.line_notify.callback_uri'),
+        'client_id'     => config('tsubasa.line_notify.client_id'),
+        'client_secret' => config('tsubasa.line_notify.client_secret')
       ]
     ]);
     Log::info('tokenレスポンス------------');

@@ -50,8 +50,11 @@ Vue 2 / OnsenUI はそのまま据え置いている（後述）。
   削除されたため、`LoginController` / `ForgotPasswordController` /
   `ResetPasswordController` を必要な処理だけ自前で実装し直した。
   ログイン試行のスロットリング（5回でロック）も従来どおり動作する
-- コントローラのコンストラクタでの `$this->middleware()` は Laravel 11 で
-  廃止されたため、`auth` / `guest` の指定を `routes/web.php` に移した
+- 認証コントローラを書き直した都合で、`auth` / `guest` の指定を
+  `routes/web.php` のルート単位に移した。
+  なお `Illuminate\Routing\Controller::middleware()` は Laravel 13 にも残っており、
+  `WithdrawalController` などコンストラクタで指定したままの箇所も動作する
+  （テストで確認済み）
 - Passport は同一オリジンSPA向けの `CreateFreshApiToken` にしか使っていなかったため、
   Sanctum の stateful 認証に置き換えた。JS側の変更は不要
 - 登録用のルートもビューも存在せず、削除済みトレイトに依存していた
@@ -93,6 +96,16 @@ Vue 2 / OnsenUI はそのまま据え置いている（後述）。
 6. **`$_SERVER` の未定義キー参照**
    `LogController` / `LogOperations` がUser-Agentなどを直接参照していたため、
    ヘッダのないリクエストで例外になり得た。`??` で保護
+
+### 移行作業で一度混入させた不具合（テストで検出して修正済み）
+
+`config/app.php` を Laravel 13 の標準ファイルに差し替えた際、末尾にあった
+アプリ独自のキーを取りこぼしていた。`line_notify_client_id` /
+`line_notify_client_secret` / `line_notify_callback_uri` が失われ、
+LINE Notify連携のclient_idがnullになる状態だった。
+`config/tsubasa.php` の `line_notify` に移して復旧し、
+`LineNotifyControllerTest` で設定値がリダイレクトURLに反映されることを検証している。
+（未使用だった `test_ip` は復旧していない）
 
 ### フロントエンド
 
@@ -153,11 +166,50 @@ PHP 8.4 + MariaDB 10.11 で、`config:cache` などを有効にした本番同�
 （コード上も `//TODO validate` と書かれている）。SPAは常に `month` を
 送るため実害は出ていないが、バリデーションを入れる余地はある。
 
+### 自動テスト
+
+移行前の `tests/Feature` は「ユーザーID 1と2が存在する」「`current_team_id`
+Cookieがある」「ブログRSSが10件返る」といった、リポジトリに含まれていない
+特定の開発用データに依存しており実行できなかった。
+ファクトリで自己完結する形に全面的に書き直してある。
+
+```bash
+# テスト用DBを一度だけ作る
+mysql -e 'CREATE DATABASE tsubasa_test'
+./vendor/bin/phpunit
+```
+
+マイグレーションが `ALTER TABLE ... COMMENT` を使うためSQLiteは利用できず、
+MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
+`tsubasa_test` に切り替えている（`RefreshDatabase` で毎回巻き戻す）。
+
+アプリのエンドポイント55件のうち51件をテストで叩いている。
+
+| 対象 | 内容 |
+| --- | --- |
+| 認証 | ログイン、退会済みユーザの拒否、5回でロック、ログアウト |
+| パスワード再設定 | メール送信、トークン検証、再設定後の自動ログイン |
+| 投稿 | 一覧/検索/カテゴリ/未読絞り込み、登録(アンケート・添付込み)、詳細、更新、削除 |
+| コメント | 投稿、件数の増減、添付、通知ジョブ、削除権限 |
+| いいね/既読 | 投稿・コメントへの反応とカウント |
+| 予定 | 一覧、登録、終日予定、更新、削除 |
+| 予定コメント | 一覧、投稿、通知ジョブ、削除権限 |
+| メンバー | 一覧、招待あり/なしの登録、更新、管理者のみ退会可 |
+| ユーザー | 自分の情報、氏名/カナ/メール/パスワード/通知フラグの更新 |
+| アンケート | 回答、上書き、削除、集計、CSVダウンロード |
+| iCal | カレンダー名、時刻あり/終日/開始のみ、VTIMEZONE、購読URL |
+| その他 | チーム取得、ブログ、LINE Notify連携、ホーム画面のCookie発行 |
+
+いずれのテストも「他チームのデータには触れない」ことを確認している。
+
 ### 既知の未対応
 
-`tests/Feature` の41テストは通らない。これは移行による退行ではなく、
-テストが「ユーザーID 1と2が存在する」「`current_team_id` Cookieがある」
-「ブログRSSが10件返る」といった、リポジトリに含まれていない特定の
-開発用データに依存しているため。
-また `UserControllerTest` の3件は `PUT /api/users/updateName` を叩いているが、
-ルートは以前から `POST` のみで、テスト側が古いままになっている。
+`Route::resource()` が生成する以下のルートは、対応するメソッドが
+コントローラに存在しない（`MemberController` は該当箇所がコメントアウト済み）ため
+呼ぶと500になる。SPAからは呼ばれておらず移行前からの状態のため、そのままにしてある。
+`->except(['edit'])` などで塞ぐ余地はある。
+
+- `GET /api/posts/{post}/edit`
+- `GET /api/schedules/{schedule}/edit`
+- `GET /api/members/create`
+- `GET /api/members/{member}/edit`

@@ -18,4 +18,11 @@ return [
     // タイムラインの1ページあたりの投稿数
     'timeline_load_posts' => (int) env('TIMELINE_LOAD_POSTS', 10),
 
+    // LINE Notify連携
+    'line_notify' => [
+        'client_id' => env('LINE_NOTIFY_CLIENT_ID'),
+        'client_secret' => env('LINE_NOTIFY_CLIENT_SECRET'),
+        'callback_uri' => env('LINE_NOTIFY_CALLBACK_URI'),
+    ],
+
 ];

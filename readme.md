@@ -41,6 +41,16 @@ npm run dev        # Vite開発サーバ
 php artisan serve
 ```
 
+## テスト
+
+MySQL/MariaDB が必要（マイグレーションが `ALTER TABLE ... COMMENT` を使うため
+SQLiteでは動かない）。テスト用DBを一度だけ作っておく。
+
+```bash
+mysql -e 'CREATE DATABASE tsubasa_test'
+./vendor/bin/phpunit
+```
+
 ## デプロイ
 
 `deploy/` 配下に Amazon Linux 2023 用の資材がある。

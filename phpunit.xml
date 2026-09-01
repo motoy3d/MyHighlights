@@ -18,6 +18,11 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- マイグレーションがALTER TABLE ... COMMENTを使うためSQLiteは使えない。
+             テスト用のDBをあらかじめ作っておくこと:
+             CREATE DATABASE tsubasa_test; -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="tsubasa_test"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
