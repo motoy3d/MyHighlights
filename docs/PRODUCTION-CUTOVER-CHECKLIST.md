@@ -109,6 +109,12 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
 
 ## 移行後に検討したいこと
 
+- **チームをまたいだ認可の穴**（移行前からの問題・未修正）
+  `current_team_id` クッキーを書き換えると、所属していないチームの
+  投稿が読め、別チームの管理者がメンバーを退会させられる。
+  詳細と現状の記録は `docs/MIGRATION-al2023.md` と
+  `tests/Feature/CrossTeamAuthorizationTest.php` を参照
+
 - 古いiOS向けに `@vitejs/plugin-legacy` の導入を検討する
   （ViteはESモジュールを出力するため）
 - Vue 2 はEOL。`vue-onsenui` 3.x でVue 3に上げる作業は別途
