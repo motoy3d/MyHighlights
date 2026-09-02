@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureCurrentTeamIsOwn;
+use App\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Middleware\LogOperations;
 use App\Support\ExceptionLogger;
 use Illuminate\Foundation\Application;
@@ -34,11 +36,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // 同一オリジンのSPAからのAPIリクエストをセッション認証で通す(旧Passportの
         // CreateFreshApiTokenミドルウェアの代替)。SANCTUM_STATEFUL_DOMAINSを参照する。
-        $middleware->statefulApi();
+        //
+        // statefulApi() ではなく自前のサブクラスを使う。Sanctum標準は
+        // session.same_site を 'lax' に強制するが、LINE Notifyのコールバックが
+        // 別サイトからのPOSTのため、Laxだとセッションが送られず連携できない。
+        $middleware->api(prepend: [EnsureFrontendRequestsAreStateful::class]);
         $middleware->throttleApi('60,1');
 
         $middleware->alias([
             'log' => LogOperations::class,
+            // current_team_id クッキーが所属チームを指していることを保証する
+            'team' => EnsureCurrentTeamIsOwn::class,
         ]);
 
         // ALB等のリバースプロキシを前段に置く場合は下記を有効化する。

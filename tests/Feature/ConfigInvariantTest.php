@@ -46,6 +46,29 @@ class ConfigInvariantTest extends TestCase
         $this->assertNull(config('session.same_site'));
     }
 
+    public function test_API応答でセッションクッキーにSameSiteが付かない(): void
+    {
+        // Sanctum標準の EnsureFrontendRequestsAreStateful は
+        // session.same_site を 'lax' に強制する。そうなるとAPI応答で
+        // セッションクッキーが Lax として再発行され、LINE Notifyの
+        // コールバック(別サイトからのPOST)でセッションが送られなくなる。
+        // App\Http\Middleware\EnsureFrontendRequestsAreStateful で
+        // 上書きを外しているので、それが効いていることを確認する。
+        [$team, $user] = $this->makeTeamWithUser();
+
+        $response = $this->actingAsTeamMember($user, $team)
+            ->getJson('/api/me')
+            ->assertStatus(200);
+
+        $this->assertNull(config('session.same_site'),
+            'stateful APIリクエスト後に session.same_site が書き換えられている');
+
+        foreach ($response->headers->getCookies() as $cookie) {
+            $this->assertNull($cookie->getSameSite(),
+                "クッキー {$cookie->getName()} に SameSite が付いている");
+        }
+    }
+
     public function test_パスワードリセットのテーブル名は既存のまま(): void
     {
         // Laravel 11の既定は password_reset_tokens だが、

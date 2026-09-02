@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:api', 'log'])->group(function () {
+Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::get('posts/search_init', [PostController::class, 'searchInit']);
     // editはコントローラに実装が無いため塞ぐ(SPAからも呼んでいない)
     Route::resource('posts', PostController::class)->except(['edit']);

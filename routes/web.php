@@ -47,6 +47,7 @@ Route::middleware(['log'])->group(function () {
     Route::get('/ical/{ical_id}', [ICalendarController::class, 'make'])->name('ical');
 
     Route::get('questionnaire_download/{questionnaire_id}', QuestionnaireCsvController::class)
+        ->middleware(['auth', 'team'])
         ->name('questionnaire_download');
 
     Route::get('goto_line_auth', [LineNotifyController::class, 'redirectToProvider']);

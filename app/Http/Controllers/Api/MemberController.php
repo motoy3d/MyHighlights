@@ -237,6 +237,7 @@ class MemberController extends Controller
   {
     // 管理者権限チェック
     $loginMember = Member::where('user_id', Auth::id())
+      ->where('team_id', Cookie::get('current_team_id'))  //別チームの管理者権限で操作できないよう絞る
       ->whereNull('withdrawal_date')
       ->whereNull('deleted_at')
       ->where('admin_flg', 1)

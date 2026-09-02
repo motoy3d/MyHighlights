@@ -83,15 +83,35 @@ class QuestionnaireCsvControllerTest extends TestCase
         $this->assertMatchesRegularExpression('/,△,\s*$/u', trim($body) . "\n");
     }
 
-    public function test_他チームのアンケートはダウンロードできない(): void
+    public function test_他チームの投稿に紐づくアンケートはダウンロードできない(): void
+    {
+        // 別チームの投稿に紐づくアンケート
+        $otherTeam = Team::factory()->create();
+        $otherQuestionnaire = Questionnaire::create([
+            'title' => '別チームのアンケート', 'items' => json_encode([['text' => 'a']]),
+            'created_id' => $this->user->id, 'updated_id' => $this->user->id,
+        ]);
+        Post::factory()->create([
+            'team_id' => $otherTeam->id, 'questionnaire_id' => $otherQuestionnaire->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->withCredentials()
+            ->withUnencryptedCookie('current_team_id', (string) $this->team->id)
+            ->get('/questionnaire_download/' . $otherQuestionnaire->id)
+            ->assertStatus(404);
+    }
+
+    public function test_他チームのクッキーを指定しても所属チームに是正される(): void
     {
         $otherTeam = Team::factory()->create();
 
+        // 自分のチームのアンケートなので、クッキーが是正された結果ダウンロードできる
         $this->actingAs($this->user)
             ->withCredentials()
             ->withUnencryptedCookie('current_team_id', (string) $otherTeam->id)
             ->get('/questionnaire_download/' . $this->questionnaire->id)
-            ->assertStatus(404);
+            ->assertStatus(200);
     }
 
     public function test_未認証ではログイン画面へ飛ばされる(): void

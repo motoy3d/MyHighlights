@@ -22,15 +22,17 @@ class TeamControllerTest extends TestCase
             ->assertJsonPath('name', $team->name);
     }
 
-    public function test_存在しないチームIDのCookieでは404(): void
+    public function test_どのチームにも所属していないユーザーは403(): void
     {
+        // EnsureCurrentTeamIsOwn ミドルウェアが弾く。
+        // 存在しないチームIDをクッキーに入れても同じ。
         $user = User::factory()->create();
 
         $this->actingAs($user, 'api')
             ->withCredentials()
             ->withUnencryptedCookie('current_team_id', '999999')
             ->getJson('/api/teams')
-            ->assertStatus(404);
+            ->assertStatus(403);
     }
 
     public function test_未認証では401になる(): void

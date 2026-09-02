@@ -88,7 +88,10 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
 - [ ] アンケートの作成・回答・CSVダウンロード
 - [ ] メンバー招待（招待メールが届くこと）
 - [ ] パスワード再設定メール
-- [ ] **LINE Notify連携**（`same_site` の回帰があった箇所）
+- [ ] **LINE Notify連携**（`same_site` の扱いを変更した箇所。
+      連携設定が完了することを実機で確認する）
+- [ ] **チーム切り替え**（複数チーム所属者で、切り替え後に
+      投稿・予定・メンバーが入れ替わること）
 - [ ] iCal購読URLをカレンダーアプリに登録して表示
 - [ ] 既存のアップロード済みファイルが表示できること
 
@@ -109,11 +112,9 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
 
 ## 移行後に検討したいこと
 
-- **チームをまたいだ認可の穴**（移行前からの問題・未修正）
-  `current_team_id` クッキーを書き換えると、所属していないチームの
-  投稿が読め、別チームの管理者がメンバーを退会させられる。
-  詳細と現状の記録は `docs/MIGRATION-al2023.md` と
-  `tests/Feature/CrossTeamAuthorizationTest.php` を参照
+- LINE Notify を通常のGETリダイレクト（`response_mode=form_post` を外す）に
+  変更できれば、Sanctum標準の `SameSite=Lax` を有効にできる。
+  詳細は `docs/MIGRATION-al2023.md` を参照
 
 - 古いiOS向けに `@vitejs/plugin-legacy` の導入を検討する
   （ViteはESモジュールを出力するため）

@@ -55,7 +55,7 @@ class UserController extends Controller
       'name' => Auth::user()->name,
       'name_kana' => Auth::user()->name_kana,
       'email' => Auth::user()->email,
-      'currentTeamAdminFlg' => $member->admin_flg,
+      'currentTeamAdminFlg' => $member?->admin_flg,
       'mail_notification_flg' => Auth::user()->mail_notification_flg,
       'line_notification_flg' => Auth::user()->line_notification_flg,
       'myTeams' => $teams

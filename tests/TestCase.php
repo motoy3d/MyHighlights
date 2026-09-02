@@ -20,8 +20,13 @@ abstract class TestCase extends BaseTestCase
     {
         // getJson()などのJSONリクエストはwithCredentials()を付けないと
         // Cookieを送らない(prepareCookiesForJsonRequestが空配列を返す)。
+        //
+        // Refererを付けるのは、Sanctumのstateful判定(fromFrontend)を
+        // 通してブラウザと同じミドルウェア構成にするため。これが無いと
+        // AddQueuedCookiesToResponseが通らず、Cookie::queue()が反映されない。
         return $this->actingAs($user, 'api')
             ->withCredentials()
+            ->withHeader('Referer', (string) config('app.url'))
             ->withUnencryptedCookie('current_team_id', (string) $team->id);
     }
 
