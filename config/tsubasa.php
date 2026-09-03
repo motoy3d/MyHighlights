@@ -18,4 +18,8 @@ return [
     // タイムラインの1ページあたりの投稿数
     'timeline_load_posts' => (int) env('TIMELINE_LOAD_POSTS', 10),
 
+    // 添付ファイル1件あたりの上限(KB)。
+    // php.ini の upload_max_filesize / post_max_size もこれ以上にしておくこと。
+    'attachment_max_kb' => (int) env('ATTACHMENT_MAX_KB', 20480),
+
 ];

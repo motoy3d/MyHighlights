@@ -226,7 +226,7 @@ mysql -e 'CREATE DATABASE tsubasa_test'
 MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 `tsubasa_test` に切り替えている（`RefreshDatabase` で毎回巻き戻す）。
 
-アプリのエンドポイント50件を全てテストで叩いている（180テスト / 467アサーション）。
+アプリのエンドポイント50件を全てテストで叩いている（197テスト / 510アサーション）。
 
 | 対象 | 内容 |
 | --- | --- |
@@ -244,7 +244,9 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 | その他 | チーム取得、ブログ、ホーム画面のCookie発行 |
 | 複数チーム | 所属一覧、管理者フラグ、切り替えによるデータの入れ替わり、未読件数の独立、退会 |
 | 運用ケース | 既存ユーザーの別チーム招待、退会メンバーの投稿と回答の扱い、ページング、重複いいね |
+| 添付ファイル | 拡張子偽装、サイズ上限、リサイズ対象の判定、他チームからの投稿拒否 |
 | ルート健全性 | 全ルートが実在するメソッドを指すこと、SPAが使う35エンドポイントの存在 |
+| フロントエンド | Blade が使う ons-* 要素のバンドル漏れ、CDN参照の復活 |
 | 設定不変条件 | セッションCookie名、ディスクroot、SameSite、失敗ジョブのuuid列など |
 
 いずれのテストも「他チームのデータには触れない」ことを確認している。
@@ -343,3 +345,113 @@ SPAからは呼ばれていないことを確認したうえで `->except()` で
 「全ルートが実在するコントローラメソッドを指していること」
 「塞いだルートが復活していないこと」
 「SPAが使う35エンドポイントが揃っていること」を検査している。
+
+### 添付ファイル周りの堅牢化（移行前からの問題・修正済み）
+
+添付ファイルは `storage/app/public` に保存され、`public/storage` の
+シンボリックリンク経由で Apache が**静的ファイルとして**直接配信する。
+そのため以下を確認・修正した。
+
+**PHPの実行は元々できない。** `PostController` はアップロード時に
+Laravel の `hashName()` で保存名を決めており、これはクライアントの
+ファイル名ではなく**中身から判定したMIMEタイプ**で拡張子を決める。
+PHPソースは `text/x-php` と判定され、これに対応する拡張子が
+Symfony の MIME マップに無いため、保存ファイルは**拡張子なし**になる。
+`evil.php` を投げても `foo` のような名前で保存され、`php-fpm` には渡らない。
+`tests/Feature/Api/AttachmentUploadTest.php` で実ファイルを使って検証している。
+
+**一方、Stored XSS は成立していた。** HTML や SVG は
+`text/html` / `image/svg+xml` と正しく判定されるため `.html` / `.svg` で
+保存され、同一オリジンで開くとスクリプトが実行できた。
+`deploy/tsubasa.conf` に以下を追加して塞いだ。
+
+```apache
+<LocationMatch "^/storage/">
+    Header always set Content-Disposition "attachment"
+    Header always set X-Content-Type-Options "nosniff"
+</LocationMatch>
+```
+
+画面側への影響が無いことは確認済み。画像は `<img :src>` で表示するため
+`Content-Disposition` の影響を受けず、ダウンロードは `<a :href :download>`、
+画像以外のプレビューは Google Docs Viewer がサーバ側で取得するため。
+※ この設定は Apache 側のためPHPUnitでは検証できない。
+本番切り替え時に `curl -I` で確認すること（チェックリストに記載）。
+
+**アップロードサイズの上限が無かった。** `php.ini` の
+`upload_max_filesize` 頼みで、アプリ側の検証が無かった。
+`config/tsubasa.php` の `attachment_max_kb`（既定20MB）を追加し、
+`PostController` / `PostCommentController` の入口で
+`files.*` / `comment_files.*` を `file|max:` で検証するようにした。
+
+**リサイズ処理が拡張子を偽装したファイルで500になっていた。**
+`ResizeImage` はクライアント側のファイル名の拡張子で画像判定しており、
+中身がテキストの `foo.gif` を投げると `ImageManager::read()` が
+例外を投げて500になっていた。判定を**保存後のパスの拡張子**に変更し、
+読み込み失敗時は警告ログを残してリサイズをスキップするようにした
+（添付自体は成功させる。移行前と同じ挙動）。
+
+### OnsenUI の CDN 読み込みを廃止
+
+ログイン・パスワード再設定・退会の4画面が OnsenUI を
+`cdnjs.cloudflare.com` から `<script>` / `<link>` で読み込んでいた。
+バージョン固定のみで SRI が無く、CDN 側の障害や改竄が
+ログイン画面に直接影響する状態だった。
+SPA本体は元々 npm の `onsenui` をバンドルしており、
+同じものを2系統から読んでいたことになる。
+
+`resources/assets/js/onsen.js` を追加して Vite のエントリに加え、
+4つの Blade を `@vite()` に統一した。CSS は元々 `app.scss` が
+npm の `onsenui/css/*` を取り込んでいたため、CDNから読んでいたのは
+JS だけだった。
+
+**注意点**: Onsen UI のESM版は要素ごとにモジュールが分かれており、
+`import 'onsenui';`（副作用のみのimport）ではViteのツリーシェイクで
+カスタム要素の登録処理まで削除される。ビルドは通り、JSエラーも出ず、
+しかし `<ons-page>` などが未登録のまま素のHTMLとして表示される
+（ブラウザで確認して発覚した）。`vue-onsenui` と同じく、使う要素を
+個別にimportしている。
+
+```js
+import ons from 'onsenui/esm';
+import 'onsenui/esm/elements/ons-page';
+import 'onsenui/esm/elements/ons-toolbar';
+import 'onsenui/esm/elements/ons-button';
+import 'onsenui/esm/elements/ons-icon';
+window.ons = ons;
+```
+
+Blade に ons-* 要素を追加したときの追従漏れは
+`tests/Feature/OnsenBundleTest.php` が検出する
+（onsen.js を読み込む全Bladeを走査し、使用している ons-* 要素が
+importされているか、CDN参照が復活していないかを検査）。
+
+要素モジュールはSPA本体と共有されるため重複せず、
+`app.js` は 936kB → 832kB に減っている。
+
+### APP_URL のずれで `/api/*` が全て401になる（ブラウザ検証で判明）
+
+Sanctum はリクエストの Referer / Origin が `sanctum.stateful` の一覧に
+一致するときだけ、セッションCookieでのAPI認証を有効にする。
+この一覧の既定値には **`APP_URL` のホスト:ポート** が自動で含まれる。
+
+検証中、`.env` の `APP_URL` が `http://127.0.0.1:8123` のまま
+別ポート(8899)で `php artisan serve` したところ、
+
+1. ログイン自体は成功して `/home` に遷移する
+2. しかし SPA が呼ぶ `/api/me` などが全て 401 を返す
+3. SPA は 401 を受けると `/login` へ遷移する
+4. ログイン済みなので `guest` ミドルウェアが `/home` へ戻す
+5. 1に戻る（無限リダイレクト）
+
+という状態になった。画面上は「ログインできないアプリ」に見えるだけで
+JSエラーもログのエラーも出ないため、原因が非常に分かりにくい。
+`APP_URL` を実際のURLに合わせると解消する。
+
+移行前(Laravel 5.6 + Passport)にはこの判定が無かったため、
+`APP_URL` が多少ずれていても動いていた。**移行後は `APP_URL` が
+サイトのURLとスキーム・ホスト・ポートまで一致している必要がある。**
+
+`tests/Feature/ConfigInvariantTest.php` に
+「`APP_URL` のオリジンが `sanctum.stateful` に含まれること」の検査を追加した。
+本番の `.env` を新サーバに置いた状態でこのテストを実行すれば事前に検出できる。

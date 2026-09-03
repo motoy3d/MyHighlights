@@ -9,6 +9,8 @@ export default defineConfig({
             input: [
                 'resources/assets/sass/app.scss',
                 'resources/assets/js/app.js',
+                // ログイン画面などSPA本体を読み込まないページ用
+                'resources/assets/js/onsen.js',
             ],
             refresh: true,
         }),

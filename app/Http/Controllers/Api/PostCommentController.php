@@ -46,7 +46,9 @@ class PostCommentController extends Controller
     Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
     $hasAttachment = false;
     if ($request->allFiles()) { //添付がある場合
-//      $allowedfileExtension=['pdf','jpg','jpeg','png','gif','xlsx','docx'];
+      $request->validate([
+        'comment_files.*' => ['file', 'max:' . config('tsubasa.attachment_max_kb')],
+      ]);
       $files = $request->file('comment_files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
@@ -56,9 +58,10 @@ class PostCommentController extends Controller
 //        }
         // ファイル保存
         $filePath = $file->storePublicly('public/comment_attachment');
-        // 画像リサイズ
-        $extensions = ['jpg','JPG','jpeg','JPEG','png','PNG','gif','GIF','bmp','BMP'];
-        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+        // 画像リサイズ。
+        // 保存後のファイル名の拡張子はアップロード内容から判定されたものなので、
+        // クライアントが送ってきた拡張子ではなくこちらを見る
+        if ($this->isResizableImage($filePath)) {
           $this->resizeImage($filePath);
         }
 

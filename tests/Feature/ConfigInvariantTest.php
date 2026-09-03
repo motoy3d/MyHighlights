@@ -87,6 +87,30 @@ class ConfigInvariantTest extends TestCase
         );
     }
 
+    public function test_app_urlのホストがsanctumのstatefulドメインに含まれる(): void
+    {
+        // Sanctum は Referer/Origin がこの一覧に一致するリクエストだけを
+        // セッション認証の対象にする。APP_URL とサイトのURLがずれていると
+        // /api/* が全て401になり、/home と /login の間で無限リダイレクトになる。
+        $appUrl = (string) config('app.url');
+        $host = parse_url($appUrl, PHP_URL_HOST);
+        $port = parse_url($appUrl, PHP_URL_PORT);
+        $origin = $host.($port ? ':'.$port : '');
+
+        $stateful = array_filter((array) config('sanctum.stateful'));
+
+        $this->assertNotEmpty($stateful, 'sanctum.stateful が空');
+        $this->assertTrue(
+            \Illuminate\Support\Str::is(
+                array_map(static fn ($d) => trim($d).'/*', $stateful),
+                $origin.'/'
+            ),
+            "APP_URL({$appUrl})のオリジン {$origin} が sanctum.stateful に含まれていない。"
+            .'含まれていないと同一オリジンのSPAからのAPIが全て401になる。'
+            .'一覧: '.implode(',', $stateful)
+        );
+    }
+
     public function test_旧env名のフォールバックが効く(): void
     {
         // 本番の .env は MAIL_DRIVER / QUEUE_DRIVER などの旧キー名のままなので、

@@ -424,14 +424,19 @@ class PostController extends Controller
   private function saveAttachment(Request $request, $post): void
   {
     if ($request->allFiles()) { //添付がある場合
+      $request->validate([
+        'files.*' => ['file', 'max:' . config('tsubasa.attachment_max_kb')],
+      ]);
       $files = $request->file('files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
         // ファイル保存
         $filePath = $file->storePublicly('public/post_attachment');
-        // 画像リサイズ
-        $extensions = ['jpg','JPG','jpeg','JPEG','png','PNG','gif','GIF','bmp','BMP'];
-        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+        // 画像リサイズ。
+        // 保存後のファイル名の拡張子はアップロード内容から判定されたものなので、
+        // クライアントが送ってきた拡張子ではなくこちらを見る
+        // (テキストを .gif という名前で送られてもリサイズを試みないようにする)
+        if ($this->isResizableImage($filePath)) {
           $this->resizeImage($filePath);
         }
         // URLのために置換

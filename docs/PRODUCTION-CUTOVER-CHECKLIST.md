@@ -28,6 +28,7 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
      "mail.default","mail.mailers.smtp.host","mail.mailers.smtp.port","mail.from.address",
      "filesystems.default","filesystems.disks.local.root","filesystems.disks.public.url",
      "auth.guards.api.driver","auth.passwords.users.table",
+     "sanctum.stateful",
      "tsubasa.schedule_data_loading_months","tsubasa.timeline_load_posts",
    ] as $k) printf("%-38s %s\n", $k, var_export(config($k), true));'
    ```
@@ -38,17 +39,40 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
    | --- | --- |
    | `session.cookie` | `tsubasaup_session`。ASCIIのみであること |
    | `filesystems.disks.local.root` | `.../storage/app`（`app/private` ではない） |
-   | `session.same_site` | `NULL`（`lax`だとLINE連携が壊れる） |
+   | `session.same_site` | `lax`（Laravel標準。LINE連携を削除したため上書き不要になった） |
    | `auth.passwords.users.table` | `password_resets` |
    | `queue.default` | `sync` ならワーカーは動かない（後述） |
    | `mail.mailers.smtp.*` | host/port/username/password が入っていること |
-   | `app.url` | `https://tsubasa.smartj.mobi`。Sanctumのstateful判定に使われる |
+   | `app.url` | **`https://tsubasa.smartj.mobi`**。スキーム・ホスト・ポートまで
+     実際のURLと完全一致させること。ずれていると `/api/*` が全て401になり、
+     `/home` と `/login` の間で無限リダイレクトになる（下記参照） |
+   | `sanctum.stateful` | 一覧に `tsubasa.smartj.mobi` が含まれること。
+     `SANCTUM_STATEFUL_DOMAINS` が設定されていると `APP_URL` の自動追加が
+     効かなくなるため、設定するなら本番ドメインを明記する |
 
 4. `MAIL_ENCRYPTION` は Laravel 13 では参照されなくなった。
    ポート587ならSTARTTLS、465なら暗黙TLSが自動選択される。
    現行の設定と実際の接続方式が合うか確認する
 
-5. 旧キー名（`MAIL_DRIVER` / `QUEUE_DRIVER` / `CACHE_DRIVER` /
+5. **`APP_URL` と Sanctum の関係**（検証中に実際に踏んだ）
+
+   SanctumはリクエストのReferer/Originが `sanctum.stateful` の一覧に
+   一致する場合だけ、セッションCookieでの認証を有効にする。
+   一覧の既定値は `localhost` などに加えて **`APP_URL` のホスト:ポート**
+   が自動で追加されたものになっている。
+
+   そのため `APP_URL` が実際のURLとずれていると、ログインは成功するのに
+   直後の `/api/me` などが全て401を返し、SPAが `/login` へ飛ばす →
+   ログイン済みなので `/home` へ戻される、というリダイレクトループになる。
+   画面上は「ログインできないアプリ」に見えるので原因が分かりにくい。
+
+   `tests/Feature/ConfigInvariantTest.php` で
+   「`APP_URL` のオリジンが `sanctum.stateful` に含まれること」を
+   検査しているので、本番の `.env` を新サーバに置いた状態で
+   `./vendor/bin/phpunit --filter ConfigInvariantTest` を実行すると
+   このずれを事前に検出できる。
+
+6. 旧キー名（`MAIL_DRIVER` / `QUEUE_DRIVER` / `CACHE_DRIVER` /
    `BROADCAST_DRIVER` / `FILESYSTEM_DRIVER`）はconfig側でフォールバック
    しているため、そのままでも動く。新キー名へ移すかは任意
 
@@ -90,6 +114,28 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
       投稿・予定・メンバーが入れ替わること）
 - [ ] iCal購読URLをカレンダーアプリに登録して表示
 - [ ] 既存のアップロード済みファイルが表示できること
+- [ ] **添付ファイルのレスポンスヘッダ**（自動テスト不可 / Apache設定のため）
+      ```
+      curl -sI https://tsubasa.smartj.mobi/storage/<既存の添付ファイル> \
+        | grep -i 'content-disposition\|x-content-type-options'
+      ```
+      → `Content-Disposition: attachment` と
+        `X-Content-Type-Options: nosniff` の両方が返ること。
+      返らない場合は `mod_headers` が有効か確認する
+      (`httpd -M | grep headers`)。
+      これが無いと、HTMLやSVGを添付された際に同一オリジンで
+      スクリプトが実行される（Stored XSS）
+- [ ] **添付が壊れていないこと**（上記ヘッダ追加による副作用の確認）
+      画像添付がタイムライン上でサムネイル表示される /
+      非画像添付がGoogle Docs Viewerで開ける /
+      ダウンロードリンクで保存できる
+- [ ] **ログイン / パスワード再設定 / 退会画面の表示崩れが無いこと**
+      （OnsenUIをCDNからバンドルに移したため。ヘッダが青く、
+      ログインボタンが青いボタンとして描画されていればOK。
+      枠線の無い素のテキストとリンクに見える場合はOnsenUIが
+      効いていない）
+- [ ] **OnsenUIのCDN廃止の確認**（DevToolsのNetworkタブで
+      `cdnjs.cloudflare.com` へのリクエストが1件も無いこと）
 
 ## 切り替え後
 

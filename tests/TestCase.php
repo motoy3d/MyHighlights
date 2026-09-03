@@ -27,6 +27,11 @@ abstract class TestCase extends BaseTestCase
         return $this->actingAs($user, 'api')
             ->withCredentials()
             ->withHeader('Referer', (string) config('app.url'))
+            // SPAのaxiosが常に付けているヘッダ。これが無いと
+            // バリデーションエラーがJSON(422)ではなくリダイレクト(302)になり、
+            // 実際の挙動とずれる。
+            ->withHeader('X-Requested-With', 'XMLHttpRequest')
+            ->withHeader('Accept', 'application/json, text/plain, */*')
             ->withUnencryptedCookie('current_team_id', (string) $team->id);
     }
 
