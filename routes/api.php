@@ -50,7 +50,6 @@ Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::post('users/updateEmail', [UserController::class, 'updateEmail']);
     Route::post('users/updatePassword', [UserController::class, 'updatePassword']);
     Route::post('users/updateMailNotificationFlg', [UserController::class, 'updateMailNotificationFlg']);
-    Route::post('users/updateLINENotificationFlg', [UserController::class, 'updateLINENotificationFlg']);
 
     // create/editはコントローラ側がコメントアウトされているため塞ぐ
     Route::resource('members', MemberController::class)->except(['create', 'edit']);

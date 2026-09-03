@@ -30,7 +30,6 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'password' => self::$password ??= Hash::make('password'),
             'mail_notification_flg' => 1,
-            'line_notification_flg' => 0,
             'withdrawal_date' => null,
             'remember_token' => Str::random(10),
             'created_id' => 1,

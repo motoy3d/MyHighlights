@@ -204,10 +204,7 @@ return [
     |
     */
 
-    // 'lax' にすると LINE Notify のコールバック(response_mode=form_post による
-    // 別サイトからのPOST)でセッションCookieが送られず連携が失敗するため、
-    // 移行前と同じ未指定のままにする。
-    'same_site' => env('SESSION_SAME_SITE'),
+    'same_site' => env('SESSION_SAME_SITE', 'lax'),
 
     /*
     |--------------------------------------------------------------------------

@@ -118,12 +118,12 @@ Laravel 13の標準 `config/*.php` をそのまま採用したことで既定値
    画像リサイズが例外になり、新規添付が全て404になる。
    rootを `storage/app` に戻した
 
-3. **SameSite=Lax でLINE Notify連携が壊れる**
-   Laravel 11標準は `same_site => 'lax'`。LINE Notifyの認証は
-   `response_mode=form_post` を使うため、別サイトからのPOSTで
-   コールバックされる。Laxではセッションクッキーが送られず
-   `auth` ミドルウェアでログイン画面に飛ばされてしまう。
-   移行前と同じ未指定(null)に戻した
+3. **SameSite=Lax でLINE Notify連携が壊れる**（その後LINE Notifyを廃止したため解消）
+   Laravel 11標準の `same_site => 'lax'` では、LINE Notifyの
+   `response_mode=form_post` による別サイトからのPOSTコールバックで
+   セッションクッキーが送られなかった。一旦は未指定に戻していたが、
+   LINE Notifyのサービス終了に伴い連携自体を削除したため、
+   現在はLaravel標準の `lax` に戻している
 
 4. **失敗ジョブが記録できない**
    Laravel 8以降の既定ドライバ `database-uuids` は `failed_jobs.uuid` に
@@ -146,9 +146,9 @@ Laravel 13の標準 `config/*.php` をそのまま採用したことで既定値
 アプリ独自のキーを取りこぼしていた。`line_notify_client_id` /
 `line_notify_client_secret` / `line_notify_callback_uri` が失われ、
 LINE Notify連携のclient_idがnullになる状態だった。
-`config/tsubasa.php` の `line_notify` に移して復旧し、
-`LineNotifyControllerTest` で設定値がリダイレクトURLに反映されることを検証している。
-（未使用だった `test_ip` は復旧していない）
+`config/tsubasa.php` の `line_notify` に移して復旧した。
+（その後LINE Notifyのサービス終了に伴い連携ごと削除。
+　未使用だった `test_ip` も復旧していない）
 
 ### フロントエンド
 
@@ -241,7 +241,7 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 | ユーザー | 自分の情報、氏名/カナ/メール/パスワード/通知フラグの更新 |
 | アンケート | 回答、上書き、削除、集計、CSVダウンロード |
 | iCal | カレンダー名、時刻あり/終日/開始のみ、VTIMEZONE、購読URL |
-| その他 | チーム取得、ブログ、LINE Notify連携、ホーム画面のCookie発行 |
+| その他 | チーム取得、ブログ、ホーム画面のCookie発行 |
 | 複数チーム | 所属一覧、管理者フラグ、切り替えによるデータの入れ替わり、未読件数の独立、退会 |
 | 運用ケース | 既存ユーザーの別チーム招待、退会メンバーの投稿と回答の扱い、ページング、重複いいね |
 | ルート健全性 | 全ルートが実在するメソッドを指すこと、SPAが使う35エンドポイントの存在 |
@@ -306,25 +306,26 @@ jsから読み書きするため暗号化対象外にしてあり、利用者が
 
 `tests/Feature/CrossTeamAuthorizationTest.php` で14件検証している。
 
-#### Sanctum による SameSite の上書きを外している
 
-`App\Http\Middleware\EnsureFrontendRequestsAreStateful` は
-Sanctum標準のミドルウェアを継承し、`configureSecureCookieSessions()` の
-上書きだけを外したもの。
+### LINE Notify連携の削除
 
-Sanctum標準は stateful なAPIリクエストのたびに `session.same_site` を
-`'lax'` へ強制する。SPAは画面表示のたびにAPIを叩くため、その応答で
-セッションクッキーが `SameSite=Lax` として再発行されてしまう。
-すると LINE Notify のコールバック（`response_mode=form_post` による
-別サイトからのPOST）でセッションクッキーが送られず、連携設定が失敗する。
+LINE Notify のサービス終了に伴い、関連コードを全て削除した。
 
-CSRFトークンの検証は Sanctum のパイプライン内で従来どおり行われる
-（トークン無しのPOSTが419、有りが200になることを実サーバで確認済み）。
-`tests/Feature/ConfigInvariantTest.php` で、API応答のクッキーに
-SameSite が付かないことを検査している。
+- `LineNotifyController` とルート3本（`goto_line_auth`、`line_auth` のGET/POST）
+- `PostNotificationJob` / `ScheduleNotificationJob` の `sendLINE()` / `postLINE()`
+  （通知はメールのみになった）
+- `UserController::updateLINENotificationFlg` とそのルート、
+  `/api/me` の `line_notification_flg`
+- 設定 `config/tsubasa.php` の `line_notify`、`.env.example` の `LINE_NOTIFY_*`
+- SPA(`Settings.vue`)のLINE通知トグルと `public/img/LINE_APP.png`
 
-将来的に LINE Notify 側を通常のGETリダイレクト（`response_mode` を外す）に
-変更できれば、この上書き解除は不要になり `SameSite=Lax` を有効にできる。
+これに伴い、`line_auth` がCSRF検証の唯一の除外だったため除外設定も不要になり、
+別サイトからのPOSTを受けるエンドポイントが無くなった。
+そのため Sanctum の `SameSite` 上書きを回避していたサブクラスを廃止し、
+`statefulApi()` と `same_site => 'lax'` という Laravel/Sanctum 標準に戻している。
+
+`users.line_notification_flg` と `users.line_access_token` の2カラムは
+残してある（削除は不可逆なため）。不要であれば削除するマイグレーションを追加する。
 
 ### 実装の無いリソースルートを塞いだ
 

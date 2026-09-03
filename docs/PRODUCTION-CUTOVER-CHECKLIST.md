@@ -28,7 +28,6 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
      "mail.default","mail.mailers.smtp.host","mail.mailers.smtp.port","mail.from.address",
      "filesystems.default","filesystems.disks.local.root","filesystems.disks.public.url",
      "auth.guards.api.driver","auth.passwords.users.table",
-     "tsubasa.line_notify.client_id","tsubasa.line_notify.callback_uri",
      "tsubasa.schedule_data_loading_months","tsubasa.timeline_load_posts",
    ] as $k) printf("%-38s %s\n", $k, var_export(config($k), true));'
    ```
@@ -41,7 +40,6 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
    | `filesystems.disks.local.root` | `.../storage/app`（`app/private` ではない） |
    | `session.same_site` | `NULL`（`lax`だとLINE連携が壊れる） |
    | `auth.passwords.users.table` | `password_resets` |
-   | `tsubasa.line_notify.*` | 3つとも値が入っていること |
    | `queue.default` | `sync` ならワーカーは動かない（後述） |
    | `mail.mailers.smtp.*` | host/port/username/password が入っていること |
    | `app.url` | `https://tsubasa.smartj.mobi`。Sanctumのstateful判定に使われる |
@@ -88,8 +86,6 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
 - [ ] アンケートの作成・回答・CSVダウンロード
 - [ ] メンバー招待（招待メールが届くこと）
 - [ ] パスワード再設定メール
-- [ ] **LINE Notify連携**（`same_site` の扱いを変更した箇所。
-      連携設定が完了することを実機で確認する）
 - [ ] **チーム切り替え**（複数チーム所属者で、切り替え後に
       投稿・予定・メンバーが入れ替わること）
 - [ ] iCal購読URLをカレンダーアプリに登録して表示
@@ -112,9 +108,9 @@ Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認
 
 ## 移行後に検討したいこと
 
-- LINE Notify を通常のGETリダイレクト（`response_mode=form_post` を外す）に
-  変更できれば、Sanctum標準の `SameSite=Lax` を有効にできる。
-  詳細は `docs/MIGRATION-al2023.md` を参照
+- LINE Notify はサービス終了に伴いコードから削除済み。
+  `users.line_notification_flg` と `users.line_access_token` の
+  2カラムは残してあるので、不要なら削除するマイグレーションを追加する
 
 - 古いiOS向けに `@vitejs/plugin-legacy` の導入を検討する
   （ViteはESモジュールを出力するため）

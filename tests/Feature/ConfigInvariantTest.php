@@ -39,35 +39,13 @@ class ConfigInvariantTest extends TestCase
         $this->assertMatchesRegularExpression('/\A[A-Za-z0-9_\-]+\z/', config('session.cookie'));
     }
 
-    public function test_SameSiteは未指定(): void
+    public function test_SameSiteはlax(): void
     {
-        // 'lax' にすると LINE Notify の form_post コールバックで
-        // セッションCookieが送られず連携が失敗する
-        $this->assertNull(config('session.same_site'));
+        // LINE Notify(別サイトからのPOSTコールバック)を廃止したため、
+        // Laravel/Sanctum標準の lax を使う
+        $this->assertSame('lax', config('session.same_site'));
     }
 
-    public function test_API応答でセッションクッキーにSameSiteが付かない(): void
-    {
-        // Sanctum標準の EnsureFrontendRequestsAreStateful は
-        // session.same_site を 'lax' に強制する。そうなるとAPI応答で
-        // セッションクッキーが Lax として再発行され、LINE Notifyの
-        // コールバック(別サイトからのPOST)でセッションが送られなくなる。
-        // App\Http\Middleware\EnsureFrontendRequestsAreStateful で
-        // 上書きを外しているので、それが効いていることを確認する。
-        [$team, $user] = $this->makeTeamWithUser();
-
-        $response = $this->actingAsTeamMember($user, $team)
-            ->getJson('/api/me')
-            ->assertStatus(200);
-
-        $this->assertNull(config('session.same_site'),
-            'stateful APIリクエスト後に session.same_site が書き換えられている');
-
-        foreach ($response->headers->getCookies() as $cookie) {
-            $this->assertNull($cookie->getSameSite(),
-                "クッキー {$cookie->getName()} に SameSite が付いている");
-        }
-    }
 
     public function test_パスワードリセットのテーブル名は既存のまま(): void
     {
@@ -92,13 +70,6 @@ class ConfigInvariantTest extends TestCase
         $this->assertSame('ja', config('app.locale'));
     }
 
-    public function test_LINE_Notifyの設定キーが存在する(): void
-    {
-        // config/app.php 差し替え時に落として一度壊した箇所
-        $this->assertTrue(config()->has('tsubasa.line_notify.client_id'));
-        $this->assertTrue(config()->has('tsubasa.line_notify.client_secret'));
-        $this->assertTrue(config()->has('tsubasa.line_notify.callback_uri'));
-    }
 
     public function test_アプリ固有の設定キーが存在する(): void
     {

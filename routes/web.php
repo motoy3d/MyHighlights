@@ -5,7 +5,6 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ICalendarController;
-use App\Http\Controllers\LineNotifyController;
 use App\Http\Controllers\QuestionnaireCsvController;
 use App\Http\Controllers\WithdrawalController;
 use Illuminate\Support\Facades\Route;
@@ -49,8 +48,4 @@ Route::middleware(['log'])->group(function () {
     Route::get('questionnaire_download/{questionnaire_id}', QuestionnaireCsvController::class)
         ->middleware(['auth', 'team'])
         ->name('questionnaire_download');
-
-    Route::get('goto_line_auth', [LineNotifyController::class, 'redirectToProvider']);
-    Route::post('line_auth', [LineNotifyController::class, 'handleProviderCallback']);
-    Route::get('line_auth', [LineNotifyController::class, 'authError']);
 });

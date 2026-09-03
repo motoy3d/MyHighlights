@@ -86,26 +86,5 @@ class UserControllerTest extends TestCase
             ->assertStatus(400);
     }
 
-    public function test_LINE通知フラグをオフにするとトークンが消える(): void
-    {
-        $this->user->forceFill([
-            'line_notification_flg' => 1,
-            'line_access_token' => 'dummy-token',
-        ])->save();
 
-        $this->actingAsTeamMember($this->user, $this->team)
-            ->postJson('/api/users/updateLINENotificationFlg', ['line_notification_flg' => 0])
-            ->assertStatus(200);
-
-        $fresh = $this->user->fresh();
-        $this->assertSame(0, (int) $fresh->line_notification_flg);
-        $this->assertNull($fresh->line_access_token);
-    }
-
-    public function test_LINE通知フラグに不正値を渡すと400(): void
-    {
-        $this->actingAsTeamMember($this->user, $this->team)
-            ->postJson('/api/users/updateLINENotificationFlg', ['line_notification_flg' => 'on'])
-            ->assertStatus(400);
-    }
 }

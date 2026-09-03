@@ -84,7 +84,7 @@ class RouteIntegrityTest extends TestCase
             'POST api/questionnaires/answer', 'GET api/blog', 'GET api/ical/config',
             'POST api/users/updateName', 'POST api/users/updateNameKana',
             'POST api/users/updateEmail', 'POST api/users/updatePassword',
-            'POST api/users/updateMailNotificationFlg', 'POST api/users/updateLINENotificationFlg',
+            'POST api/users/updateMailNotificationFlg',
         ];
 
         $existing = [];
