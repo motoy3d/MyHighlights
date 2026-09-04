@@ -1,5 +1,8 @@
 # 本番移行チェックリスト
 
+作業の進め方（フェーズ構成・当夜のタイムライン・切り戻し）は
+`docs/MIGRATION-PLAN.md` を参照。こちらは項目単位の確認事項。
+
 Amazon Linux 1 / PHP 7.1 / Laravel 5.6 から
 Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認項目。
 
