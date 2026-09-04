@@ -7,6 +7,71 @@
 
 ---
 
+## 0. 作業環境と接続方式
+
+**作業はローカルの Claude Code CLI から行う。**
+本番AWSアカウントの資格情報を使い捨てのクラウド環境に置かずに済むため。
+
+**新サーバへの接続は SSH ではなく AWS Systems Manager (SSM) を使う。**
+
+- インバウンドポートを一切開けない（22番も含めて）
+- SSH鍵の配布・管理が不要
+- 踏み台サーバが不要
+- 操作履歴がCloudTrailに残る
+
+そのため**インスタンスロールには次の2つが必要**になる。
+どちらもEC2作成時にアタッチする。
+
+| 権限 | 目的 | 欠けると |
+| --- | --- | --- |
+| SES送信 (`ses:SendRawEmail`) | 通知メール送信 | メールが無言で全滅する |
+| `AmazonSSMManagedInstanceCore` | SSM経由の操作 | 以後の操作手段が無くなる |
+
+AL2023はSSMエージェントを同梱しているので、追加インストールは不要。
+
+### コマンドの流し方
+
+`deploy/ssm-run.sh` を用意した。実行前に対象アカウントを確認し、
+完了を待って標準出力・標準エラーを表示する。
+
+```bash
+export AWS_PROFILE=<本番アカウントのプロファイル>
+export EXPECT_ACCOUNT=<本番のアカウントID>   # 誤爆防止（任意だが推奨）
+
+deploy/ssm-run.sh i-0123456789abcdef0 'php -v'
+deploy/ssm-run.sh i-0123456789abcdef0 -f deploy/setup-al2023.sh
+```
+
+SSMが返す出力は24,000文字で打ち切られる。
+`setup-al2023.sh` のようにdnfの出力が長いものは途中までしか見えないので、
+全文はインスタンス側の `/var/log/tsubasa-deploy.log` を見る
+（`ssm-run.sh` が自動で追記している）。
+
+### 画面確認の仕方
+
+セキュリティグループを開けずに、手元のブラウザから新サーバを見られる。
+
+```bash
+aws ssm start-session \
+  --target i-0123456789abcdef0 \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["80"],"localPortNumber":["8080"]}'
+```
+
+`http://localhost:8080` で新サーバに繋がる。
+**この方式なら、フェーズ1・2の動作確認に一時ホスト名も証明書も要らない。**
+ただし `.env` の `APP_URL` を `http://localhost:8080` に合わせること
+（合っていないと `/api/*` が全て401になる。問題4の下に詳述）。
+`SESSION_SECURE_COOKIE` も平文HTTPの間は `false` にしておく。
+
+> **当夜の「切り替え前スモークテスト」だけは別**。
+> あちらは本番ドメイン・本番証明書での確認が目的なので、
+> hostsファイルに新サーバのIPを書いて 443 で確認する。
+> そのため**切り替え前までにセキュリティグループの443は開けておく**
+> （切り替え後は全利用者が使うので、いずれにせよ必要）。
+
+---
+
 ## 1. 当初案への評価
 
 想定していた流れ:
@@ -177,7 +242,8 @@ sudo systemctl list-timers | grep certbot   # 自動更新タイマーが有効�
 | 添付の容量とファイル数 | `du -sh` / `find \| wc -l` | rsyncの所要時間 |
 | cron / バッチの棚卸し | `crontab -l`, `/etc/cron.d/` | 移設漏れ防止 |
 | 本番 `.env` の実物 | 旧サーバから取得 | **`APP_KEY` を失うと復号不能。最優先で退避**（内容の突き合わせは検証済み → チェックリスト参照） |
-| ~~SES送信用のIAMロール~~ | **方針決定済み** | **EC2作成時に必須でアタッチする運用とした。**`deploy/setup-al2023.sh` が未アタッチなら停止する |
+| ~~SES送信用のIAMロール~~ | **方針決定済み** | **EC2作成時に必須でアタッチする運用とした**（SES送信 + `AmazonSSMManagedInstanceCore` の2つ）。`deploy/setup-al2023.sh` が未アタッチなら停止する |
+| ローカルのAWSプロファイル | `aws sts get-caller-identity` | 本番アカウントを指していること。`EXPECT_ACCOUNT` に設定して誤爆を防ぐ |
 | DBユーザーのホスト指定 | `SELECT user,host FROM mysql.user;` | `DB_HOST=localhost` なので `'tsubasa'@'localhost'` が必要 |
 
 ```sql
@@ -215,12 +281,20 @@ find /var/www/tsubasa/storage/app/public -type f | wc -l
 
 ### フェーズ1: 新サーバ構築とアプリ単体の検証（1日）
 
-DNSは触らない。新サーバのIPに直接アクセスして進める。
+DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで画面を確認する**
+（インバウンドは何も開けない）。
 
-1. **EC2(AL2023)を起動する。作成時にSES送信権限のIAMロールを必ずアタッチする**
-   （付け忘れると通知メールが無言で全滅する。`deploy/setup-al2023.sh` は
-   IAMロールが付いていなければ停止するようにしてある）
-2. `deploy/setup-al2023.sh` を実行し、リポジトリを配置して `deploy/deploy.sh`
+1. **EC2(AL2023)を起動する。作成時に次を含むIAMロールを必ずアタッチする**
+   - SES送信権限（`ses:SendRawEmail`）
+   - `AmazonSSMManagedInstanceCore`
+
+   `deploy/setup-al2023.sh` はロールが付いていなければ停止する。
+2. 環境構築とデプロイ
+
+   ```bash
+   deploy/ssm-run.sh <インスタンスID> -f deploy/setup-al2023.sh
+   # 以降、リポジトリ配置と deploy/deploy.sh も同じ要領で流す
+   ```
 3. **本番の `.env` を配置**する。内容の突き合わせは検証済み
    （`docs/PRODUCTION-CUTOVER-CHECKLIST.md`）だが、配置後に
    `php artisan tinker` で設定解決を再確認する。
@@ -228,6 +302,10 @@ DNSは触らない。新サーバのIPに直接アクセスして進める。
    （キューワーカー必須 / `DB_HOST=localhost` なのでDBユーザーを
    `'tsubasa'@'localhost'` で作る / ログのローテーション）を
    ここで潰しておく（IAMロールは手順1で対応済み）
+
+   このフェーズの間は `APP_URL=http://localhost:8080`、
+   `SESSION_SECURE_COOKIE=false` にしておく（ポートフォワードで見るため）。
+   **当夜に本番値へ戻す。**
 4. **メールが実際に届くことを確認する。**
    IAMロールが付いていても、そのロールに `ses:SendRawEmail` が
    無ければ送信は失敗する。アタッチの有無ではなく
@@ -242,13 +320,25 @@ DNSは触らない。新サーバのIPに直接アクセスして進める。
    （`APP_URL` と Sanctum のずれをここで検出する）
 6. `php artisan db:seed --class=DevelopmentSeeder` で
    テストデータを入れ、**手動テスト**（疎通確認レベル）
-7. 一時ホスト名（例 `new.tsubasa.smartj.mobi`）を新サーバに向け、
-   証明書を取得してHTTPSで通しの動作を確認
 
-> **注意:** 一時ホスト名でテストする間は `.env` の `APP_URL` も
-> その名前に合わせる（合っていないと `/api/*` が全て401になり、
-> `/home` と `/login` の無限リダイレクトになる）。
-> **当夜に本番URLへ戻すのを忘れないこと。**
+   ```bash
+   aws ssm start-session --target <インスタンスID> \
+     --document-name AWS-StartPortForwardingSession \
+     --parameters '{"portNumber":["80"],"localPortNumber":["8080"]}'
+   # → ブラウザで http://localhost:8080
+   ```
+
+> **注意:** `APP_URL` と実際にアクセスしているURLは、
+> スキーム・ホスト・ポートまで一致していないと
+> `/api/*` が全て401になり、`/home` と `/login` の無限リダイレクトになる。
+> ポートフォワードのポート番号を変えたら `APP_URL` も変えること。
+
+> **HTTPSでの確認について。** ポートフォワードは平文HTTPなので、
+> 証明書やSecure Cookieを含めた最終確認は当夜の
+> 「切り替え前スモークテスト」で行う（hostsファイル方式）。
+> フェーズ1で先にHTTPSまで通したい場合のみ、一時ホスト名
+> （例 `new.tsubasa.smartj.mobi`）を新サーバのIPに向けて証明書を取る。
+> **EIP付け替え方式では必須ではない。**
 
 ### フェーズ2: 本番データでのテスト（1〜2日、テストチーム）
 
@@ -345,6 +435,10 @@ DNSは触らない。新サーバのIPに直接アクセスして進める。
 ```
 <新サーバのIP>  tsubasa.smartj.mobi
 ```
+
+> このステップだけは443へ直接アクセスするため、
+> **切り替え前までにセキュリティグループの443を開けておくこと**
+> （切り替え後は全利用者が使うので、いずれにせよ必要）。
 
 確認する項目（5分で終わる範囲に絞る。網羅はフェーズ2で済んでいる）:
 

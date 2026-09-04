@@ -3,6 +3,10 @@
 # Amazon Linux 2023 に Tsubasa⬆UP の実行環境を用意する。
 # 新しいEC2インスタンスで一度だけ実行する。
 #
+# SSH接続は使わない。ローカルから SSM 経由で流す:
+#   deploy/ssm-run.sh <インスタンスID> -f deploy/setup-al2023.sh
+# (SSMのsend-commandはrootで実行されるため sudo はそのまま通る)
+#
 # 収録パッケージのバージョンは 2026-08 時点の AL2023 リポジトリで確認済み:
 #   php8.4 / mariadb1011 (10.11) / httpd 2.4.68 / nodejs20 / certbot 2.6 / composer 2.10
 #
@@ -26,13 +30,17 @@ IAM_ROLE=$(curl -sS --max-time 5 \
 
 if [ -z "${IAM_ROLE}" ]; then
   echo "!!! このインスタンスにIAMロールが付いていません。" >&2
-  echo "!!! SES送信権限のあるロールをアタッチしてから再実行してください。" >&2
-  echo "!!! (付けないまま進めると、通知メールが無言で全滅します)" >&2
-  echo "!!! 検証目的などで承知のうえ進める場合は SKIP_IAM_CHECK=1 を付けて実行。" >&2
+  echo "!!! 次の2つを含むロールをアタッチしてから再実行してください。" >&2
+  echo "!!!   - SES送信権限 (ses:SendRawEmail)" >&2
+  echo "!!!     付けないまま進めると、通知メールが無言で全滅します" >&2
+  echo "!!!   - AmazonSSMManagedInstanceCore" >&2
+  echo "!!!     SSH無しで運用するため、これが無いと以後の操作手段が無くなります" >&2
+  echo "!!! 承知のうえ進める場合は SKIP_IAM_CHECK=1 を付けて実行。" >&2
   [ "${SKIP_IAM_CHECK:-0}" = "1" ] || exit 1
 else
   echo "    アタッチ済みロール: ${IAM_ROLE}"
-  echo "    ※ SES送信(ses:SendRawEmail)が許可されているかは別途確認すること"
+  echo "    ※ ses:SendRawEmail が実際に許可されているかは、"
+  echo "      アタッチの有無では分からない。フェーズ1でメールを実送信して確認すること"
 fi
 
 echo "==> パッケージのインストール"

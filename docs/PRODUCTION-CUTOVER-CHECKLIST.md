@@ -69,9 +69,12 @@ Laravelは資格情報が空の場合、明示的なcredentialsを渡さずSDK�
 if (! empty($config['key']) && ! empty($config['secret'])) { ... }  // 空なので通らない
 ```
 
-→ **EC2インスタンス作成時に、SES送信権限のIAMロールを必ずアタッチする**
+→ **EC2インスタンス作成時に、次の2つを含むIAMロールを必ずアタッチする**
 （付け忘れ防止のため、`deploy/setup-al2023.sh` は
 IAMロールが付いていない場合に停止するようにしてある）。
+
+- SES送信権限（`ses:SendRawEmail`）
+- `AmazonSSMManagedInstanceCore` — SSH無しでSSM経由の操作を行うため
 移行先は本番と同じAWSアカウントなので、SESの検証済みドメインは
 そのまま使える。
 付け忘れると、招待メール・パスワード再設定・投稿通知が
