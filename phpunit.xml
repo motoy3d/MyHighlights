@@ -20,9 +20,16 @@
         <env name="APP_ENV" value="testing"/>
         <!-- マイグレーションがALTER TABLE ... COMMENTを使うためSQLiteは使えない。
              テスト用のDBをあらかじめ作っておくこと:
-             CREATE DATABASE tsubasa_test; -->
+             CREATE DATABASE tsubasa_phpunit
+               CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+             注意: 以前は tsubasa_test を使っていたが、これは
+             tsubasademo.smartj.mobi（デモ環境）が実際に使っている
+             DB名と同一だった。ほぼ全てのテストが RefreshDatabase を
+             使うため、その名前のままだとテスト実行でデモ環境の
+             データが消える。新サーバでは両者が同居するので必ず分ける。 -->
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="tsubasa_test"/>
+        <env name="DB_DATABASE" value="tsubasa_phpunit"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>

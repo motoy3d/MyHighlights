@@ -236,11 +236,11 @@ sudo systemctl list-timers | grep certbot   # 自動更新タイマーが有効�
 | **EIPの AllocationId と新旧インスタンスID** | `aws ec2 describe-addresses` / `describe-instances` | **当夜の付け替えコマンドに使う。事前に控える** |
 | ~~DNSのTTL短縮~~ | — | **EIP付け替えのため不要になった**（切り戻し不能時の保険として、ホストゾーンの所在だけ把握しておく） |
 | 証明書の取得方法 | 旧サーバの `/etc/letsencrypt/renewal/*.conf` | 上表のどの手を使うか |
-| DBサイズ | 下記SQL | フル再取り込みが成立するか |
-| 旧MySQLのバージョンと文字セット | `SELECT VERSION();` | ダンプの互換性 |
-| ゼロ日付の有無 | 下記SQL | 取り込み失敗の事前回避 |
-| 添付の容量とファイル数 | `du -sh` / `find \| wc -l` | rsyncの所要時間 |
-| cron / バッチの棚卸し | `crontab -l`, `/etc/cron.d/` | 移設漏れ防止 |
+| ~~DBサイズ~~ | **2,964 MB（実測）** | **うち `logs` が 2,867MB＝96.7%。全件移行と決定したため、旧サーバの空き7.6GBに置けない。中間ファイルを作らずパイプで流すのが必須** |
+| ~~旧MySQLのバージョンと文字セット~~ | **5.7.35-log / utf8mb4（実測）** | **列レベルは79列すべて `utf8mb4_unicode_ci` で統一。utf8mb4でないテーブルはゼロ＝絵文字は化けない** |
+| ~~ゼロ日付の有無~~ | **該当なし（67列を実データで走査、0件）** | **旧環境が既に `NO_ZERO_DATE`＋`STRICT_TRANS_TABLES` で7年運用されていた。取り込み失敗のリスクは消滅** |
+| ~~添付の容量とファイル数~~ | **5.2 GB / 15,799件（実測）** | **当夜に転送するには大きい。「事前フル同期→当夜は差分のみ」を必ず採用する** |
+| ~~cron / バッチの棚卸し~~ | **Tsubasa用は0本（実測）** | **稼働中の4本は別アプリ redsmylife 用。移設対象なし。詳細は「2.1 事前調査の実測結果」** |
 | 本番 `.env` の実物 | 旧サーバから取得 | **`APP_KEY` を失うと復号不能。最優先で退避**（内容の突き合わせは検証済み → チェックリスト参照） |
 | ~~SES送信用のIAMロール~~ | **方針決定済み** | **EC2作成時に必須でアタッチする運用とした**（SES送信 + `AmazonSSMManagedInstanceCore` の2つ）。`deploy/setup-al2023.sh` が未アタッチなら停止する |
 | ローカルのAWSプロファイル | `aws sts get-caller-identity` | 本番アカウントを指していること。`EXPECT_ACCOUNT` に設定して誤爆を防ぐ |
@@ -262,9 +262,159 @@ SELECT VERSION(), @@sql_mode;
 ```
 
 ```bash
-du -sh /var/www/tsubasa/storage/app/public
-find /var/www/tsubasa/storage/app/public -type f | wc -l
+# 旧サーバの実パスは /var/www/MyHighlights（計画初版の /var/www/tsubasa は誤り）
+du -sh /var/www/MyHighlights/storage/app/public
+find /var/www/MyHighlights/storage/app/public -type f | wc -l
 ```
+
+---
+
+## 2.1 事前調査の実測結果（2026-09-05 実施）
+
+旧サーバ `smartj.mobi` (52.199.130.187 / Amazon Linux AMI 2018.03) 上で実測。
+
+### DB
+
+| 項目 | 実測値 |
+| --- | --- |
+| バージョン | MySQL **5.7.35-log** |
+| `sql_mode` | `ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION` |
+| サーバ文字セット | `utf8mb4` / `utf8mb4_general_ci` |
+| 総サイズ | **2,964 MB**（33テーブル） |
+| ゼロ日付 | **なし**（date/datetime/timestamp 67列を全走査、0件） |
+
+**`logs` テーブルが DB の 96.7% を占める。**
+
+| テーブル | 行数 | サイズ |
+| --- | ---: | ---: |
+| `logs` | 13,875,254 | **2,867 MB** |
+| `post_responses` | 145,173 | 24.0 MB |
+| `questionnaire_answers` | 122,716 | 17.0 MB |
+| `failed_jobs` | 762 | 12.5 MB |
+| `posts` | 4,303 | 11.1 MB |
+| 残り28テーブル | | 約 32 MB |
+
+`logs` は 2019-04-13 以降 7年5か月分。`AppServiceProvider` が全SQLを出力し続けた結果。
+**全件移行と決定済み**（除外すればダンプは約97MBまで縮むが、方針として全件を運ぶ）。
+
+照合順序は `utf8mb4_unicode_ci` × 26テーブル、`utf8mb4_general_ci` × 7テーブル。
+後者は `posts_20190308` / `post_responses_20190308` / `post_comments_20190308` 系の
+**2019年の退避テーブル（計14.5MB）** のみで、現用テーブルは全て `unicode_ci`。
+列レベルでは79列すべて `utf8mb4_unicode_ci` に統一されている。
+
+> フェーズ2の `CREATE DATABASE` は計画初版で `utf8mb4_general_ci` としていたが、
+> 現用テーブルに合わせて **`utf8mb4_unicode_ci`** にすること。
+
+### 添付ファイル
+
+| ディレクトリ | 容量 |
+| --- | ---: |
+| `comment_attachment` | 3.1 GB |
+| `post_attachment` | 2.2 GB |
+| `prof` | 436 KB |
+| **合計** | **5.2 GB / 15,799ファイル** |
+
+`storage` 全体では 7.3GB（差分はログとキャッシュ）。最大ファイルは約19MB。
+
+### cron / バッチ
+
+**Tsubasa 用のジョブは1本も無い**（リポジトリ側にも Laravel スケジューラの定義はゼロで一致）。
+
+| 実行者 | 内容 | 移設 |
+| --- | --- | --- |
+| root | `certbot renew`（毎日04:00、deploy-hookでhttpd reload） | 新サーバで再構成 |
+| ec2-user | `feedEntry.sh` / `standings.sh` / `results.sh` / `video.sh` | **不要**。`com.urawaredsmylife.*` の Java バッチで、Tomcat上の別アプリ redsmylife 用。旧サーバに残す |
+| cron.daily | `s3backup` → S3 `smartj.mobi-backup` | 新サーバで再構成 |
+
+### 証明書
+
+- `authenticator = webroot` / **`webroot_path = /var/www/html`**
+  — Tsubasa のドキュメントルート (`/var/www/MyHighlights/public`) **ではない**
+- `tsubasa.smartj.mobi` の有効期限 **2026-10-29**、`tsubasademo.smartj.mobi` は 2026-11-28
+- certbot **0.38.0**（旧版）
+
+> **`/etc/letsencrypt` をコピーするだけでは更新が失敗する。**
+> 新サーバにも `/var/www/html` に相当する webroot を用意して
+> `.well-known/acme-challenge` を配信できるようにするか、
+> renewal の `webroot_path` を新サーバの構成に合わせて書き換えること。
+
+### その他
+
+- 旧サーバの **uptime 1195日**（無再起動）。EBSスナップショットは必須
+- ルートディスク 40GB / **使用81%・空き7.6GB** — 3GBのダンプを置く余裕は乏しい
+- PHP **7.1.33**、Apache 2.4、Tomcat 8（AJP 8009）
+- `/var/www/MyHighlights` のパーミッションが **777**（新サーバでは引き継がない）
+- **`/backup/php_backup_s3/backup.php` にAWSアクセスキーが平文でハードコードされている。**
+  無効化と再発行を推奨。新サーバではIAMロールに寄せる
+
+---
+
+## 2.2 旧サーバは Tsubasa 専用機ではなかった —— 切り替え方式の修正
+
+調査で判明した最大の事実。**同一EIPを4つのホスト名・3サイト・2アプリサーバが共有している。**
+
+```
+tsubasa.smartj.mobi       -> 52.199.130.187   ← 移行対象
+tsubasademo.smartj.mobi   -> 52.199.130.187   ← 移行対象（追加）
+smartj.mobi               -> 52.199.130.187   ← 旧サーバに残す
+www.smartj.mobi           -> 52.199.130.187   ← 旧サーバに残す
+```
+
+| vhost | DocumentRoot | 扱い |
+| --- | --- | --- |
+| `smartj.mobi`（default） | `/var/www/html` | **旧サーバに残す**。`/redsmylife/` を AJP で Tomcat にプロキシ |
+| `tsubasa.smartj.mobi` | `/var/www/MyHighlights/public` | 移行する |
+| `tsubasademo.smartj.mobi` | `/var/www/MyHighlights2/public` | 移行する |
+
+**このまま単純にEIPを付け替えると、`smartj.mobi` / `www.smartj.mobi` / `redsmylife` が
+同時に落ちる。** フェーズ5の「2週間後に旧サーバを停止」も、そのままでは
+redsmylife とその4本のバッチを恒久的に止めてしまう。
+
+### 修正: 旧サーバに2つ目のEIPを事前に付けて分離する
+
+**EIP付け替え方式は維持する**（当夜の切り替えは数秒、切り戻しも数秒のまま）。
+
+1. **事前（当夜の数日前）**: 旧サーバのENIにセカンダリプライベートIPを追加し、
+   **新しいEIPをもう1つ割り当てて紐付ける**。この時点で旧サーバは2つのIPを持つ
+2. **事前**: `smartj.mobi` と `www.smartj.mobi` のAレコードを**新しいEIP**に向ける
+   — 両方のIPが同じ旧サーバを指しているので、**伝播中も無停止**。リスクゼロ
+3. 伝播完了後、**元のEIPは実質 tsubasa 系専用**になる
+4. **当夜**: 元のEIPを新サーバに付け替える（従来どおり数秒。切り戻しも数秒）
+
+これで当初の方針（EIP付け替え・DNSは当夜触らない）を保ったまま、
+他サイトを巻き込まずに切り替えられる。DNS変更は事前作業として
+**無停止で**済ませられる点が重要。
+
+> DNSは Route53 ではなく **dnsv.jp**（`01〜04.dnsv.jp`）。TTLは3600秒。
+> 手作業での変更が1回必要。
+> DNS-01チャレンジを使う場合もこのDNSのAPI可否が前提になる。
+
+---
+
+## 2.3 tsubasademo（テスト環境）も移行対象
+
+| 項目 | 本番 | demo |
+| --- | --- | --- |
+| ディレクトリ | `/var/www/MyHighlights` | `/var/www/MyHighlights2` |
+| ホスト名 | `tsubasa.smartj.mobi` | `tsubasademo.smartj.mobi` |
+| DB | `tsubasa`（33テーブル / 2,964MB） | **`tsubasa_test`**（28テーブル / 5MB） |
+| 添付 | 5.2GB / 15,799件 | 444KB / 21件 |
+| `APP_DEBUG` | `false` | `true` |
+| `QUEUE_DRIVER` | `database` | `sync` |
+| Laravel | 5.6.40 | 5.6.40（master `869bc00`） |
+
+demo も現行は **Laravel 5.6.40 / PHP 7.1**。AL2023 には PHP 7.1 が無いため、
+**demo も新コードベース（Laravel 13 / PHP 8.4）に載せ替える必要がある。**
+コードは同一なので、`.env` とDBを分けるだけで同居できる。
+
+### ⚠️ DB名の衝突に注意
+
+**demo の本番DB名が `tsubasa_test`** で、これは自動テスト用に作ろうとしていたDB名と同じ。
+新サーバでこの名前のまま `phpunit` を走らせると、`RefreshDatabase` が
+**demo環境のデータを消す。**
+
+> **自動テスト用のDBは `tsubasa_phpunit` など別名にすること。**
+> `phpunit.xml` / `.env.testing` の `DB_DATABASE` を確認する。
 
 ---
 
@@ -347,7 +497,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 1. テストデータを捨てる。行を消すのではなく作り直す:
    ```bash
    mysql -e 'DROP DATABASE tsubasa; CREATE DATABASE tsubasa
-             CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;'
+             CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
    ```
    テストで作られた添付ファイルも消す
 2. 本番からダンプを取り、新サーバに取り込む（**ここで所要時間を計測**）
