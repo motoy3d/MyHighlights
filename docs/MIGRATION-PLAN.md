@@ -141,7 +141,9 @@ DNSが旧サーバを向いている間、新サーバは HTTP-01 チャレン�
 | ゼロ日付の有無 | 下記SQL | 取り込み失敗の事前回避 |
 | 添付の容量とファイル数 | `du -sh` / `find \| wc -l` | rsyncの所要時間 |
 | cron / バッチの棚卸し | `crontab -l`, `/etc/cron.d/` | 移設漏れ防止 |
-| 本番 `.env` の実物 | 旧サーバから取得 | **`APP_KEY` を失うと復号不能。最優先で退避** |
+| 本番 `.env` の実物 | 旧サーバから取得 | **`APP_KEY` を失うと復号不能。最優先で退避**（内容の突き合わせは検証済み → チェックリスト参照） |
+| **SES送信用のIAMロール** | 旧インスタンスのIAMロールを確認 | **新インスタンスに同じロールを付けないとメールが全滅する**（`SES_KEY`/`SES_SECRET` が空でロール依存のため） |
+| DBユーザーのホスト指定 | `SELECT user,host FROM mysql.user;` | `DB_HOST=localhost` なので `'tsubasa'@'localhost'` が必要 |
 
 ```sql
 -- DBサイズ
@@ -182,15 +184,21 @@ DNSは触らない。新サーバのIPに直接アクセスして進める。
 
 1. EC2(AL2023)を起動し `deploy/setup-al2023.sh` を実行
 2. リポジトリを配置し `deploy/deploy.sh` を実行
-3. **本番の `.env` を配置**し、
-   `docs/PRODUCTION-CUTOVER-CHECKLIST.md` の
-   「本番 `.env` との突き合わせ検証」を実施
-4. `./vendor/bin/phpunit` を実行（197件）。
+3. **本番の `.env` を配置**する。内容の突き合わせは検証済み
+   （`docs/PRODUCTION-CUTOVER-CHECKLIST.md`）だが、配置後に
+   `php artisan tinker` で設定解決を再確認する。
+   検証で見つかった要対応4点（**SESのIAMロール** / キューワーカー必須 /
+   `DB_HOST=localhost` のユーザー指定 / ログのローテーション）を
+   ここで潰しておく
+4. **SESの疎通確認** — 新インスタンスにIAMロールが付いているか。
+   これが最大の落とし穴で、付け忘れると通知メールが
+   エラーも出さずに全滅する
+5. `./vendor/bin/phpunit` を実行（197件）。
    特に `ConfigInvariantTest` は本番 `.env` を置いた状態で通すこと
    （`APP_URL` と Sanctum のずれをここで検出する）
-5. `php artisan db:seed --class=DevelopmentSeeder` で
+6. `php artisan db:seed --class=DevelopmentSeeder` で
    テストデータを入れ、**手動テスト**（疎通確認レベル）
-6. 一時ホスト名（例 `new.tsubasa.smartj.mobi`）を新サーバに向け、
+7. 一時ホスト名（例 `new.tsubasa.smartj.mobi`）を新サーバに向け、
    証明書を取得してHTTPSで通しの動作を確認
 
 > **注意:** 一時ホスト名でテストする間は `.env` の `APP_URL` も

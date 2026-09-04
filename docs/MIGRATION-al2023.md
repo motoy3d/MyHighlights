@@ -253,10 +253,14 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 
 ### 移行にあたっての確認事項
 
-- **キューワーカーは `QUEUE_CONNECTION` 次第で無意味になる**
-  本番の `.env` が `QUEUE_DRIVER=sync` の場合、通知ジョブはリクエスト内で
-  同期実行され、`tsubasa-queue` サービスは何もしない（移行前のsupervisordも
-  同じ状態だった）。ワーカーを活かすなら `QUEUE_CONNECTION=database` にする
+- **キューワーカーは必須**（本番 `.env` の実物で確認済み）
+  本番は `QUEUE_DRIVER=database` なので、通知ジョブは `jobs` テーブル経由で
+  処理される。`tsubasa-queue` が起動していないと通知メールが一切飛ばず、
+  エラーも出ないまま `jobs` に溜まり続ける
+- **SESはEC2のIAMロールに依存している**（本番 `.env` の実物で確認済み）
+  `SES_KEY` / `SES_SECRET` が空のため、AWS SDKがインスタンスプロファイルから
+  資格情報を取得している。新インスタンスに同じ権限のIAMロールを付けないと
+  メール送信が全て失敗する。詳細は `docs/PRODUCTION-CUTOVER-CHECKLIST.md`
 - **セッションCookieがSecureになる可能性がある**
   `session.secure` の既定が `false` から未指定に変わり、未指定の場合は
   リクエストがHTTPSかどうかで自動判定される。HTTPS運用なので問題ないが、
