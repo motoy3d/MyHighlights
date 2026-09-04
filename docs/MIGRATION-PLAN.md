@@ -236,7 +236,7 @@ sudo systemctl list-timers | grep certbot   # 自動更新タイマーが有効�
 | **EIPの AllocationId と新旧インスタンスID** | `aws ec2 describe-addresses` / `describe-instances` | **当夜の付け替えコマンドに使う。事前に控える** |
 | ~~DNSのTTL短縮~~ | — | **EIP付け替えのため不要になった**（切り戻し不能時の保険として、ホストゾーンの所在だけ把握しておく） |
 | 証明書の取得方法 | 旧サーバの `/etc/letsencrypt/renewal/*.conf` | 上表のどの手を使うか |
-| ~~DBサイズ~~ | **2,964 MB（実測）** | **うち `logs` が 2,867MB＝96.7%。全件移行と決定したため、旧サーバの空き7.6GBに置けない。中間ファイルを作らずパイプで流すのが必須** |
+| ~~DBサイズ~~ | **2,964 MB（実測）** | **うち `logs` が 2,867MB＝96.7%。`logs` は直近2年分のみ移行と決定 → 移行量は約1.0GBに減る（下記2.4）** |
 | ~~旧MySQLのバージョンと文字セット~~ | **5.7.35-log / utf8mb4（実測）** | **列レベルは79列すべて `utf8mb4_unicode_ci` で統一。utf8mb4でないテーブルはゼロ＝絵文字は化けない** |
 | ~~ゼロ日付の有無~~ | **該当なし（67列を実データで走査、0件）** | **旧環境が既に `NO_ZERO_DATE`＋`STRICT_TRANS_TABLES` で7年運用されていた。取り込み失敗のリスクは消滅** |
 | ~~添付の容量とファイル数~~ | **5.2 GB / 15,799件（実測）** | **当夜に転送するには大きい。「事前フル同期→当夜は差分のみ」を必ず採用する** |
@@ -295,7 +295,7 @@ find /var/www/MyHighlights/storage/app/public -type f | wc -l
 | 残り28テーブル | | 約 32 MB |
 
 `logs` は 2019-04-13 以降 7年5か月分。`AppServiceProvider` が全SQLを出力し続けた結果。
-**全件移行と決定済み**（除外すればダンプは約97MBまで縮むが、方針として全件を運ぶ）。
+**直近2年分のみ移行すると決定**（下記2.4）。
 
 照合順序は `utf8mb4_unicode_ci` × 26テーブル、`utf8mb4_general_ci` × 7テーブル。
 後者は `posts_20190308` / `post_responses_20190308` / `post_comments_20190308` 系の
@@ -354,8 +354,8 @@ find /var/www/MyHighlights/storage/app/public -type f | wc -l
 調査で判明した最大の事実。**同一EIPを4つのホスト名・3サイト・2アプリサーバが共有している。**
 
 ```
-tsubasa.smartj.mobi       -> 52.199.130.187   ← 移行対象
-tsubasademo.smartj.mobi   -> 52.199.130.187   ← 移行対象（追加）
+tsubasa.smartj.mobi       -> 52.199.130.187   ← 移行対象（これだけ）
+tsubasademo.smartj.mobi   -> 52.199.130.187   ← 廃止（移行しない）
 smartj.mobi               -> 52.199.130.187   ← 旧サーバに残す
 www.smartj.mobi           -> 52.199.130.187   ← 旧サーバに残す
 ```
@@ -363,8 +363,8 @@ www.smartj.mobi           -> 52.199.130.187   ← 旧サーバに残す
 | vhost | DocumentRoot | 扱い |
 | --- | --- | --- |
 | `smartj.mobi`（default） | `/var/www/html` | **旧サーバに残す**。`/redsmylife/` を AJP で Tomcat にプロキシ |
-| `tsubasa.smartj.mobi` | `/var/www/MyHighlights/public` | 移行する |
-| `tsubasademo.smartj.mobi` | `/var/www/MyHighlights2/public` | 移行する |
+| `tsubasa.smartj.mobi` | `/var/www/MyHighlights/public` | **移行する（唯一の移行対象）** |
+| `tsubasademo.smartj.mobi` | `/var/www/MyHighlights2/public` | **廃止。移行しない** |
 
 **このまま単純にEIPを付け替えると、`smartj.mobi` / `www.smartj.mobi` / `redsmylife` が
 同時に落ちる。** フェーズ5の「2週間後に旧サーバを停止」も、そのままでは
@@ -391,30 +391,99 @@ redsmylife とその4本のバッチを恒久的に止めてしまう。
 
 ---
 
-## 2.3 tsubasademo（テスト環境）も移行対象
+## 2.3 tsubasademo（テスト環境）は廃止する
 
-| 項目 | 本番 | demo |
-| --- | --- | --- |
-| ディレクトリ | `/var/www/MyHighlights` | `/var/www/MyHighlights2` |
-| ホスト名 | `tsubasa.smartj.mobi` | `tsubasademo.smartj.mobi` |
-| DB | `tsubasa`（33テーブル / 2,964MB） | **`tsubasa_test`**（28テーブル / 5MB） |
-| 添付 | 5.2GB / 15,799件 | 444KB / 21件 |
-| `APP_DEBUG` | `false` | `true` |
-| `QUEUE_DRIVER` | `database` | `sync` |
-| Laravel | 5.6.40 | 5.6.40（master `869bc00`） |
+**移行しない。** 現行は `/var/www/MyHighlights2`（Laravel 5.6.40 / PHP 7.1、DB `tsubasa_test`
+28テーブル5MB、添付444KB/21件）。AL2023 には PHP 7.1 が無く、移行するなら
+Laravel 13 への載せ替えが必要になるが、それに見合う価値が無いと判断した。
 
-demo も現行は **Laravel 5.6.40 / PHP 7.1**。AL2023 には PHP 7.1 が無いため、
-**demo も新コードベース（Laravel 13 / PHP 8.4）に載せ替える必要がある。**
-コードは同一なので、`.env` とDBを分けるだけで同居できる。
+廃止に伴う扱い:
 
-### ⚠️ DB名の衝突に注意
+| 対象 | 扱い |
+| --- | --- |
+| `tsubasademo.smartj.mobi` のAレコード | **切り替え前に削除する。** 残したままEIPを付け替えると、新サーバの別vhostに流れ込む |
+| DB `tsubasa_test` / ディレクトリ `/var/www/MyHighlights2` | 旧サーバの退役時にまとめて処分。**切り替え当夜には触らない** |
+| 証明書 `tsubasademo.smartj.mobi`（2026-11-28まで） | 新サーバにコピーしない。旧サーバの renewal 設定から外す |
 
-**demo の本番DB名が `tsubasa_test`** で、これは自動テスト用に作ろうとしていたDB名と同じ。
-新サーバでこの名前のまま `phpunit` を走らせると、`RefreshDatabase` が
-**demo環境のデータを消す。**
+> **当夜に消す作業を入れないこと。** 廃止は切り替えとは独立していて急がない。
+> 旧サーバは切り替え後もしばらく残すので、その間に落ち着いて処分する。
 
-> **自動テスト用のDBは `tsubasa_phpunit` など別名にすること。**
-> `phpunit.xml` / `.env.testing` の `DB_DATABASE` を確認する。
+### 補足: テスト用DB名について
+
+demo の DB名が `tsubasa_test` で、自動テスト用に使おうとしていた名前と同一だった。
+demo を移行しないので新サーバでの衝突は起きないが、
+**旧サーバの demo DB は退役まで生き続ける**ため、取り違えの余地を残さないよう
+テスト用DBは `tsubasa_phpunit` に改名した（`phpunit.xml`）。
+テストの26/27ファイルが `RefreshDatabase` を使うので、
+名前を間違えた状態で流すとデータが消える。
+
+---
+
+## 2.4 `logs` は直近2年分のみ移行する
+
+### 年別の分布（`log_timestamp` 基準・実測）
+
+| 年 | 行数 | 比率 |
+| --- | ---: | ---: |
+| 2019 | 1,209,648 | 8.7% |
+| 2020 | 1,010,130 | 7.3% |
+| 2021 | 1,414,538 | 10.2% |
+| 2022 | 1,945,621 | 14.0% |
+| 2023 | 2,330,027 | 16.8% |
+| 2024 | 2,229,487 | 16.1% |
+| 2025 | 2,134,117 | 15.4% |
+| 2026 | 1,601,742 | 11.5% |
+| **合計** | **13,875,310** | |
+
+### 2年で切った場合（カットオフ 2024-09-05）
+
+| | 行数 | 比率 | 推定サイズ |
+| --- | ---: | ---: | ---: |
+| 移行する | **4,425,540** | 31.9% | **約 915 MB** |
+| 捨てる | 9,449,770 | 68.1% | 約 1,952 MB |
+
+**DB全体は 2,964 MB → 約 1.0 GB になる（約66%減）。**
+旧サーバの空き7.6GBに対する圧迫もかなり緩む。
+
+### ⚠️ ダンプ方法に注意 — `logs` に時刻の索引が無い
+
+`logs` の索引は **`id` の PRIMARY だけ**。`log_timestamp` に索引が無いため、
+
+```bash
+# これは1,387万行のフルスキャンになる。遅い
+mysqldump ... tsubasa logs --where="log_timestamp >= '2024-09-05'"
+```
+
+**`id` が auto_increment で時刻と相関しているので、境界の `id` を事前に1回求めておき、
+当夜はPKのレンジスキャンで抜く。**
+
+```bash
+# 事前（1回だけ。フルスキャンだが日中に済ませられる）
+mysql -e "SELECT MIN(id) FROM logs
+          WHERE log_timestamp >= DATE_SUB(NOW(), INTERVAL 2 YEAR);"   # → BOUNDARY_ID
+# 2026-09-05 時点の実測: BOUNDARY_ID = 9449781 （= 2024-09-05 00:20:14 以降）
+#   max(id) = 13875323 に対し総行数 13875310 で、id と時刻の順序は実質一致している
+
+# 当夜: logs 以外 + logs の直近分、の2本に分けて取る
+mysqldump --single-transaction --no-tablespaces \
+  --ignore-table=tsubasa.logs tsubasa            > main.sql
+mysqldump --single-transaction --no-tablespaces \
+  tsubasa logs --where="id >= ${BOUNDARY_ID}"    > logs.sql
+```
+
+> **`BOUNDARY_ID` は当夜の直前に取り直すこと。** 事前に求めた値のままだと、
+> それ以降に増えた分だけ保持期間が延びる（害は無いが量が増える）。
+> 厳密さより速度を優先してよい箇所。
+
+> 旧サーバの空きは7.6GBあり、約1.0GBのダンプなら中間ファイルを置ける。
+> それでも**パイプ直結のほうが速い**ので、フェーズ3で両方試して速いほうを採る。
+
+### 切り捨てた分の扱い
+
+**旧サーバは切り替え後も残るので、古いログはそちらに残り続ける。**
+監査などで必要になったら旧サーバを参照する。
+旧サーバを最終的に削除する際は、EBSスナップショットを残すので
+そこからも取り出せる。
 
 ---
 
@@ -663,7 +732,15 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 
 ### 2週間後
 
-- [ ] 旧サーバを停止（**削除はしない**）
+> **旧サーバは落とせない。** `smartj.mobi` / `www.smartj.mobi` と、
+> Tomcat上の `redsmylife`（および ec2-user の cron 4本）が同居しているため、
+> 当初の「旧サーバを停止」は **Tsubasa の vhost を止めるだけ** に読み替える。
+
+- [ ] **Tsubasa の vhost だけを止める**（`tsubasa.smartj.mobi`）。
+      **旧サーバ自体は停止しない** — `smartj.mobi` / `www` / `redsmylife` が
+      動き続けているため（2.2節）
+- [ ] tsubasademo を処分する（DB `tsubasa_test`、`/var/www/MyHighlights2`、
+      Aレコード、renewal設定）
 - [ ] さらに1か月様子を見てから、スナップショットを残して削除
 
 ---
