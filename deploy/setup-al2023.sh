@@ -11,6 +11,30 @@ set -euo pipefail
 APP_DIR=${APP_DIR:-/var/www/MyHighlights}
 DOMAIN=${DOMAIN:-tsubasa.smartj.mobi}
 
+# --- IAMロールの確認 -------------------------------------------------------
+# 本番の .env は SES_KEY / SES_SECRET が空で、AWS SDK が
+# インスタンスプロファイル(IAMロール)から資格情報を取得している。
+# ロールが付いていないと、通知メールがエラーも出さずに全て失敗する
+# (キュー経由のため failed_jobs に積まれるだけで画面には出ない)。
+# インスタンス作成時にロールを付ける運用としたので、ここで検算する。
+echo "==> IAMロールの確認"
+IMDS_TOKEN=$(curl -sS -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 60" --max-time 5 || true)
+IAM_ROLE=$(curl -sS --max-time 5 \
+  -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" \
+  "http://169.254.169.254/latest/meta-data/iam/security-credentials/" || true)
+
+if [ -z "${IAM_ROLE}" ]; then
+  echo "!!! このインスタンスにIAMロールが付いていません。" >&2
+  echo "!!! SES送信権限のあるロールをアタッチしてから再実行してください。" >&2
+  echo "!!! (付けないまま進めると、通知メールが無言で全滅します)" >&2
+  echo "!!! 検証目的などで承知のうえ進める場合は SKIP_IAM_CHECK=1 を付けて実行。" >&2
+  [ "${SKIP_IAM_CHECK:-0}" = "1" ] || exit 1
+else
+  echo "    アタッチ済みロール: ${IAM_ROLE}"
+  echo "    ※ SES送信(ses:SendRawEmail)が許可されているかは別途確認すること"
+fi
+
 echo "==> パッケージのインストール"
 sudo dnf -y update
 sudo dnf -y install \
