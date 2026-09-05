@@ -414,29 +414,48 @@ redsmylife とその4本のバッチを恒久的に止めてしまう。
 > `ses:SendRawEmail` / `ses:SendEmail` / `ses:GetSendQuota` に絞ってある。
 > **フェーズ1でメールが実際に届くかを必ず確認すること**（絞りすぎていた場合はここで分かる）。
 
-### 作業上の注意: `aws login` のトークンは15分で切れる
+### 作業上の注意: `aws login` のトークンは15分で切れ、自動更新されない
 
-プロファイル `motoikataoka` は `login_session` 方式で、
-**アクセストークンの有効期間が15分**（`idToken` の `iat`/`exp` で確認）。
-`refreshToken` による自動更新はあるが、
-**AWS CLI を並列に実行するとリフレッシュが競合して失敗する**
-（`The provided authorization grant is invalid, expired, revoked, or malformed`）。
-リフレッシュトークンがローテーション方式のため、同時更新で先勝ちになる。
+プロファイル `motoikataoka` は `login_session` 方式
+（`clientId: arn:aws:signin:::devtools/same-device`）で、
+**アクセストークンの有効期間は15分**（`idToken` の `iat`/`exp` で確認）。
 
-> **AWS CLI の呼び出しは直列で行うこと。**
-> 長い処理（`ssm-run.sh` など）の実行中に別のAWSコマンドを重ねない。
-> 切れた場合は `aws login --profile motoikataoka` で再認証する。
+`aws login help` には「リフレッシュトークンが有効な限り CLI が自動更新する」と
+あり、キャッシュにも `refreshToken` は入っている。
+**しかし実際には自動更新が機能していない。**
 
-`aws login` に**有効期間を指定するオプションは無い**（`aws login help` で確認）。
-15分は固定で、設計上はリフレッシュトークンによる自動更新で回す前提。
-長時間の作業でどうしても再認証を避けたい場合の選択肢:
+```
+login cache の最終更新: 23:14:53   ← ログイン時刻のまま一度も更新されない
+トークン        iat: 23:14:53  exp: 23:29:53
+```
+
+キャッシュが書き換わらないため、`aws` プロセスは起動のたびに
+期限切れのキャッシュを読み、ローテーション済みで無効になった
+リフレッシュトークンで更新を試みて失敗する:
+
+```
+ValidationException: The provided authorization grant is
+invalid, expired, revoked, or malformed
+```
+
+**結果として、`aws login` から15分でAWS操作が全て止まる。**
+`aws login` に有効期間を指定するオプションは無い（`aws login help` で確認済み）。
+
+> 当初これを「AWS CLIの並列実行によるリフレッシュ競合」と推測したが、
+> **誤りだった。** 並列実行していない場面でも同様に失敗する。
+> キャッシュの更新時刻がログイン時刻から動いていないことが根拠。
+
+長時間の作業をするなら、次のいずれかが必要:
 
 | 方法 | 有効期間 | 備考 |
 | --- | --- | --- |
-| 並列実行をやめる（推奨） | 実質無期限 | リフレッシュが競合しなくなるので15分は問題にならない |
-| IAMアクセスキーを `~/.aws/credentials` に置く | 無期限 | 静的な長期資格情報がディスクに残る。漏洩リスクと引き換え |
+| **IAMアクセスキーを `~/.aws/credentials` に置く** | 無期限 | 最も確実。静的な長期資格情報がディスクに残るのと引き換え |
 | 上記＋`aws sts get-session-token --duration-seconds` | 最大36時間 | 長期キーが前提。一時資格情報からは呼べない |
-| IAM Identity Center (SSO) に移行 | セッション最大90日 / ロール最大12時間 | 別アカウントで既に使っている方式 |
+| IAM Identity Center (SSO) へ移行 | セッション最大90日 / ロール最大12時間 | 別アカウントで既に使っている方式 |
+| 都度 `aws login` し直す | 15分 | **切り替え当夜には向かない。** 作業の途中で必ず止まる |
+
+> **当夜までに必ず解消しておくこと。** 15分で認証が切れる状態のまま
+> 深夜作業に入ると、EIP付け替えの直前で操作不能になりうる。
 
 ---
 
