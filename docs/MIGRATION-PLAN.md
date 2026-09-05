@@ -401,7 +401,75 @@ redsmylife とその4本のバッチを恒久的に止めてしまう。
 | プライマリ プライベートIP | `172.31.8.179` |
 | **新EIP**（smartj.mobi / www 退避用） | **`52.199.118.63`** / `eipalloc-051478db829ae4ae2` |
 | 新EIPのセカンダリ プライベートIP | `172.31.9.135`（assoc `eipassoc-0df28cc8b28fb6bd3`） |
-| 新インスタンス | 未作成（フェーズ1で作る） |
+| **新インスタンス** | **`i-0421f25f72d67e67b`**（t3.medium / ap-northeast-1a） |
+| 新インスタンスのIP | プライベート `172.31.4.190`（固定）/ パブリックIPは**自動割当なので停止・起動で変わる** |
+| 新インスタンスのAMI | `ami-0794a632d5c1058bf`（AL2023 / 2026-09-01版） |
+| 新インスタンスのIAMロール | `TsubasaAppServer`（`AmazonSSMManagedInstanceCore` + インライン `SesSend`） |
+| 新インスタンスのSG | `sg-06a9c13cfebdfd595`（`tsubasa-al2023`。**インバウンド規則なし**） |
+| 新インスタンスのEBS | 40GB gp3 / **暗号化あり**（旧サーバは暗号化なし） |
+
+> **旧サーバの `SESFromEC2` ロールには手を触れていない。**
+> 旧サーバが本番で使用中のため。新サーバには別ロールを作った。
+> 権限は `AmazonSESFullAccess`（旧）ではなく
+> `ses:SendRawEmail` / `ses:SendEmail` / `ses:GetSendQuota` に絞ってある。
+> **フェーズ1でメールが実際に届くかを必ず確認すること**（絞りすぎていた場合はここで分かる）。
+
+### 作業上の注意: `aws login` のトークンは15分で切れる
+
+プロファイル `motoikataoka` は `login_session` 方式で、
+**アクセストークンの有効期間が15分**（`idToken` の `iat`/`exp` で確認）。
+`refreshToken` による自動更新はあるが、
+**AWS CLI を並列に実行するとリフレッシュが競合して失敗する**
+（`The provided authorization grant is invalid, expired, revoked, or malformed`）。
+リフレッシュトークンがローテーション方式のため、同時更新で先勝ちになる。
+
+> **AWS CLI の呼び出しは直列で行うこと。**
+> 長い処理（`ssm-run.sh` など）の実行中に別のAWSコマンドを重ねない。
+> 切れた場合は `aws login --profile motoikataoka` で再認証する。
+
+`aws login` に**有効期間を指定するオプションは無い**（`aws login help` で確認）。
+15分は固定で、設計上はリフレッシュトークンによる自動更新で回す前提。
+長時間の作業でどうしても再認証を避けたい場合の選択肢:
+
+| 方法 | 有効期間 | 備考 |
+| --- | --- | --- |
+| 並列実行をやめる（推奨） | 実質無期限 | リフレッシュが競合しなくなるので15分は問題にならない |
+| IAMアクセスキーを `~/.aws/credentials` に置く | 無期限 | 静的な長期資格情報がディスクに残る。漏洩リスクと引き換え |
+| 上記＋`aws sts get-session-token --duration-seconds` | 最大36時間 | 長期キーが前提。一時資格情報からは呼べない |
+| IAM Identity Center (SSO) に移行 | セッション最大90日 / ロール最大12時間 | 別アカウントで既に使っている方式 |
+
+---
+
+## フェーズ1の進捗（2026-09-05）
+
+| 手順 | 状態 |
+| --- | --- |
+| 1. EC2(AL2023)起動＋IAMロール | **完了** |
+| 2. `setup-al2023.sh` で環境構築 | **完了** |
+| 3. リポジトリ配置と `deploy.sh` | 未 |
+| 4. 本番 `.env` の配置 | 未 |
+| 5. メール実送信の確認 | 未 |
+| 6. `phpunit` 197件 | 未 |
+| 7. シーダー投入と手動テスト | 未 |
+
+構築後の検証結果:
+
+| コンポーネント | バージョン |
+| --- | --- |
+| PHP | 8.4.24 |
+| MariaDB | 10.11.18 |
+| Apache | 2.4.68 |
+| Node.js | 20.20.2 |
+| Composer | 2.10.2 |
+| certbot | 2.6.0 |
+
+`mariadb` / `php-fpm` / `httpd` はいずれも active + enabled。
+PHP拡張 `pdo_mysql` `mbstring` `xml` `gd` `bcmath` `intl` `zip` `opcache` は全て導入済み。
+
+> **インスタンスは停止してある。** 再開するときは
+> `aws ec2 start-instances --instance-ids i-0421f25f72d67e67b` の後、
+> SSMに再登録されるまで1〜2分待つ。パブリックIPは変わるが、
+> SSM経由で操作するので影響はない。
 
 **手順1（AWS側）は完了。** 実施内容:
 

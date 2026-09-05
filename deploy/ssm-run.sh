@@ -56,10 +56,15 @@ wrapped = (
 print(json.dumps({"commands": [wrapped]}))
 PY
 
+# SSMの --comment は改行を含められず、100文字以内という制約がある
+# (^.{0,100}$ で . は改行にマッチしない)。複数行のコマンドをそのまま渡すと
+# ValidationException で落ちるので、空白に潰してから切り詰める。
+COMMENT=$(printf 'tsubasa: %s' "${LABEL}" | tr '\n\r\t' '   ' | tr -s ' ' | cut -c1-100)
+
 CMD_ID=$(aws ssm send-command \
   --instance-ids "${INSTANCE_ID}" \
   --document-name AWS-RunShellScript \
-  --comment "tsubasa: ${LABEL:0:90}" \
+  --comment "${COMMENT}" \
   --timeout-seconds 3600 \
   --parameters "file://${PARAM_FILE}" \
   --query Command.CommandId --output text)
