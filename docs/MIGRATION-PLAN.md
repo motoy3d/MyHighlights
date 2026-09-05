@@ -467,7 +467,7 @@ invalid, expired, revoked, or malformed
 | 2. `setup-al2023.sh` で環境構築 | **完了** |
 | 3. リポジトリ配置と `deploy.sh` | **完了** |
 | 4. 本番 `.env` の配置 | **完了** |
-| 5. メール実送信の確認 | **未**（実際にメールが飛ぶので実施前に合意が要る） |
+| 5. メール実送信の確認 | **完了（実受信を確認）** |
 | 6. `phpunit` 197件 | **完了（197件成功 / 510アサーション）** |
 | 7. シーダー投入と画面確認 | **完了** |
 
@@ -527,15 +527,34 @@ DBは `'tsubasa'@'localhost'` で作成し、ソケット接続を実地確認�
 > rootで流すと同じ状態になるため、`deploy.sh` 経由で流すか、
 > 流した後に `deploy/fix-permissions.sh` を実行すること。
 
+### メール送信の確認結果（手順5）
+
+新サーバから `Mail::raw` で1通送信し、**実際に受信箱まで届くことを確認した。**
+
+| メトリクス (CloudWatch AWS/SES) | 値 |
+| --- | ---: |
+| Send | 1 |
+| **Delivery** | **1** |
+| Bounce / Reject / Complaint | 0 |
+
+**旧サーバの `AmazonSESFullAccess` まで広げなくても、
+`ses:SendRawEmail` / `ses:SendEmail` / `ses:GetSendQuota` に
+絞ったロールで送信できる**ことが確定した。
+
+> `ses:GetSendStatistics` はロールに含めていないため、
+> インスタンス上から `aws ses get-send-statistics` は AccessDenied になる。
+> 送信自体には影響しない。統計を見たい場合は手元の資格情報で見る。
+
+SESは本番アクセス有効（サンドボックス外）、`smartj.mobi` と
+`system@smartj.mobi` が検証済み、直近24時間で1,866通送信中。
+
 ### 残っているもの
 
-- **メール実送信の確認（手順5）。** 新サーバのIAMロールは旧サーバの
-  `AmazonSESFullAccess` ではなく `ses:SendRawEmail` などに絞ってある。
-  絞りすぎていないかは実送信でしか分からない。
-  SESは本番アクセス有効（サンドボックス外）、`smartj.mobi` と
-  `system@smartj.mobi` が検証済み、直近24時間で1,866通送信中。
 - テスト実行のために入れた開発依存は、その後の `deploy.sh` 再実行で
   `--no-dev` に戻っている。
+- **フェーズ2に入る前にメールを封じ込めること**（問題2）。
+  本番データを入れた状態で今回と同じことをすると、
+  実在の会員に本物の通知が飛ぶ。
 
 > **インスタンスは使い終わったら停止すること。**
 > `aws ec2 stop-instances --instance-ids i-0421f25f72d67e67b`
