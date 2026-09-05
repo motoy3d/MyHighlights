@@ -14,6 +14,14 @@ export HOME="${HOME:-/root}"
 export COMPOSER_HOME="${COMPOSER_HOME:-${HOME}/.composer}"
 export COMPOSER_ALLOW_SUPERUSER=1
 
+# gitは空ディレクトリを追跡しないため、クローン直後には
+# storage/framework/cache/data が存在しない。無いままだとレートリミッタが
+# ファイルキャッシュに書けず、/api/* が全て500になる。
+echo "==> storage ディレクトリの用意"
+mkdir -p storage/framework/cache/data storage/framework/sessions \
+         storage/framework/views storage/logs bootstrap/cache
+chown -R apache:apache storage bootstrap/cache
+
 echo "==> composer"
 composer install --no-dev --optimize-autoloader --no-interaction
 
@@ -22,24 +30,35 @@ echo "==> フロントエンドのビルド"
 npm ci
 npm run build
 
+# artisan は apache ユーザーで実行する。
+# SSM経由だとrootで動くため、素で流すと storage 配下に root 所有の
+# ディレクトリ(特に framework/cache/data)ができ、以後 Apache が
+# そこへ書けなくなって /api/* が全て500になる。
+# 「ログインはできるがデータが出ない」という出方をするので気づきにくい。
+ARTISAN="php artisan"
+if [ "$(id -u)" = "0" ]; then
+  ARTISAN="sudo -u apache php artisan"
+fi
+
 echo "==> マイグレーション"
-php artisan migrate --force
+${ARTISAN} migrate --force
 
 echo "==> キャッシュの再生成"
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan event:cache
+${ARTISAN} optimize:clear
+${ARTISAN} config:cache
+${ARTISAN} route:cache
+${ARTISAN} view:cache
+${ARTISAN} event:cache
 
 echo "==> storage シンボリックリンク"
-php artisan storage:link || true
+${ARTISAN} storage:link || true
 
 echo "==> 権限"
-sudo chown -R apache:apache storage bootstrap/cache
+# composer/npm はrootで動かしているので、最後にもう一度揃える
+chown -R apache:apache storage bootstrap/cache
 
 echo "==> キューワーカーの再起動"
 # 現在のジョブを終えてからワーカーが終了し、systemdが新しいコードで起動し直す
-php artisan queue:restart
+${ARTISAN} queue:restart
 
 echo "==> 完了"
