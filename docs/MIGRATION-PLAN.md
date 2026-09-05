@@ -459,10 +459,88 @@ invalid, expired, revoked, or malformed
 
 ---
 
-## フェーズ1の進捗（2026-09-05）
+## フェーズ1の進捗
 
 | 手順 | 状態 |
 | --- | --- |
+| 1. EC2(AL2023)起動＋IAMロール | **完了** |
+| 2. `setup-al2023.sh` で環境構築 | **完了** |
+| 3. リポジトリ配置と `deploy.sh` | **完了** |
+| 4. 本番 `.env` の配置 | **完了** |
+| 5. メール実送信の確認 | **未**（実際にメールが飛ぶので実施前に合意が要る） |
+| 6. `phpunit` 197件 | **完了（197件成功 / 510アサーション）** |
+| 7. シーダー投入と画面確認 | **完了** |
+
+構築後の検証結果:
+
+| コンポーネント | バージョン |
+| --- | --- |
+| PHP | 8.4.24 |
+| MariaDB | 10.11.18 |
+| Apache | 2.4.68 |
+| Node.js | 20.20.2 |
+| Composer | 2.10.2 |
+| certbot | 2.6.0 |
+
+本番 `.env` を置いた状態での設定解決値:
+
+```
+app.env                       'production'
+app.url                       'http://localhost:8080'   ← フェーズ1のみ
+app.timezone                  'Asia/Tokyo'
+app.locale                    'ja'
+session.cookie                'tsubasaup_session'       ← 旧と同じ
+session.secure                false                     ← フェーズ1のみ
+mail.default                  'ses'
+queue.default                 'database'
+logging.default               'daily'                   ← 要対応4を解消
+filesystems.disks.public.url  'http://localhost:8080/storage'
+```
+
+DBは `'tsubasa'@'localhost'` で作成し、ソケット接続を実地確認した
+（`pdo_mysql.default_socket` と MariaDB の `socket` がどちらも
+`/var/lib/mysql/mysql.sock` で一致。**要対応3を解消**）。
+テスト用DBは `tsubasa_phpunit` を別に作ってある。
+
+画面確認（SSMポートフォワード → `http://localhost:8080`）:
+ログイン画面の描画（ヘッダとボタンが青く、OnsenUIが効いている）、
+ログイン、タイムラインへの投稿表示、カレンダーの月表示と予定表示、
+`/.env` が403で拒否されることを確認した。
+
+### フェーズ1で見つかった問題
+
+いずれも**当夜に踏むと復旧が長引く**もの。修正済み。
+
+| 症状 | 原因 | 対処 |
+| --- | --- | --- |
+| `deploy.sh` が composer で落ちる | SSMの `AWS-RunShellScript` はrootかつ **`HOME` 未設定**で実行する。composerは `HOME` か `COMPOSER_HOME` が無いと起動できない | `ssm-run.sh` が `HOME` を補うようにした。`deploy.sh` でも `COMPOSER_HOME` を固定 |
+| **`/api/*` が全て500** | `storage/framework/cache/data` が **root所有**で apache が書けず、レートリミッタがファイルキャッシュに書けなかった。artisanをrootで流すと発生する | `deploy.sh` が artisan を `sudo -u apache` で実行するようにした。`deploy/fix-permissions.sh` も追加 |
+| `ssm-run.sh` が複数行コマンドで落ちる | `--comment` に改行が入り、SSMの `^.{0,100}$` 制約に違反 | 空白に潰してから切り詰めるようにした |
+| ポートフォワードで画面が見られない | `tsubasa.conf` は :80 を全てhttpsへ301し、`ServerName` も固定。:443 は証明書未配置のまま `SSLEngine on` | 検証用の `deploy/tsubasa-phase1.conf` を追加。**切り替え前に `tsubasa.conf` へ差し替える** |
+| シーダーが実行できない | `DevelopmentSeeder` に `app()->isProduction()` の停止ガードがあり、本番 `.env`（`APP_ENV=production`）とは両立しない | 投入の間だけ `APP_ENV` を落として戻す。フェーズ1のDBは使い捨てなので問題ない |
+
+> **`/api/*` の500は特に注意。** 画面上は「ログインはできるが
+> タイムラインもカレンダーも空」という出方をする。
+> 401ではないのでSanctumの設定を疑っても見つからない。
+> **当夜のタイムラインは 00:30 に `migrate` と `config:cache` を
+> 流し、その直後の 00:33 がスモークテスト。** ここでartisanを
+> rootで流すと同じ状態になるため、`deploy.sh` 経由で流すか、
+> 流した後に `deploy/fix-permissions.sh` を実行すること。
+
+### 残っているもの
+
+- **メール実送信の確認（手順5）。** 新サーバのIAMロールは旧サーバの
+  `AmazonSESFullAccess` ではなく `ses:SendRawEmail` などに絞ってある。
+  絞りすぎていないかは実送信でしか分からない。
+  SESは本番アクセス有効（サンドボックス外）、`smartj.mobi` と
+  `system@smartj.mobi` が検証済み、直近24時間で1,866通送信中。
+- テスト実行のために入れた開発依存は、その後の `deploy.sh` 再実行で
+  `--no-dev` に戻っている。
+
+> **インスタンスは使い終わったら停止すること。**
+> `aws ec2 stop-instances --instance-ids i-0421f25f72d67e67b`
+
+--- | --- |
 | 1. EC2(AL2023)起動＋IAMロール | **完了** |
 | 2. `setup-al2023.sh` で環境構築 | **完了** |
 | 3. リポジトリ配置と `deploy.sh` | 未 |
