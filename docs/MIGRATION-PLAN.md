@@ -389,6 +389,61 @@ redsmylife とその4本のバッチを恒久的に止めてしまう。
 > 手作業での変更が1回必要。
 > DNS-01チャレンジを使う場合もこのDNSのAPI可否が前提になる。
 
+### 実施状況と確定したリソースID（2026-09-05）
+
+**本番アカウント: `796478799102`（IAMユーザー `Motoi` / プロファイル `motoikataoka`）**
+
+| 用途 | 値 |
+| --- | --- |
+| **当夜に付け替えるEIP**（tsubasa用） | `52.199.130.187` / **`eipalloc-e5f15181`** |
+| 旧インスタンス | **`i-0ea1f248078364fbe`**（t3.medium / ap-northeast-1a / Name=`RedsMyLife-Web/DB`） |
+| 旧インスタンスのENI | `eni-76e2b738`（subnet `subnet-a0f1e3d4` / SG `sg-4f8cc028`） |
+| プライマリ プライベートIP | `172.31.8.179` |
+| **新EIP**（smartj.mobi / www 退避用） | **`52.199.118.63`** / `eipalloc-051478db829ae4ae2` |
+| 新EIPのセカンダリ プライベートIP | `172.31.9.135`（assoc `eipassoc-0df28cc8b28fb6bd3`） |
+| 新インスタンス | 未作成（フェーズ1で作る） |
+
+**手順1（AWS側）は完了。** 実施内容:
+
+```bash
+aws ec2 allocate-address --domain vpc            # → 52.199.118.63
+aws ec2 assign-private-ip-addresses \
+  --network-interface-id eni-76e2b738 --secondary-private-ip-address-count 1
+aws ec2 associate-address \
+  --allocation-id eipalloc-051478db829ae4ae2 \
+  --network-interface-id eni-76e2b738 --private-ip-address 172.31.9.135
+# 旧サーバ側でOSにセカンダリIPを反映
+sudo bash -c 'export INTERFACE=eth0; \
+  . /etc/sysconfig/network-scripts/ec2net-functions; rewrite_aliases'
+```
+
+検証: `https://smartj.mobi/` を新IP `52.199.118.63` に向けて取得した内容が、
+旧IP経由と **md5一致**。同じサーバが応答している。本番も無影響
+（tsubasa 301 / smartj 200 が作業前後で不変）。
+
+> **`/etc/sysconfig/network-scripts/ifcfg-eth0:1` を作成した。**
+> このAMIの `ec2-net-utils` は `plug_interface` から `rewrite_primary` しか
+> 呼ばず、**セカンダリIPは再起動で復活しない**ことを確認したため。
+> この設定を消すと、再起動後に `smartj.mobi` が新IPで応答しなくなる。
+
+**残るのは手順2〜4（dnsv.jp での手作業）。** これが終わるまで当夜の付け替えはできない。
+
+| レコード | 現在 | 変更後 |
+| --- | --- | --- |
+| `smartj.mobi` A | 52.199.130.187 | **52.199.118.63** |
+| `www.smartj.mobi` A | 52.199.130.187 | **52.199.118.63** |
+| `tsubasademo.smartj.mobi` A | 52.199.130.187 | **削除** |
+| `tsubasa.smartj.mobi` A | 52.199.130.187 | **変更しない**（EIPごと移動するため） |
+
+### 作業前から存在した問題（移行とは無関係）
+
+新IPでの検証中に見つかったが、**旧IPでも同じ結果**なので移行が原因ではない。
+
+| 事象 | 内容 |
+| --- | --- |
+| `https://www.smartj.mobi/` が繋がらない | 証明書のSANに `www.smartj.mobi` が無い（`no alternative certificate subject name matches`）。DNSを移しても直らないし、悪化もしない |
+| `https://smartj.mobi/redsmylife/` が404 | 旧IP・現行DNSいずれでも404。Tomcatとcron4本は動いているので、Webの入口だけの問題と思われる |
+
 ---
 
 ## 2.3 tsubasademo（テスト環境）は廃止する
