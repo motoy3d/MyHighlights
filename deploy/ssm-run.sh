@@ -50,6 +50,10 @@ body = open(sys.argv[1], encoding='utf-8').read()
 log = '/var/log/tsubasa-deploy.log'
 wrapped = (
     'set -o pipefail\n'
+    # SSMのAWS-RunShellScriptはrootで、かつHOMEを設定せずに実行する。
+    # composer は HOME か COMPOSER_HOME が無いと起動時に落ち、
+    # npm もキャッシュの置き場所を決められない。ここで補っておく。
+    'export HOME="${HOME:-/root}"\n'
     f'echo "===== $(date -Is) ssm-run =====" >> {log}\n'
     '{\n' + body + '\n} 2>&1 | tee -a ' + log + '\n'
 )

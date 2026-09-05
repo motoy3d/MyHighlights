@@ -7,6 +7,13 @@ set -euo pipefail
 APP_DIR=${APP_DIR:-/var/www/MyHighlights}
 cd "${APP_DIR}"
 
+# SSM経由(AWS-RunShellScript)で流すとrootかつHOME未設定で動くため、
+# composer が "The HOME or COMPOSER_HOME environment variable must be set"
+# で落ちる。rootで動かすこと自体は承知のうえなので明示的に許可する。
+export HOME="${HOME:-/root}"
+export COMPOSER_HOME="${COMPOSER_HOME:-${HOME}/.composer}"
+export COMPOSER_ALLOW_SUPERUSER=1
+
 echo "==> composer"
 composer install --no-dev --optimize-autoloader --no-interaction
 
