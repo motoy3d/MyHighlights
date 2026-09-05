@@ -478,7 +478,7 @@ invalid, expired, revoked, or malformed
 | PHP | 8.4.24 |
 | MariaDB | 10.11.18 |
 | Apache | 2.4.68 |
-| Node.js | 20.20.2 |
+| Node.js | 24.18.1 |
 | Composer | 2.10.2 |
 | certbot | 2.6.0 |
 
@@ -575,11 +575,21 @@ SESは本番アクセス有効（サンドボックス外）、`smartj.mobi` と
 | PHP | 8.4.24 |
 | MariaDB | 10.11.18 |
 | Apache | 2.4.68 |
-| Node.js | 20.20.2 |
+| Node.js | 24.18.1 |
 | Composer | 2.10.2 |
 | certbot | 2.6.0 |
 
 `mariadb` / `php-fpm` / `httpd` はいずれも active + enabled。
+
+> **Node は当初 nodejs20 を入れたが 24 に上げた。**
+> Node 20 (LTS Iron) は 2026-04 にEOLを迎えている。
+> AL2023 が提供するのは nodejs18(EOL) / nodejs22(2027-04まで) /
+> **nodejs24(2028-04まで)** の3系統。
+> Node は Vite のビルドにしか使わず実行時には登場しないため
+> リスクは低いが、サーバを数年使う前提だと nodejs22 では
+> 7か月後に同じ話になるので 24 を選んだ。
+> Node 24.18.1 / npm 11.16.0 でクリーンビルドし直し、
+> 画面表示とコンソールエラー無しを確認済み。
 PHP拡張 `pdo_mysql` `mbstring` `xml` `gd` `bcmath` `intl` `zip` `opcache` は全て導入済み。
 
 > **インスタンスは停止してある。** 再開するときは

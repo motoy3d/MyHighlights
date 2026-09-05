@@ -8,7 +8,12 @@
 # (SSMのsend-commandはrootで実行されるため sudo はそのまま通る)
 #
 # 収録パッケージのバージョンは 2026-08 時点の AL2023 リポジトリで確認済み:
-#   php8.4 / mariadb1011 (10.11) / httpd 2.4.68 / nodejs20 / certbot 2.6 / composer 2.10
+#   php8.4 / mariadb1011 (10.11) / httpd 2.4.68 / nodejs24 / certbot 2.6 / composer 2.10
+#
+# Node は Vite のビルドにしか使わない(実行時には登場しない)が、
+# AL2023 が提供する nodejs20 は 2026-04 にEOLを迎えているため nodejs24 を使う。
+# nodejs24 は 2028-04 まで、nodejs22 は 2027-04 まで。
+# Vite 7 の要求は Node 20.19+ / 22.12+ / 24+ なのでいずれでも動く。
 #
 set -euo pipefail
 
@@ -50,7 +55,7 @@ sudo dnf -y install \
   php8.4-gd php8.4-bcmath php8.4-intl php8.4-opcache php8.4-zip \
   mariadb1011-server mariadb1011 \
   httpd mod_ssl \
-  nodejs20 nodejs20-npm \
+  nodejs24 nodejs24-npm \
   composer git certbot python3-certbot-apache
 
 php -v
