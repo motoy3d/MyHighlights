@@ -23,6 +23,12 @@ export default defineConfig({
             },
         }),
     ],
+    build: {
+        // Vite 7 の既定(baseline-widely-available)は Safari 16 以上向けの構文を出す。
+        // 旧サーバのアクセスログには iOS 14/15 の実機が残っている(2.5か月で13回)ので、
+        // esbuild にそこまで下げて変換させる。ポリフィルは不要(使っている API は古い)。
+        target: ['es2019', 'safari13', 'ios13'],
+    },
     resolve: {
         alias: {
             // Laravel Mixと同じくテンプレートコンパイラ入りのフルビルドを使う

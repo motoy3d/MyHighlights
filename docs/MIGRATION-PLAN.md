@@ -111,7 +111,9 @@ aws ssm start-session \
 
 ```dotenv
 MAIL_MAILER=log        # storage/logs/laravel.log に出るだけになる
-QUEUE_CONNECTION=sync  # ワーカー経由の送信も同じ経路に乗せる
+QUEUE_CONNECTION=database  # sync にしない。PostNotificationJob は宛先1人ごとに sleep(1) するので
+                           # 同期実行にすると投稿の POST が20秒以上かかる(実測)。database のまま
+                           # tsubasa-queue を止めておけば jobs に溜まるだけで、当夜の TRUNCATE で消える
 ```
 
 送信内容そのものを確認したい場合は Mailtrap 等の
@@ -328,15 +330,14 @@ find /var/www/MyHighlights/storage/app/public -type f | wc -l
 
 ### 証明書
 
-- `authenticator = webroot` / **`webroot_path = /var/www/html`**
-  — Tsubasa のドキュメントルート (`/var/www/MyHighlights/public`) **ではない**
-- `tsubasa.smartj.mobi` の有効期限 **2026-10-29**、`tsubasademo.smartj.mobi` は 2026-11-28
-- certbot **0.38.0**（旧版）
+- `authenticator = webroot`。**webroot は証明書ごとに違う**(2026-09-06 に訂正):
+  - `smartj.mobi` … `/var/www/html`(旧サーバに残る。新には持ち込まない)
+  - **`tsubasa.smartj.mobi` … `/var/www/MyHighlights/public`**(新サーバも同じパス。書き換え不要)
 
-> **`/etc/letsencrypt` をコピーするだけでは更新が失敗する。**
-> 新サーバにも `/var/www/html` に相当する webroot を用意して
-> `.well-known/acme-challenge` を配信できるようにするか、
-> renewal の `webroot_path` を新サーバの構成に合わせて書き換えること。
+> 当初「`/etc/letsencrypt` をコピーするだけでは更新が失敗する」と書いていたが、
+> それは `smartj.mobi` 側の設定を見た誤り。tsubasa の renewal 設定はそのまま使える。
+> 新サーバの `:80` vhost は `/.well-known/acme-challenge/` を https に 301 しないことを curl で確認済み。
+> ただし **AL2023 の certbot rpm は timer を同梱しない**ので、`configure-runtime.sh` が `certbot-renew.timer` を入れる。
 
 ### その他
 
@@ -581,7 +582,7 @@ SESは本番アクセス有効（サンドボックス外）、`smartj.mobi` と
 
 ```
 MAIL_MAILER=log / MAIL_DRIVER=log
-QUEUE_CONNECTION=sync / QUEUE_DRIVER=sync
+QUEUE_CONNECTION=database / QUEUE_DRIVER=database(ワーカー停止。sync は投稿が20秒以上かかるため不採用)
 tsubasa-queue: 停止
 ```
 
@@ -703,7 +704,7 @@ DB上の `post_attachments` 2,490件との突き合わせも通っている。
 | `www.smartj.mobi` A | 52.199.118.63 | ✅ |
 | `tsubasademo.smartj.mobi` A | 削除 | ✅ |
 | `tsubasa.smartj.mobi` A | 52.199.130.187（変更なし） | ✅ |
-| **`aws.smartj.mobi` A** | **削除** | **未** |
+| **`aws.smartj.mobi` A** | **削除** | **済**(2026-09-06、`dig` で空を確認) |
 
 > **`aws.smartj.mobi` は当初把握していなかった5つ目のホスト名。**
 > `smartj.mobi` と中身が完全に同一（md5一致）で、
@@ -1123,6 +1124,20 @@ Playwright(chromium)を SSM ポートフォワード越しに実行: **32 passed
 テスト後のデータ件数・添付ファイル数は旧サーバと一致。
 (mobile=WebKit はホスト名の差し替えができないため HTTP で実施済みの結果をもって代える)
 
+### 最終点検（2026-09-07）— 手法を変えて再点検
+
+「自分が書いたテストを通す」以外の角度で見直した。
+
+| 手法 | 結果 |
+| --- | --- |
+| **実トラフィックの再生** — 旧サーバのアクセスログ(6〜9月、97万行)から利用者が実際に叩いた URL 839 件を新サーバに再生 | 利用者に見える差分なし。**iCal 購読 URL 15 本は全て 200**(`+` や `$` を含むトークンも)。旧 200 / 新 404 は bot の探索(`/config/.env` 等。旧は default vhost の `Options Indexes` が 200 を返していた)、旧 mix のアセット(`/js/app.js?id=`。新 HTML は参照しない)、削除済み投稿の添付(旧にも無い)、`/img/LINE_APP.png`(LINE Notify 廃止で意図的に削除) |
+| **iCal 内容の旧新比較** | DTSTART/DTEND/SUMMARY は一致。ライブラリ更新で UID の形式・ヘッダ(`VTIMEZONE`、`Content-Type: text/calendar`)が変わる。**購読側では初回取得時に全イベントが入れ替わる**(重複はしない)。終日イベントの `DTEND` が省略されるが、予定は `schedule_date` の単日のみなので意味は同じ |
+| **内容レベルのデータ照合** — 件数ではなく行のハッシュ(`BIT_XOR(CRC32(...))`)で旧新比較 | posts / post_comments / schedules / members / teams / users / categories / questionnaires / logs(10万行)すべて一致(ダンプ後に旧で更新された数行を除外)。**TIMESTAMP 型を含む列も一致**=タイムゾーン修正の裏取り |
+| **再起動試験**(旧は 1197 日無再起動) | httpd / php-fpm / mariadb / SSM / certbot timer / queue が全て自動起動。TZ・php.ini・DB 設定・storage リンク・権限も維持 |
+| **利用者の端末 × TLS** | 新サーバは TLS 1.2+(AL2023 DEFAULT ポリシー)。旧は 1.0/1.1 も受けていたが、ログ上の 1.2 非対応クライアントは bot のみ。**iOS 14/15 の実機が 2.5 か月で 13 回**あり、Vite 7 の既定ビルド対象(Safari 16+)では画面が出ない可能性 → `vite.config.js` の `build.target` を `safari13/ios13` に下げた |
+| **IAM の机上シミュレーション** | `simulate-principal-policy` で `ses:SendRawEmail` が allowed、`ec2:TerminateInstances` は deny。SES は本番アクセス済み(sandbox ではない)、`smartj.mobi` ドメイン検証済み |
+| **第三者のプレモーテム**(文脈を持たない別エージェントに文書とスクリプトを読ませた) | 13 件の指摘。有効だったもの: **フル取り込みで検証アカウントが消える**(→ `smoke:account` コマンドを追加し当夜手順に組み込み)、**`ssm-run.sh` が 100 秒で待機を打ち切る**(→ 実測で再現。完了までポーリングする形に修正し 130 秒で確認)、**スモークの投稿通知がワーカー起動後に実メンバーへ飛ぶ**(→ スモーク中は `MAIL=log` のまま、`TRUNCATE jobs` 後に ses へ)、`.env` 戻しの時点が文書間で矛盾、EIP 付与後に `hosts` が死んだ IP を指す、当夜の DB 手順にスクリプトが無い(→ `cutover-db.sh` を追加)、旧サーバの外向き通信(→ 当夜の確認項目に)。誤認だったもの: webroot(古い記述を読んだもの。訂正済み)、`QUEUE=sync`(同)。確認して問題なし: パスワードは全件 bcrypt |
+
 ### まだ当夜まで踏めない経路
 
 - `certbot renew --dry-run` の HTTP-01: DNS が旧サーバを向いている間は必ず失敗する。設定の読み込みまでは正常
@@ -1271,20 +1286,20 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | 経過 | 作業 | 中止できるか |
 | --- | --- | --- |
 | -30分 | 全員の待機開始。旧サーバのEBSスナップショットを取得 | ○ |
-| -10分 | 利用中の利用者がいないことを確認 | ○ |
-| **00:00** | **旧サーバをメンテナンスモードにする** — `cd /var/www/MyHighlights && php artisan down`（旧は mod_php で php-fpm は無い。同居する redsmylife に影響させずに tsubasa だけ 503 にできる）。以後、本番への書き込みは発生しない | ○ |
-| 00:02 | 旧DBの最終ダンプを取得 | ○ |
-| 00:10 | 新サーバのDBを作り直してダンプを取り込む | ○ |
-| 00:20 | 添付ファイルの**差分**同期 `deploy/sync-attachments.sh --since <前回フル同期日> --to-server`（実測: 旧→S3 4秒 + S3→新 7秒） | ○ |
-| 00:25 | `TRUNCATE jobs; TRUNCATE failed_jobs;` | ○ |
-| 00:27 | **`.env` を本番値に戻す**（`APP_URL=https://tsubasa.smartj.mobi`（今は `:8443` 付き）、`MAIL_MAILER`/`MAIL_DRIVER=ses`、`API_RATE_LIMIT` の行を削除。`SESSION_SECURE_COOKIE=true` と `APP_DEBUG=false` は既にそうなっている） | ○ |
-| 00:30 | `php artisan migrate --force` → `optimize:clear` → `config:cache route:cache view:cache event:cache` | ○ |
-| 00:33 | **切り替え前スモークテスト**（下記） | ○ |
-| **00:40** | **切り替え実行** — EIPを新インスタンスに付け替え（数秒） | **ここから切り戻しにコストが発生** |
-| 00:45 | 本番URLでスモークテスト再実施 | △ |
-| 00:50 | キューワーカー起動 `systemctl start tsubasa-queue`（cron は無い。certbot は systemd timer で登録済み） | △ |
-| 01:00 | 監視（ログ、`logs`テーブル、メール送信）開始。問題なければ完了 | △ |
-| 01:30 | **切り戻し判断期限** | — |
+| -10分 | 利用中の利用者がいないことを確認。**新サーバの SG に 80/443 を開ける**(`sg-06a9c13cfebdfd595`。`--dry-run` 確認済み) | ○ |
+| **00:00** | **旧サーバをメンテナンスモードにする** — `cd /var/www/MyHighlights && php artisan down`(旧は mod_php で php-fpm は無い。同居する redsmylife に影響させずに tsubasa だけ 503 にできる)。以後、本番への書き込みは発生しない | ○ |
+| 00:02 | **`deploy/cutover-db.sh`** を実行。旧で境界 id の取り直し(8秒)→ ダンプ → S3 → 新で DB を作り直して取り込み → migrate → `TRUNCATE jobs, failed_jobs` → キャッシュ再生成 → 件数の突き合わせ、まで1本で行う(実測は §2.5 最終点検) | ○ |
+| 00:10 | 添付ファイルの**差分**同期 `deploy/sync-attachments.sh --since <前回フル同期日> --to-server`(実測 11秒) | ○ |
+| 00:12 | **検証アカウントを作り直す**(フル取り込みで消えている) `sudo -u apache php artisan smoke:account create --password='…'` | ○ |
+| 00:15 | **`.env` を本番値に**: `APP_URL=https://tsubasa.smartj.mobi`(今は `:8443` 付き)、`API_RATE_LIMIT` の行を削除、`QUEUE_CONNECTION`/`QUEUE_DRIVER` が `database` であることを確認。**`MAIL_MAILER`/`MAIL_DRIVER` はまだ `log` のまま**(スモークの投稿通知が実メンバーに飛ばないように)。`sudo -u apache php artisan config:cache` | ○ |
+| 00:18 | **切り替え前スモークテスト**(下記)。投稿の作成→削除まで | ○ |
+| 00:25 | `TRUNCATE jobs;`(スモークで積まれた通知ジョブを捨てる)→ `MAIL_MAILER`/`MAIL_DRIVER` を `ses` に → `config:cache` → **自分のアカウントでパスワード再設定メールを送り、届くことを確認**(IAM ロール経由の SES 送信の実地確認) | ○ |
+| **00:30** | **切り替え実行** — EIP を新インスタンスに付け替え(数秒)。直後に作業端末の `hosts` / `TSUBASA_RESOLVE` を外す(新サーバの自動割当IPは EIP 付与で解放され、残すと死んだIPを指す) | **ここから切り戻しにコストが発生** |
+| 00:31 | **旧サーバの外向き通信を確認** `curl -s https://checkip.amazonaws.com`(EIP を外すと自動割当IPに置き換わるはずだが、redsmylife のバッチと certbot が外へ出られることを目視) | △ |
+| 00:35 | 本番URLでスモークテスト再実施(接続先が `52.199.130.187` であることを `curl -v` で確認) | △ |
+| 00:40 | `SELECT COUNT(*) FROM jobs;` が 0 であることを確認してから **キューワーカー起動** `systemctl start tsubasa-queue`(cron は無い。certbot は timer 登録済み) | △ |
+| 00:45 | 監視(ログ、`logs` テーブル、メール送信)開始。問題なければ完了 | △ |
+| **01:00** | **切り戻し判断期限**(切り替えから30分) | — |
 
 ### 切り替え前スモークテスト（00:33）
 
@@ -1327,7 +1342,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 
 ### 判断基準
 
-**切り替え後30分（01:10）の時点で、上記スモークの必須項目
+**切り替え後30分（01:00）の時点で、上記スモークの必須項目
 （ログイン・既存データの表示・添付の表示）が通らなければ切り戻す。**
 「あとで直せそう」で引っ張らない。
 
@@ -1363,6 +1378,9 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 `docs/PRODUCTION-CUTOVER-CHECKLIST.md` の「切り替え後」も参照。
 
 ### 当日中
+
+- 検証アカウントを消す `sudo -u apache php artisan smoke:account delete`
+- **旧サーバの renewal から tsubasa を外す** `sudo certbot delete --cert-name tsubasa.smartj.mobi`(旧の root cron が毎日 tsubasa の更新に失敗し続けるのを止める。新サーバ側の証明書には影響しない)
 
 - [ ] `storage/logs/laravel.log` と `logs` テーブルのエラー確認
   ```sql

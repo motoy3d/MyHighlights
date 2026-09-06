@@ -185,7 +185,6 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
 - [ ] 現行DBのダンプを取得
 - [ ] `storage/app/public` 配下のアップロード済みファイルを退避
       （投稿添付・コメント添付・プロフィール画像）
-- [ ] DNSのTTLを短くしておく
 
 ## 新サーバ構築（実施済み。2026-09-06 の点検で追加になった項目に ★）
 
@@ -267,16 +266,13 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
 - [ ] **`.env` から `API_RATE_LIMIT` を消す**
       （フェーズ2のテスト用に600へ緩めてある。消すと既定の60/分に戻る。
       消し忘れると本番のレート制限が緩んだままになる）
-- [ ] **`.env` を本番値に戻す**（今は HTTPS リハーサル用の値）
-      - `APP_URL=https://tsubasa.smartj.mobi`（今は `:8443` 付き。
-        Sanctum の stateful ドメインがここから決まるのでポート付きのままだと
-        API が 401 になる）
-      - `SESSION_SECURE_COOKIE=true` はそのまま
-      - `MAIL_MAILER` / `MAIL_DRIVER` を `ses` に戻す
-      - `QUEUE_CONNECTION` / `QUEUE_DRIVER` は `database` のまま
-      - 変更後に `sudo -u apache php artisan config:cache`
-- [ ] `tsubasa-queue` を起動する（`systemctl start tsubasa-queue`。
+- [ ] （`.env` の本番値への戻しは**切り替え前**に行う。計画書 §4 のタイムライン 00:15 / 00:25 を正とする。
+      `APP_URL` の `:8443` を外し忘れると Sanctum の stateful 判定が外れて API が 401 になる）
+- [ ] `SELECT COUNT(*) FROM jobs;` が 0 であることを確認してから `tsubasa-queue` を起動する
+      （スモークテストの投稿通知が実メンバー宛に積まれている可能性がある。
       ユニットは登録・enable 済みで、リハーサルで実際にジョブを処理させて確認済み）
+- [ ] 検証アカウントを消す `sudo -u apache php artisan smoke:account delete`
+- [ ] 旧サーバの renewal から tsubasa を外す `sudo certbot delete --cert-name tsubasa.smartj.mobi`
 - [ ] **全ユーザーが一度ログアウトされる**ことを周知する
       （Laravel 7以降、暗号化Cookieの形式が変わったため、
       移行前に発行されたセッションCookieは復号検証に失敗する。回避不能）

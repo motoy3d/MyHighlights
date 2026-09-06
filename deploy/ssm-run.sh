@@ -75,10 +75,14 @@ CMD_ID=$(aws ssm send-command \
 
 echo "==> CommandId: ${CMD_ID}  (完了まで待機します)"
 
-# wait は失敗時に非0で返るが、出力は必ず見たいので握りつぶす
-set +e
-aws ssm wait command-executed --command-id "${CMD_ID}" --instance-id "${INSTANCE_ID}" 2>/dev/null
-set -e
+# `aws ssm wait command-executed` は 5秒×20回=100秒で諦めて InProgress のまま返す
+# (点検で判明。DBの取り込みなど2分を超える処理を「失敗」と誤認する)。
+# 自前で終了状態になるまでポーリングする。上限は SSM 側の executionTimeout に任せる
+while :; do
+  ST=$(aws ssm get-command-invocation --command-id "${CMD_ID}" --instance-id "${INSTANCE_ID}" \
+        --query Status --output text 2>/dev/null || echo Pending)
+  case "${ST}" in Pending|InProgress|Delayed) sleep 5;; *) break;; esac
+done
 
 STATUS=$(aws ssm get-command-invocation \
   --command-id "${CMD_ID}" --instance-id "${INSTANCE_ID}" \
