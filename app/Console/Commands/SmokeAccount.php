@@ -27,7 +27,8 @@ class SmokeAccount extends Command
 {
     protected $signature = 'smoke:account {action : create|delete}
                             {--email=browser-test@example.invalid}
-                            {--password= : create 時に必須}';
+                            {--password= : create 時に必須}
+                            {--since= : delete 時、この日時以降に置かれたDB参照の無い添付ファイルも消す(既定: 検証ユーザーの作成日時)}';
 
     protected $description = '切り替え当夜のスモークテスト用アカウントと検証専用チームを作成/削除する';
 
@@ -176,7 +177,8 @@ class SmokeAccount extends Command
         }
         // 画面から投稿を消すとDB行は消えるがファイルは残る(アプリの仕様)。
         // 検証ユーザーの作成以降に置かれた、DBから参照されていないファイルを掃除する
-        $since = strtotime(DB::table('users')->where('id', $existing)->value('created_at') ?? 'now');
+        // create/delete を繰り返した場合は前のアカウントの分が残るので --since で遡れる
+        $since = strtotime($this->option('since') ?: (DB::table('users')->where('id', $existing)->value('created_at') ?? 'now'));
         $orphans = 0;
         foreach (['post_attachment' => 'post_attachments', 'comment_attachment' => 'post_comment_attachments'] as $dir => $table) {
             foreach (glob(storage_path("app/public/{$dir}/*")) ?: [] as $path) {
