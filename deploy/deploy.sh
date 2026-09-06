@@ -51,7 +51,21 @@ ${ARTISAN} view:cache
 ${ARTISAN} event:cache
 
 echo "==> storage シンボリックリンク"
-${ARTISAN} storage:link || true
+# storage:link は public/ の下にシンボリックリンクを作る。
+# public/ は root 所有なので apache では作れない（Permission denied）。
+# 失敗しても || true で握り潰されるため、リンクが無いまま進んでしまい、
+# /storage/* が全て404になる（添付も画像もプロフィールも表示されない）。
+# ここだけは root で実行し、作れたことを検証する。
+php artisan storage:link || true
+if [ ! -e public/storage ]; then
+  echo "!!! public/storage が作れていない。手動で作成する" >&2
+  ln -sfn ../storage/app/public public/storage
+fi
+if [ ! -d public/storage ]; then
+  echo "!!! public/storage が有効なディレクトリとして解決できない" >&2
+  exit 1
+fi
+echo "    public/storage -> $(readlink public/storage)"
 
 echo "==> 権限"
 # composer/npm はrootで動かしているので、最後にもう一度揃える
