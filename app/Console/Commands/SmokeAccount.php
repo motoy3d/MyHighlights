@@ -179,6 +179,11 @@ class SmokeAccount extends Command
         // 検証ユーザーの作成以降に置かれた、DBから参照されていないファイルを掃除する
         // create/delete を繰り返した場合は前のアカウントの分が残るので --since で遡れる
         $since = strtotime($this->option('since') ?: (DB::table('users')->where('id', $existing)->value('created_at') ?? 'now'));
+        // 画面からコメント/投稿を消しても添付の行は残る(アプリの仕様)。since 以降の親なし行を先に消す
+        DB::table('post_attachments')->whereNotIn('post_id', DB::table('posts')->select('id'))
+            ->where('created_at', '>=', date('Y-m-d H:i:s', $since))->delete();
+        DB::table('post_comment_attachments')->whereNotIn('post_comment_id', DB::table('post_comments')->select('id'))
+            ->where('created_at', '>=', date('Y-m-d H:i:s', $since))->delete();
         $orphans = 0;
         foreach (['post_attachment' => 'post_attachments', 'comment_attachment' => 'post_comment_attachments'] as $dir => $table) {
             foreach (glob(storage_path("app/public/{$dir}/*")) ?: [] as $path) {
