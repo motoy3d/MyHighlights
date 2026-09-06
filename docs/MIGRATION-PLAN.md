@@ -1079,6 +1079,44 @@ mysqldump --single-transaction --no-tablespaces \
 
 ---
 
+## 2.5 多角的点検（2026-09-06）— 「毎回新しい問題が出る」への対応
+
+フェーズ2までのテストは全て通っていたが、作業のたびに新しい問題が出ていた。
+原因は「**当夜に初めて動く経路がまだ残っていた**」こと。この点検では文書を読み直すのではなく、
+旧サーバ・新サーバ・AWS の実態を機械的に採取して突き合わせ、当夜の経路を実際に踏んだ。
+
+### 見つかった差分と対処
+
+| # | 発見 | 当夜どうなっていたか | 対処 |
+| --- | --- | --- | --- |
+| 1 | **OSタイムゾーンが旧 JST / 新 UTC**。MariaDB は `time_zone=SYSTEM` | DB側の `CURRENT_TIMESTAMP` / `NOW()` が UTC、Laravel(Asia/Tokyo) が書く値が JST になり **9時間ずれる**。実データで `logs.log_timestamp` と `created_at` が9時間ずれていた | `timedatectl set-timezone Asia/Tokyo`。TIMESTAMP 型は内部 UTC で持つので、既に取り込んだデータも正しく読めるようになったことを同じ行で確認 |
+| 2 | **php.ini が既定値のまま**（upload 2M / post 8M / memory 128M。旧は 20M / 20M / 256M） | **2MB を超える写真の投稿が全て失敗**する。自動テストの画像は10KBなので検知できなかった | `/etc/php.d/99-tsubasa.ini` で旧と同値に |
+| 3 | MariaDB が `character_set_server=latin1`、`innodb_buffer_pool_size=128M`（旧 utf8mb4 / 512M） | 接続単位では Laravel が utf8mb4 を指定するので文字化けはしないが、440万行の `logs` に対してバッファが1/4 | `/etc/my.cnf.d/99-tsubasa.cnf` で旧と同値に |
+| 4 | **`tsubasa.conf` に証明書パスが無い**（`SSLEngine on` だけ） | 当夜 vhost を差し替えた瞬間に **httpd が起動しない** | 旧 vhost と同じ `/etc/letsencrypt/live/tsubasa.smartj.mobi/` を明記し、実際に差し替えて起動・HTTPS 応答を確認 |
+| 5 | `tsubasa-queue.service` が**未インストール**（チェックリストは「起動する」としか書いていない） | 通知メールが `jobs` に溜まるだけで送られない | 登録・enable し、リハーサルで実際にジョブを処理させた |
+| 6 | **certbot の自動更新が無い**（AL2023 の rpm は timer 同梱せず、cronie も未導入） | 53日後（2026-10-29）に証明書失効 | `certbot-renew.timer`（毎日04時、旧の root cron と同内容）を登録 |
+| 7 | `/etc/letsencrypt` が未配置 | 4 と同じく httpd が起動しない | 旧サーバから丸ごと持ち込み。移行しない `tsubasademo` と `smartj.mobi` の更新設定は外した（残すと毎日 renew が失敗し続ける） |
+| 8 | 新サーバに旧に無い添付が57ファイル、DBに親のない添付行が27件 | 実害なし（当夜フル取り込みで消える）が、件数突合ができない | ブラウザテストの残骸と確認して削除。**ファイル数・行数とも旧と完全一致** |
+| 9 | 新サーバが**日次スナップショットの対象外**（DLM はタグ `Name=RedsMyLife-Web/DB` のみ） | 切り替え後、バックアップ無しで稼働 | チェックリストに追加（要判断） |
+| 10 | 新インスタンスの削除保護が無効 | 誤操作で消せる | 有効化した |
+| 11 | ロールバック手順の EIP コマンドが `--instance-id` 指定 | 旧 ENI には EIP が2本あり、プライマリIPに戻る保証がない | ENI + プライベートIP 指定に修正、`--dry-run` で確認 |
+| 12 | 当夜手順の「`systemctl stop php-fpm` でメンテナンス」 | 旧は mod_php で php-fpm が無い。redsmylife も巻き込む | `php artisan down` に変更 |
+| 13 | `deploy/sync-attachments.sh` が旧経路（ローカル中継） | 53分かかって失敗した経路 | 署名付き PUT 方式に書き換え、差分モードを実走（11秒） |
+| 14 | スクリプト側: macOS bash 3.2 に連想配列が無い / ssh 引数の `&` / `pipefail` 下の `\| head` | 当夜スクリプトが途中で止まる | いずれも修正して再実走 |
+
+### 差分が無かったもの（確認済み）
+
+- `.env` のキー差分: 旧にある `LINE_NOTIFY_*` / `PUSHER_*` / `TEST_IP` はコードから参照されていない
+- Laravel スケジューラ: 定義が無く、旧サーバにも `schedule:run` の cron は無い（旧の cron は全て redsmylife のバッチ）
+- `noimage.png` の 404 は旧サーバでも同じ（既存の不具合。移行の回帰ではない）
+- 自動テストで検出できない Apache 設定は curl で確認: http→https 301、`/.well-known/acme-challenge/` は 301 されず 200、`/storage/` の画像が `image/png` で返る
+- EIP 付け替え・SG 開放のコマンドは `--dry-run` で権限・構文を確認
+
+### まだ当夜まで踏めない経路
+
+- `certbot renew --dry-run` の HTTP-01: DNS が旧サーバを向いている間は必ず失敗する。設定の読み込みまでは正常
+- EIP 付け替えそのもの（`--dry-run` まで）
+
 ## 3. フェーズ構成
 
 所要日数は目安。フェーズ1〜3は日中作業。
@@ -1223,17 +1261,17 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | --- | --- | --- |
 | -30分 | 全員の待機開始。旧サーバのEBSスナップショットを取得 | ○ |
 | -10分 | 利用中の利用者がいないことを確認 | ○ |
-| **00:00** | **旧サーバをメンテナンスモードにする**（`systemctl stop php-fpm`、Apacheはメンテナンス画面だけ返す設定に）。以後、本番への書き込みは発生しない | ○ |
+| **00:00** | **旧サーバをメンテナンスモードにする** — `cd /var/www/MyHighlights && php artisan down`（旧は mod_php で php-fpm は無い。同居する redsmylife に影響させずに tsubasa だけ 503 にできる）。以後、本番への書き込みは発生しない | ○ |
 | 00:02 | 旧DBの最終ダンプを取得 | ○ |
 | 00:10 | 新サーバのDBを作り直してダンプを取り込む | ○ |
-| 00:20 | 添付ファイルの**差分**rsync | ○ |
+| 00:20 | 添付ファイルの**差分**同期 `deploy/sync-attachments.sh --since <前回フル同期日> --to-server`（実測: 旧→S3 4秒 + S3→新 7秒） | ○ |
 | 00:25 | `TRUNCATE jobs; TRUNCATE failed_jobs;` | ○ |
-| 00:27 | **`.env` を本番値に戻す**（`APP_URL` を `https://tsubasa.smartj.mobi` に、`MAIL_MAILER` を本番SMTPに、`SESSION_SECURE_COOKIE=true`、`APP_DEBUG=false`） | ○ |
+| 00:27 | **`.env` を本番値に戻す**（`APP_URL=https://tsubasa.smartj.mobi`（今は `:8443` 付き）、`MAIL_MAILER`/`MAIL_DRIVER=ses`、`API_RATE_LIMIT` の行を削除。`SESSION_SECURE_COOKIE=true` と `APP_DEBUG=false` は既にそうなっている） | ○ |
 | 00:30 | `php artisan migrate --force` → `optimize:clear` → `config:cache route:cache view:cache event:cache` | ○ |
 | 00:33 | **切り替え前スモークテスト**（下記） | ○ |
 | **00:40** | **切り替え実行** — EIPを新インスタンスに付け替え（数秒） | **ここから切り戻しにコストが発生** |
 | 00:45 | 本番URLでスモークテスト再実施 | △ |
-| 00:50 | キューワーカー起動 `systemctl start tsubasa-queue`、cron有効化 | △ |
+| 00:50 | キューワーカー起動 `systemctl start tsubasa-queue`（cron は無い。certbot は systemd timer で登録済み） | △ |
 | 01:00 | 監視（ログ、`logs`テーブル、メール送信）開始。問題なければ完了 | △ |
 | 01:30 | **切り戻し判断期限** | — |
 
@@ -1246,6 +1284,12 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 ```
 <新サーバのIP>  tsubasa.smartj.mobi
 ```
+
+`hosts` を触りたくなければ、Chrome を
+`--host-resolver-rules="MAP tsubasa.smartj.mobi <新サーバのIP>"` で起動するか、
+`curl --resolve tsubasa.smartj.mobi:443:<新サーバのIP>` で確認できる。
+自動テストは `TSUBASA_URL=https://tsubasa.smartj.mobi TSUBASA_RESOLVE=<新サーバのIP>`
+で Playwright(chromium) が同じことをする（2026-09-06 のリハーサルで使用）。
 
 > このステップだけは443へ直接アクセスするため、
 > **切り替え前までにセキュリティグループの443を開けておくこと**
@@ -1280,9 +1324,14 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 
 1. **EIPを旧インスタンスに戻す**（数秒で完了する）
    ```bash
-   aws ec2 associate-address --allocation-id <eipalloc-xxxx> --instance-id <旧インスタンスID>
+   # 旧インスタンスの ENI には EIP が2本付いている(tsubasa 用と redsmylife 用)。
+   # --instance-id 指定だとプライマリIPに付くとは限らないので、ENI とプライベートIPを明示する
+   aws ec2 associate-address --allocation-id eipalloc-e5f15181 \
+     --network-interface-id eni-76e2b738 --private-ip-address 172.31.8.179 \
+     --allow-reassociation
    ```
-2. 旧サーバのメンテナンスモードを解除する
+   （`--dry-run` で 2026-09-06 に権限・構文を確認済み）
+2. 旧サーバのメンテナンスモードを解除する（`php artisan up`）
 3. 新サーバは**停止せずそのまま残す**（原因調査のため）
 
 ### 切り戻しのコスト

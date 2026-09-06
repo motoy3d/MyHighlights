@@ -187,18 +187,41 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
       （投稿添付・コメント添付・プロフィール画像）
 - [ ] DNSのTTLを短くしておく
 
-## 新サーバ構築
+## 新サーバ構築（実施済み。2026-09-06 の点検で追加になった項目に ★）
 
-- [ ] EC2 に Amazon Linux 2023 を用意
-- [ ] `deploy/setup-al2023.sh` を実行
-- [ ] MariaDB の初期設定（`mariadb-secure-installation`）とDB/ユーザー作成
-- [ ] DBダンプをリストア
-- [ ] `storage/app/public` のファイルをリストア
-- [ ] `.env` を配置（上記の検証を実施）
-- [ ] `deploy/tsubasa.conf` を `/etc/httpd/conf.d/` に配置
-- [ ] `deploy/deploy.sh` を実行
-- [ ] `sudo certbot --apache -d tsubasa.smartj.mobi`
-- [ ] `systemctl list-timers | grep certbot` で自動更新を確認
+- [x] EC2 に Amazon Linux 2023 を用意（t4g.medium / arm64 / 40GB）
+- [x] `deploy/setup-al2023.sh` を実行
+      → 内部で `deploy/configure-runtime.sh` を呼び、**OSタイムゾーン(JST)・php.ini
+      (upload 20M / post 20M / memory 256M)・MariaDB(utf8mb4 / buffer pool 512M)・
+      certbot-renew.timer・tsubasa-queue.service** を旧サーバと揃える ★
+- [x] MariaDB の初期設定（`mariadb-secure-installation`）とDB/ユーザー作成
+- [x] DBダンプをリストア
+- [x] `storage/app/public` のファイルをリストア（`deploy/sync-attachments.sh`）
+- [x] `.env` を配置（上記の検証を実施）
+- [x] `deploy/tsubasa.conf` を `/etc/httpd/conf.d/` に配置
+      （証明書パスは旧vhostと同じ `/etc/letsencrypt/live/tsubasa.smartj.mobi/`） ★
+- [x] `deploy/deploy.sh` を実行
+- [x] 旧サーバの `/etc/letsencrypt` を丸ごと持ち込む（証明書・アカウント鍵・更新設定） ★
+      ~~`sudo certbot --apache -d tsubasa.smartj.mobi`~~ は使わない。
+      新規発行は不要で、`--apache` は vhost を書き換えてしまう
+- [x] `systemctl list-timers certbot-renew.timer` で自動更新を確認 ★
+      （AL2023 の certbot rpm は timer を同梱しないので configure-runtime.sh が入れる）
+
+## 切り替え当夜（AWS側）
+
+- [ ] **セキュリティグループ `sg-06a9c13cfebdfd595` に 80/443 を開ける** ★
+      （今はインバウンド無し。80 は https への301と certbot の HTTP-01 に必要）
+      ```
+      aws ec2 authorize-security-group-ingress --group-id sg-06a9c13cfebdfd595 \
+        --ip-permissions 'IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0}]' \
+                         'IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges=[{CidrIp=0.0.0.0/0}]'
+      ```
+- [ ] EIP `52.199.130.187` を新サーバの ENI `eni-06ba927a409a6bd65` へ付け替える
+      （`--dry-run` で権限確認済み。戻す時は旧 ENI `eni-76e2b738` の
+      `172.31.8.179` へ `--allow-reassociation` 付きで associate）
+- [ ] 新サーバを日次スナップショットの対象にする ★
+      （DLM ポリシー `policy-0e8fc7d2e26794363` はタグ `Name=RedsMyLife-Web/DB`
+      だけを対象にしていて、新サーバは**自動バックアップ無し**）
 
 ## 切り替え前の動作確認
 
@@ -243,10 +266,16 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
 - [ ] **`.env` から `API_RATE_LIMIT` を消す**
       （フェーズ2のテスト用に600へ緩めてある。消すと既定の60/分に戻る。
       消し忘れると本番のレート制限が緩んだままになる）
-- [ ] **`.env` のメール封じ込めを解除する**
-      `MAIL_MAILER` / `MAIL_DRIVER` を `ses` に戻し、
-      `QUEUE_CONNECTION` / `QUEUE_DRIVER` を `database` にして
-      `tsubasa-queue` を起動する
+- [ ] **`.env` を本番値に戻す**（今は HTTPS リハーサル用の値）
+      - `APP_URL=https://tsubasa.smartj.mobi`（今は `:8443` 付き。
+        Sanctum の stateful ドメインがここから決まるのでポート付きのままだと
+        API が 401 になる）
+      - `SESSION_SECURE_COOKIE=true` はそのまま
+      - `MAIL_MAILER` / `MAIL_DRIVER` を `ses` に戻す
+      - `QUEUE_CONNECTION` / `QUEUE_DRIVER` は `database` のまま
+      - 変更後に `sudo -u apache php artisan config:cache`
+- [ ] `tsubasa-queue` を起動する（`systemctl start tsubasa-queue`。
+      ユニットは登録・enable 済みで、リハーサルで実際にジョブを処理させて確認済み）
 - [ ] **全ユーザーが一度ログアウトされる**ことを周知する
       （Laravel 7以降、暗号化Cookieの形式が変わったため、
       移行前に発行されたセッションCookieは復号検証に失敗する。回避不能）

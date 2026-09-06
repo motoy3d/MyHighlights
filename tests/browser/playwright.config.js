@@ -38,6 +38,13 @@ export default defineConfig({
     baseURL: process.env.TSUBASA_URL || 'http://localhost:8080',
     // 本番vhost(HTTPS)をポートフォワードで叩くとホスト名が証明書と一致しない
     ignoreHTTPSErrors: true,
+    // 本番vhost(ServerName tsubasa.smartj.mobi)をSSMポートフォワード越しに叩く時は
+    //   TSUBASA_URL=https://tsubasa.smartj.mobi:8443 TSUBASA_RESOLVE=127.0.0.1
+    // で、そのホスト名をローカルに向ける(/etc/hosts を触らない)。
+    // Chromium の起動引数なので setup と chromium にだけ効く(mobile=WebKit は下で打ち消す)
+    launchOptions: process.env.TSUBASA_RESOLVE
+      ? { args: [`--host-resolver-rules=MAP ${new URL(process.env.TSUBASA_URL).hostname} ${process.env.TSUBASA_RESOLVE}`] }
+      : {},
     locale: 'ja-JP',
     timezoneId: 'Asia/Tokyo',
     // 失敗時にだけ証跡を残す。移行作業では「何が起きたか」が命綱になる
@@ -55,13 +62,16 @@ export default defineConfig({
 
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/user.json',
+      },
       dependencies: ['setup'],
     },
     {
       // 利用者の多くはスマートフォンから使う
       name: 'mobile',
-      use: { ...devices['iPhone 13'], storageState: '.auth/user.json' },
+      use: { ...devices['iPhone 13'], storageState: '.auth/user.json', launchOptions: {} },
       dependencies: ['setup'],
     },
   ],
