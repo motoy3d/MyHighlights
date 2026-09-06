@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoApp, watchApiFailures } from '../helpers/app.js';
+import { gotoApp, watchApiFailures, fetchInPage } from '../helpers/app.js';
 import { createPost, openPostByTitle, deleteOpenPost, stamp } from '../helpers/post.js';
 
 /**
@@ -89,11 +89,11 @@ test.describe('添付ファイル', () => {
     await deleteOpenPost(page);
   });
 
-  test('既存のアップロード済みファイルが配信される', async ({ request }) => {
+  test('既存のアップロード済みファイルが配信される', async ({ page }) => {
     // リポジトリに含まれるプリセット画像。移行で保存先の既定が変わったため、
     // 既存ファイルが読めなくなる回帰をここで検出する
-    const res = await request.get('/storage/prof/preset_boy.png');
-    expect(res.status(), '既存の添付ファイルが配信できていない').toBe(200);
-    expect(Number(res.headers()['content-length'] || 0)).toBeGreaterThan(0);
+    const res = await fetchInPage(page, '/storage/prof/preset_boy.png');
+    expect(res.status, '既存の添付ファイルが配信できていない').toBe(200);
+    expect(res.length).toBeGreaterThan(0);
   });
 });

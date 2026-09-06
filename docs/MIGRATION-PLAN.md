@@ -1112,6 +1112,15 @@ mysqldump --single-transaction --no-tablespaces \
 - 自動テストで検出できない Apache 設定は curl で確認: http→https 301、`/.well-known/acme-challenge/` は 301 されず 200、`/storage/` の画像が `image/png` で返る
 - EIP 付け替え・SG 開放のコマンドは `--dry-run` で権限・構文を確認
 
+### 本番相当でのリハーサル結果
+
+本番 vhost(`tsubasa.conf`)・旧サーバの証明書・`SESSION_SECURE_COOKIE=true`・
+`APP_URL=https://tsubasa.smartj.mobi:8443`・キューワーカー稼働、の状態で
+Playwright(chromium)を SSM ポートフォワード越しに実行: **32 passed / 1 skipped(複数チーム)**。
+キューワーカーは投稿通知ジョブを実際に処理し、メールは `MAIL_MAILER=log` によりログに落ちた。
+テスト後のデータ件数・添付ファイル数は旧サーバと一致。
+(mobile=WebKit はホスト名の差し替えができないため HTTP で実施済みの結果をもって代える)
+
 ### まだ当夜まで踏めない経路
 
 - `certbot renew --dry-run` の HTTP-01: DNS が旧サーバを向いている間は必ず失敗する。設定の読み込みまでは正常

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoApp, watchApiFailures } from '../helpers/app.js';
+import { gotoApp, watchApiFailures, fetchInPage } from '../helpers/app.js';
 import { openNewPost, openPostByTitle, deleteOpenPost, stamp } from '../helpers/post.js';
 
 /**
@@ -70,9 +70,9 @@ test.describe('アンケート', () => {
     const href = await csvLink.getAttribute('href');
     expect(href, 'CSVのリンクが想定と違う').toContain('questionnaire_download/');
 
-    const csv = await page.request.get(href.startsWith('/') ? href : `/${href}`);
-    expect(csv.status(), 'CSVがダウンロードできない').toBe(200);
-    const body = await csv.text();
+    const csv = await fetchInPage(page, href.startsWith('/') ? href : `/${href}`);
+    expect(csv.status, 'CSVがダウンロードできない').toBe(200);
+    const body = csv.text;
     expect(body, 'CSVに設問が含まれていない').toContain(item1);
 
     expect(apiFailures, `/api/* が5xx: ${apiFailures.join(', ')}`).toHaveLength(0);

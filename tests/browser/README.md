@@ -44,6 +44,7 @@ npm run report                # 結果をブラウザで見る
 | 変数 | 既定値 | 用途 |
 | --- | --- | --- |
 | `TSUBASA_URL` | `http://localhost:8080` | 接続先 |
+| `TSUBASA_RESOLVE` | (未設定) | `TSUBASA_URL` のホスト名をこのIPに向ける(Chromium の `--host-resolver-rules`)。本番vhost(`ServerName tsubasa.smartj.mobi`)をSSMポートフォワード越しに叩く時に使う。`/etc/hosts` は触らない。setup と chromium にだけ効く(mobile=WebKit は不可) |
 | `TSUBASA_EMAIL` | `test@example.com` | ログインするアカウント |
 | `TSUBASA_PASSWORD` | `password` | 同上 |
 | `TSUBASA_MULTI_TEAM_EMAIL` | (未設定) | 複数チーム所属のアカウント |
@@ -55,6 +56,16 @@ TSUBASA_EMAIL=xxx TSUBASA_PASSWORD=yyy npm test
 
 # 当夜のスモークテスト（hostsで tsubasa.smartj.mobi を新IPに向けてから）
 TSUBASA_URL=https://tsubasa.smartj.mobi TSUBASA_EMAIL=xxx TSUBASA_PASSWORD=yyy npm test
+
+# 本番vhost(HTTPS)をポートフォワード越しに (443 -> localhost:8443)
+aws ssm start-session --target i-0626d85c720708c64 \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["443"],"localPortNumber":["8443"]}'
+TSUBASA_URL=https://tsubasa.smartj.mobi:8443 TSUBASA_RESOLVE=127.0.0.1 \
+  TSUBASA_EMAIL=xxx TSUBASA_PASSWORD=yyy npx playwright test --project=chromium
+# ※ サーバ側の APP_URL も https://tsubasa.smartj.mobi:8443 にしておく(Sanctum の stateful 判定)
+# ※ テスト内の HTTP は page.request ではなく helpers/app.js の fetchInPage を使う
+#    (page.request は Node 側なのでホスト名の差し替えが効かない)
 ```
 
 **チーム切り替えのテストは `TSUBASA_MULTI_TEAM_EMAIL` を設定しないと skip される。**

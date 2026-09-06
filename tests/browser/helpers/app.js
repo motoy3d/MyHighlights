@@ -207,3 +207,22 @@ export function watchPageErrors(page) {
   errors.rateLimited = rateLimited;
   return errors;
 }
+
+/**
+ * ブラウザの中から fetch する。
+ *
+ * Playwright の `request` は Node 側の HTTP クライアントなので、
+ * Chromium の --host-resolver-rules(TSUBASA_RESOLVE)が効かず、
+ * 本番vhostをポートフォワード越しに叩くリハーサルで本物の DNS へ向いてしまう。
+ * ページ内 fetch なら同一オリジンなのでレスポンスヘッダも読める。
+ */
+export async function fetchInPage(page, path) {
+  if (page.url() === 'about:blank') await page.goto('/login');
+  return page.evaluate(async (p) => {
+    const r = await fetch(p, { credentials: 'same-origin' });
+    const headers = {};
+    r.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
+    const text = await r.text();
+    return { status: r.status, headers, text, length: text.length };
+  }, path);
+}
