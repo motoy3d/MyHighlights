@@ -1097,7 +1097,7 @@ mysqldump --single-transaction --no-tablespaces \
 | 6 | **certbot の自動更新が無い**（AL2023 の rpm は timer 同梱せず、cronie も未導入） | 53日後（2026-10-29）に証明書失効 | `certbot-renew.timer`（毎日04時、旧の root cron と同内容）を登録 |
 | 7 | `/etc/letsencrypt` が未配置 | 4 と同じく httpd が起動しない | 旧サーバから丸ごと持ち込み。移行しない `tsubasademo` と `smartj.mobi` の更新設定は外した（残すと毎日 renew が失敗し続ける） |
 | 8 | 新サーバに旧に無い添付が57ファイル、DBに親のない添付行が27件 | 実害なし（当夜フル取り込みで消える）が、件数突合ができない | ブラウザテストの残骸と確認して削除。**ファイル数・行数とも旧と完全一致** |
-| 9 | 新サーバが**日次スナップショットの対象外**（DLM はタグ `Name=RedsMyLife-Web/DB` のみ） | 切り替え後、バックアップ無しで稼働 | チェックリストに追加（要判断） |
+| 9 | 新サーバが**日次スナップショットの対象外**（DLM はタグ `Name=RedsMyLife-Web/DB` のみ） | 切り替え後、バックアップ無しで稼働 | 同じポリシーの対象タグに `Name=Tsubasa-AL2023-arm64` を追加（保持1世代・04:00 JST） |
 | 10 | 新インスタンスの削除保護が無効 | 誤操作で消せる | 有効化した |
 | 11 | ロールバック手順の EIP コマンドが `--instance-id` 指定 | 旧 ENI には EIP が2本あり、プライマリIPに戻る保証がない | ENI + プライベートIP 指定に修正、`--dry-run` で確認 |
 | 12 | 当夜手順の「`systemctl stop php-fpm` でメンテナンス」 | 旧は mod_php で php-fpm が無い。redsmylife も巻き込む | `php artisan down` に変更 |
