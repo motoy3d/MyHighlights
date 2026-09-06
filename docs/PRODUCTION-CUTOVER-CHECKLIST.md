@@ -240,6 +240,13 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
 
 ## 切り替え後
 
+- [ ] **`.env` から `API_RATE_LIMIT` を消す**
+      （フェーズ2のテスト用に600へ緩めてある。消すと既定の60/分に戻る。
+      消し忘れると本番のレート制限が緩んだままになる）
+- [ ] **`.env` のメール封じ込めを解除する**
+      `MAIL_MAILER` / `MAIL_DRIVER` を `ses` に戻し、
+      `QUEUE_CONNECTION` / `QUEUE_DRIVER` を `database` にして
+      `tsubasa-queue` を起動する
 - [ ] **全ユーザーが一度ログアウトされる**ことを周知する
       （Laravel 7以降、暗号化Cookieの形式が変わったため、
       移行前に発行されたセッションCookieは復号検証に失敗する。回避不能）

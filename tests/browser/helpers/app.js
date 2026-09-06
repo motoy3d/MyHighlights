@@ -49,7 +49,62 @@ export async function login(page, email = creds.email, password = creds.password
  * アプリ側に429のハンドリングが無いため画面が黙って空になる。
  * (本番設定をテストの都合で緩めるのは筋が違うので、こちらが待つ)
  */
+/**
+ * 429(レート制限)を踏んだら Retry-After の分だけ待って処理をやり直す。
+ *
+ * bootstrap/app.php の throttleApi('60,1') は 60リクエスト/分。
+ * スイートを通しで回すと1つのIPからの合算で超える。
+ * アプリ側に429のハンドリングが無いため、踏むと画面が
+ * 「ごめんなさい。エラーになりました」になって何も表示されない。
+ */
+/**
+ * スイート全体の流量を throttleApi('60,1') = 60リクエスト/分 に収める。
+ *
+ * gotoApp は1回で約5本のAPIを叩き、ほぼ全テストの起点になる。
+ * ここで最低間隔を空けることで、スイート全体の流量が自然に下がる。
+ * 429を踏んでからリトライで待つより、最初から踏まない方が速い
+ * (Retry-Afterは30〜40秒返ってくるため)。
+ *
+ * PACE_MS を 0 にすれば無効化できる。単体のテストを流すときなど。
+ */
+const PACE_MS = Number(process.env.TSUBASA_PACE_MS ?? 5000);
+let lastBurstAt = 0;
+
+async function pace(page) {
+  if (!PACE_MS) return;
+  const wait = PACE_MS - (Date.now() - lastBurstAt);
+  if (wait > 0) await page.waitForTimeout(wait);
+  lastBurstAt = Date.now();
+}
+
+export async function withRateLimitRetry(page, fn, { attempts = 3 } = {}) {
+  let last;
+  for (let i = 0; i < attempts; i++) {
+    let retryAfter = 0;
+    const onResponse = (res) => {
+      if (res.url().includes('/api/') && res.status() === 429) {
+        retryAfter = Math.max(retryAfter, Number(res.headers()['retry-after'] || 10));
+      }
+    };
+    page.on('response', onResponse);
+    try {
+      const r = await fn();
+      page.off('response', onResponse);
+      return r;
+    } catch (e) {
+      page.off('response', onResponse);
+      last = e;
+      if (!retryAfter) throw e;
+      // eslint-disable-next-line no-console
+      console.log(`  レート制限(429)。${retryAfter + 1}秒待って再試行`);
+      await page.waitForTimeout((retryAfter + 1) * 1000);
+    }
+  }
+  throw last;
+}
+
 export async function gotoApp(page, { attempts = 3 } = {}) {
+  await pace(page);
   let lastError;
 
   for (let i = 0; i < attempts; i++) {

@@ -36,17 +36,22 @@ test.describe('メンバーとチーム', () => {
    * 未設定なら skip する（シーダーのデータでは再現できないため）。
    */
   test('チームを切り替えると表示内容が入れ替わる', async ({ browser }) => {
+    test.skip(!creds.multiTeamEmail,
+      'TSUBASA_MULTI_TEAM_EMAIL が未設定のため skip（複数チーム所属アカウントが必要）');
+
     // 別アカウントでログインするため、保存済みの認証状態は使わない
     const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
-    test.skip(!creds.multiTeamEmail,
-      'TSUBASA_MULTI_TEAM_EMAIL が未設定のため skip（複数チーム所属アカウントが必要）');
 
     const apiFailures = watchApiFailures(page);
     await login(page, creds.multiTeamEmail, creds.multiTeamPassword);
 
-    const select = page.locator('#teamSelection');
-    await expect(select, '複数チーム所属ならチーム選択が出るはず').toBeVisible({ timeout: 15_000 });
+    // <ons-select> はラッパーで、中に実体の <select> がある。
+    // ラッパーに対して selectOption は使えない
+    // (Error: Element is not a <select> element)
+    const wrapper = page.locator('#teamSelection');
+    await expect(wrapper, '複数チーム所属ならチーム選択が出るはず').toBeVisible({ timeout: 15_000 });
+    const select = wrapper.locator('select');
 
     const options = select.locator('option');
     const count = await options.count();
@@ -56,7 +61,11 @@ test.describe('メンバーとチーム', () => {
 
     const secondValue = await options.nth(1).getAttribute('value');
     await select.selectOption(secondValue);
-    await page.waitForTimeout(2000);
+    // 切り替えでタイムラインを取り直すので、その完了を待つ
+    await page.waitForResponse(
+      (r) => r.url().includes('/api/posts') && r.request().method() === 'GET',
+      { timeout: 20_000 }).catch(() => {});
+    await page.waitForTimeout(1500);
 
     const after = await page.locator('#timeline_list').innerText();
     expect(after, 'チームを切り替えてもタイムラインが変わらない（認可の穴の兆候）')

@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { gotoApp } from './app.js';
+import { gotoApp, withRateLimitRetry } from './app.js';
 
 /**
  * 投稿まわりの共通操作。
@@ -61,9 +61,12 @@ export async function createPost(page, { title, body = '自動テストの本文
 
 /** タイムラインを開き直して、件名で投稿を開く */
 export async function openPostByTitle(page, title) {
-  await gotoApp(page);
-  await page.getByText(title).first().click();
-  await expect(page.getByText('この投稿を削除')).toBeVisible({ timeout: 15_000 });
+  // 投稿を開くと /api/posts/{id} を叩く。ここも429を踏みうるので包む
+  await withRateLimitRetry(page, async () => {
+    await gotoApp(page);
+    await page.getByText(title).first().click();
+    await expect(page.getByText('この投稿を削除')).toBeVisible({ timeout: 15_000 });
+  });
 }
 
 /** 開いている投稿を削除する */

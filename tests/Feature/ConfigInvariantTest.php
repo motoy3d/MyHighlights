@@ -113,20 +113,27 @@ class ConfigInvariantTest extends TestCase
 
     public function test_APIのレート制限がconfig経由で解決できる(): void
     {
-        // bootstrap/app.php から config() で引いている。
-        // env() を直接呼ぶと config:cache 後に null になり、
-        // throttleApi(',1') という不正な指定になってしまう。
+        // bootstrap/app.php のクロージャは設定が読み込まれる前に走るため、
+        // そこに config() や env() を書くと落ちる(実際に踏んで500になった)。
+        // 名前付きリミッタ 'api' を AppServiceProvider で定義し、
+        // そちらで config() を引いている。
         $limit = config('tsubasa.api_rate_limit');
         $this->assertIsInt($limit);
         $this->assertGreaterThan(0, $limit);
+    }
 
-        // 緩めるのは移行のテスト時だけ。本番に持ち込まないための警告。
-        // 当夜は .env から API_RATE_LIMIT を消すこと。
-        if ($limit > 60) {
-            $this->addWarning(
-                "API_RATE_LIMIT が {$limit} に緩められている。本番へ持ち込まないこと。"
-            );
-        }
+    public function test_レート制限の既定値は60のまま(): void
+    {
+        // 移行のテスト中は .env の API_RATE_LIMIT で緩めてよいが、
+        // config側の既定を書き換えてはいけない。書き換えると
+        // .env から消しても本番の制限が緩んだままになる。
+        // 当夜に .env から API_RATE_LIMIT を消すことはチェックリストで担保する。
+        $config = file_get_contents(config_path('tsubasa.php'));
+        $this->assertMatchesRegularExpression(
+            "/'api_rate_limit'\s*=>\s*\(int\)\s*env\(\s*'API_RATE_LIMIT'\s*,\s*60\s*\)/",
+            $config,
+            'config/tsubasa.php の api_rate_limit の既定値が60でなくなっている'
+        );
     }
 
     public function test_旧env名のフォールバックが効く(): void
