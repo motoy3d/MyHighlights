@@ -31,10 +31,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // 同一オリジンのSPAからのAPIリクエストをセッション認証で通す(旧Passportの
         // CreateFreshApiTokenミドルウェアの代替)。SANCTUM_STATEFUL_DOMAINSを参照する。
         $middleware->statefulApi();
-        // レート制限は config/tsubasa.php 経由で参照する。
-        // ここで env() を直接呼ぶと config:cache 後に null になる
-        // (configの外のenv()はキャッシュ後に読めなくなるため)。
-        $middleware->throttleApi(config('tsubasa.api_rate_limit', 60) . ',1');
+        // レート制限は AppServiceProvider で定義した名前付きリミッタ 'api' を使う。
+        //
+        // ここに config() や env() を直接書いてはいけない。
+        // このクロージャはアプリの構築中に走り、設定がまだ読み込まれていないため
+        // 例外になる(実際に踏んで500になった)。
+        $middleware->throttleApi();
 
         $middleware->alias([
             'log' => LogOperations::class,

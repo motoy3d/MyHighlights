@@ -6,6 +6,9 @@ use DateTimeInterface;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,6 +18,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // /api/* のレート制限。ここは設定が読み込まれた後なので config() を使える。
+        // bootstrap/app.php のクロージャ内では設定がまだ無く、config() は使えない。
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute((int) config('tsubasa.api_rate_limit', 60))
+                ->by($request->user()?->id ?: $request->ip());
+        });
+
         DB::listen(function (QueryExecuted $query) {
             Log::info($this->interpolateBindings($query));
         });
