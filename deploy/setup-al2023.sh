@@ -79,20 +79,12 @@ echo "==> ディレクトリ権限"
 sudo mkdir -p "${APP_DIR}"
 sudo chown -R apache:apache "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache" 2>/dev/null || true
 
-echo "==> キューワーカーの登録"
-if [ -f "${APP_DIR}/deploy/tsubasa-queue.service" ]; then
-  sudo cp "${APP_DIR}/deploy/tsubasa-queue.service" /etc/systemd/system/
-  sudo systemctl daemon-reload
-  sudo systemctl enable tsubasa-queue
-fi
-
-echo "==> スケジューラ(cron)"
-echo "    以下を \`sudo crontab -u apache -e\` に追加する:"
-echo "    * * * * * cd ${APP_DIR} && /usr/bin/php artisan schedule:run >> /dev/null 2>&1"
+echo "==> 実行環境を旧サーバと揃える(TZ/php.ini/MariaDB/certbot timer/queue)"
+sudo APP_DIR="${APP_DIR}" bash "${APP_DIR}/deploy/configure-runtime.sh"
 
 echo "==> TLS証明書"
-echo "    sudo certbot --apache -d ${DOMAIN}"
-echo "    certbot のパッケージは systemd タイマーで自動更新される:"
-echo "    systemctl list-timers | grep certbot"
+echo "    旧サーバの /etc/letsencrypt をそのまま持ち込む(証明書・アカウント鍵・更新設定)。"
+echo "    自動更新は configure-runtime.sh が入れた certbot-renew.timer が毎日04時に行う。"
+echo "    ※ このアプリに Laravel スケジューラ(schedule:run)の cron は不要(定義が無い)"
 
 echo "==> 完了。次に deploy/deploy.sh を実行する"

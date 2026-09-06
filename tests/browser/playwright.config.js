@@ -36,6 +36,8 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.TSUBASA_URL || 'http://localhost:8080',
+    // 本番vhost(HTTPS)をポートフォワードで叩くとホスト名が証明書と一致しない
+    ignoreHTTPSErrors: true,
     locale: 'ja-JP',
     timezoneId: 'Asia/Tokyo',
     // 失敗時にだけ証跡を残す。移行作業では「何が起きたか」が命綱になる
