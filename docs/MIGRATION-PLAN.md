@@ -1103,6 +1103,8 @@ mysqldump --single-transaction --no-tablespaces \
 | 12 | 当夜手順の「`systemctl stop php-fpm` でメンテナンス」 | 旧は mod_php で php-fpm が無い。redsmylife も巻き込む | `php artisan down` に変更 |
 | 13 | `deploy/sync-attachments.sh` が旧経路（ローカル中継） | 53分かかって失敗した経路 | 署名付き PUT 方式に書き換え、差分モードを実走（11秒） |
 | 14 | スクリプト側: macOS bash 3.2 に連想配列が無い / ssh 引数の `&` / `pipefail` 下の `\| head` | 当夜スクリプトが途中で止まる | いずれも修正して再実走 |
+| 15 | リハーサル中にキューワーカーが `ModelNotFoundException` で失敗（テストが投稿を即削除するため） | — | **旧サーバでも同じ失敗が日常的に起きている**（failed_jobs 1,674 件、最終 2026-09-05）ので移行の回帰ではない。チェックリストの「failed_jobs が 0」の判定基準を修正 |
+| 16 | Playwright の `page.request` はホスト名の差し替えが効かない | 本番相当のリハーサルで 5 件が偽の失敗 | ページ内 fetch に置き換え |
 
 ### 差分が無かったもの（確認済み）
 

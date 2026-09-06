@@ -288,7 +288,12 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
       `SELECT COUNT(*) FROM jobs;` が増え続けていないことも見る
 - [ ] **SES送信の疎通確認**（IAMロールが付いていないと全て失敗する）
       テスト用アドレス宛にパスワード再設定メールを送り、実際に届くこと。
-      `SELECT COUNT(*) FROM failed_jobs;` が0のままであること
+      `SELECT COUNT(*) FROM failed_jobs;` を見る。ただし
+      **`ModelNotFoundException`（投稿/コメントが通知前に削除された）は旧サーバでも
+      日常的に起きている**（旧の failed_jobs 1,674 件のうち大半。最終 2026-09-05）ので、
+      これは移行の失敗ではない。見るべきは SES/認証系の例外が無いこと。
+      移行後の改善候補: ジョブに `public $deleteWhenMissingModels = true;` を付けると
+      この種の失敗が failed_jobs に残らなくなる
 - [ ] `certbot renew --dry-run` が成功すること
       （EIP付け替え後は新サーバがドメインのIPを持つため、
       HTTP-01のまま更新できる。ここを確認しないと今回の失効を繰り返す）
