@@ -78,5 +78,5 @@ echo "==> 確認"
 date +%Z
 php -r 'foreach(["upload_max_filesize","post_max_size","memory_limit","date.timezone"] as $k) echo "  $k=".ini_get($k)."\n";'
 mysql -N -e "SELECT CONCAT('  system_time_zone=',@@system_time_zone,' charset=',@@character_set_server,' buffer_pool=',@@innodb_buffer_pool_size/1024/1024,'M')"
-systemctl list-timers certbot-renew.timer --no-pager | head -2
+systemctl list-timers certbot-renew.timer --no-pager --no-legend
 echo "  tsubasa-queue: $(systemctl is-enabled tsubasa-queue) / $(systemctl is-active tsubasa-queue)"
