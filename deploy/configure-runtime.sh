@@ -65,6 +65,17 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+echo "==> スワップ 2GB (/swapfile)"
+# 旧 t3.medium は実負荷で 3.7GB を使い切りスワップしていた。新 t4g.medium も 4GB で、
+# スワップ無しだと瞬間的な増加で OOM killer が mariadb を落とす。保険として 2GB 置く
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+swapon -a 2>/dev/null || true
+grep -q '^vm.swappiness' /etc/sysctl.d/99-tsubasa.conf 2>/dev/null || echo 'vm.swappiness = 10' > /etc/sysctl.d/99-tsubasa.conf
+sysctl -q -p /etc/sysctl.d/99-tsubasa.conf
+
 echo "==> tsubasa-queue.service"
 cp "${APP_DIR}/deploy/tsubasa-queue.service" /etc/systemd/system/tsubasa-queue.service
 
@@ -80,3 +91,4 @@ php -r 'foreach(["upload_max_filesize","post_max_size","memory_limit","date.time
 mysql -N -e "SELECT CONCAT('  system_time_zone=',@@system_time_zone,' charset=',@@character_set_server,' buffer_pool=',@@innodb_buffer_pool_size/1024/1024,'M')"
 systemctl list-timers certbot-renew.timer --no-pager --no-legend
 echo "  tsubasa-queue: $(systemctl is-enabled tsubasa-queue) / $(systemctl is-active tsubasa-queue)"
+echo "  swap: $(swapon --show --noheadings | awk '{print $3}')"
