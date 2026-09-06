@@ -21,7 +21,7 @@ PHP と Laravel を同時に上げる必要があった。
 | DB | MySQL | MariaDB 10.11 |
 | APIの認証 | Laravel Passport | Laravel Sanctum |
 | フロントのビルド | Laravel Mix 4 (webpack 4) | Vite |
-| キューワーカー | supervisord | systemd |
+| キューワーカー | supervisord（手動起動のまま2年以上稼働） | systemd（`tsubasa-queue.service`、OS起動時に自動で立ち上がる） |
 
 Vue 2 / OnsenUI はそのまま据え置いている（後述）。
 
@@ -218,15 +218,23 @@ Cookieがある」「ブログRSSが10件返る」といった、リポジトリ
 
 ```bash
 # テスト用DBを一度だけ作る
-mysql -e 'CREATE DATABASE tsubasa_test'
+mysql -e 'CREATE DATABASE tsubasa_phpunit'
 ./vendor/bin/phpunit
 ```
 
 マイグレーションが `ALTER TABLE ... COMMENT` を使うためSQLiteは利用できず、
 MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
-`tsubasa_test` に切り替えている（`RefreshDatabase` で毎回巻き戻す）。
+`tsubasa_phpunit` に切り替えている（`RefreshDatabase` で毎回巻き戻す）。
+DB名が `tsubasa_test` でないのは、旧サーバのデモ環境（廃止予定）が
+その名前を使い続けるため。
 
-アプリのエンドポイント50件を全てテストで叩いている（197テスト / 510アサーション）。
+アプリのエンドポイント50件を全てテストで叩いている（199テスト）。
+本番サーバは `composer install --no-dev` で入れるため `vendor/bin/phpunit` は無い。
+本番機で流す場合は dev 依存を一時的に入れること。
+
+画面を実際に動かすブラウザテストは `tests/browser/`（Playwright、33件）。
+PHPUnit ではカバーできない、フロントエンドの描画・OnsenUIの操作・
+Apacheの配信設定を確認する。
 
 | 対象 | 内容 |
 | --- | --- |

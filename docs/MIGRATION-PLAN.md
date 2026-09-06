@@ -473,7 +473,7 @@ invalid, expired, revoked, or malformed
 | 3. リポジトリ配置と `deploy.sh` | **完了** |
 | 4. 本番 `.env` の配置 | **完了** |
 | 5. メール実送信の確認 | **完了（実受信を確認）** |
-| 6. `phpunit` 197件 | **完了（197件成功 / 510アサーション）** |
+| 6. `phpunit` 199件 | **完了（199件成功）** |
 | 7. シーダー投入と画面確認 | **完了** |
 
 構築後の検証結果:
@@ -521,7 +521,7 @@ DBは `'tsubasa'@'localhost'` で作成し、ソケット接続を実地確認�
 | `deploy.sh` が composer で落ちる | SSMの `AWS-RunShellScript` はrootかつ **`HOME` 未設定**で実行する。composerは `HOME` か `COMPOSER_HOME` が無いと起動できない | `ssm-run.sh` が `HOME` を補うようにした。`deploy.sh` でも `COMPOSER_HOME` を固定 |
 | **`/api/*` が全て500** | `storage/framework/cache/data` が **root所有**で apache が書けず、レートリミッタがファイルキャッシュに書けなかった。artisanをrootで流すと発生する | `deploy.sh` が artisan を `sudo -u apache` で実行するようにした。`deploy/fix-permissions.sh` も追加 |
 | `ssm-run.sh` が複数行コマンドで落ちる | `--comment` に改行が入り、SSMの `^.{0,100}$` 制約に違反 | 空白に潰してから切り詰めるようにした |
-| ポートフォワードで画面が見られない | `tsubasa.conf` は :80 を全てhttpsへ301し、`ServerName` も固定。:443 は証明書未配置のまま `SSLEngine on` | 検証用の `deploy/tsubasa-phase1.conf` を追加。**切り替え前に `tsubasa.conf` へ差し替える** |
+| ポートフォワードで画面が見られない | `tsubasa.conf` は :80 を全てhttpsへ301し、`ServerName` も固定。:443 は証明書未配置のまま `SSLEngine on` | 検証用に `deploy/tsubasa-phase1.conf` を一時的に使った。**その後 `tsubasa.conf`（証明書パスを明記）に差し替え済みで、HTTPS はポートフォワード経由で確認できるため phase1 用の vhost は削除した** |
 | シーダーが実行できない | `DevelopmentSeeder` に `app()->isProduction()` の停止ガードがあり、本番 `.env`（`APP_ENV=production`）とは両立しない | 投入の間だけ `APP_ENV` を落として戻す。フェーズ1のDBは使い捨てなので問題ない |
 
 > **`/api/*` の500は特に注意。** 画面上は「ログインはできるが
@@ -611,7 +611,7 @@ tsubasa-queue: 停止
 `logs` を直近2年に絞った判断が効いていて、取り込みの81秒が最大の区間。
 全件（1,389万行）だと単純計算で4分程度になるが、それでも窓には収まる。
 
-> **残るのは添付ファイルの差分rsyncだけ**（下記）。
+> **残るのは添付ファイルの差分同期だけ**（`deploy/sync-attachments.sh --since`。下記）。
 > ここが読めないと当夜の合計は確定しない。
 
 ### 取り込み結果の検証
@@ -757,7 +757,7 @@ httpd / composer / certbot / mod_ssl …    すべて arm64 に存在
 | 項目 | 結果 |
 | --- | --- |
 | `npm run build` | 成功。`@esbuild/linux-arm64` が正しく入り、**アセットのハッシュは x86 版と同一** |
-| `phpunit` | **197件成功**（本番データ＋本番 `.env`） |
+| `phpunit` | **199件成功**（本番データ＋本番 `.env`） |
 | `logs` 443万行の取り込み | **78秒**（x86 は81秒） |
 | 添付 15,817ファイル | 転送・展開・DBとの突き合わせ完了 |
 
@@ -824,7 +824,7 @@ Vue 2 は 2023-12 にEOL。今回まとめて対応する案を検討したが�
 
 判断の決め手は**安全網が無いこと**だった。
 
-- PHPUnitの197件は**全てバックエンド(HTTP/API)のテスト**で、
+- PHPUnitの199件は**全てバックエンド(HTTP/API)のテスト**で、
   Vueコンポーネントを1件も検証していない。JS側のテスト基盤も無かった
 - したがって「テストが通っているから安全」は Vue 3 化には当てはまらない
 
@@ -906,11 +906,11 @@ iCal購読で、いずれもメール送信や外部アプリが絡むため
 --- | --- |
 | 1. EC2(AL2023)起動＋IAMロール | **完了** |
 | 2. `setup-al2023.sh` で環境構築 | **完了** |
-| 3. リポジトリ配置と `deploy.sh` | 未 |
-| 4. 本番 `.env` の配置 | 未 |
-| 5. メール実送信の確認 | 未 |
-| 6. `phpunit` 197件 | 未 |
-| 7. シーダー投入と手動テスト | 未 |
+| 3. リポジトリ配置と `deploy.sh` | 完了 |
+| 4. 本番 `.env` の配置 | 完了 |
+| 5. メール実送信の確認 | 完了 |
+| 6. `phpunit` 199件 | 完了 |
+| 7. シーダー投入と手動テスト | 完了 |
 
 構築後の検証結果:
 
@@ -1203,7 +1203,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
    php artisan tinker --execute='
      Mail::raw("SES疎通確認", fn($m) => $m->to("自分のアドレス")->subject("test"));'
    ```
-5. `./vendor/bin/phpunit` を実行（197件）。
+5. `./vendor/bin/phpunit` を実行（199件）。
    特に `ConfigInvariantTest` は本番 `.env` を置いた状態で通すこと
    （`APP_URL` と Sanctum のずれをここで検出する）
 6. `php artisan db:seed --class=DevelopmentSeeder` で
@@ -1239,7 +1239,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
    ```
    テストで作られた添付ファイルも消す
 2. 本番からダンプを取り、新サーバに取り込む（**ここで所要時間を計測**）
-3. 添付ファイルを rsync
+3. 添付ファイルを `deploy/sync-attachments.sh` で同期
 4. `php artisan migrate --force`
    （本番データに対して走るのは `failed_jobs` へのuuid列追加1件のみ）
 5. `TRUNCATE jobs; TRUNCATE failed_jobs;`
@@ -1270,7 +1270,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | 本番ダンプ取得 | 分 |
 | 転送 | 分 |
 | 取り込み | 分 |
-| 添付ファイルの差分rsync | 分 |
+| 添付ファイルの差分同期 | 11秒（実測） |
 | migrate + キャッシュ再生成 | 分 |
 | スモークテスト | 分 |
 | **合計** | **分** |
@@ -1450,4 +1450,4 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | — | **切り替え前スモークテスト（新規。hostsで本番ドメインを向ける）** |
 | DNS切り替え | **EIP付け替えに変更**（当夜 00:40、数秒。TTL短縮も伝播待ちも不要） |
 | 新本番開始 | 当夜 00:45〜 |
-| — | **切り戻し判断期限 01:30（新規）** |
+| — | **切り戻し判断期限 01:00（新規）** |
