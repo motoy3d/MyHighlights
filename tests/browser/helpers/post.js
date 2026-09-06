@@ -10,10 +10,28 @@ import { gotoApp } from './app.js';
  * そのため画面の特定にはフォームIDなど一意なものを使う。
  */
 
-/** 新規投稿画面を開く（タイムラインのFABから） */
+/** 表示されているダイアログのOKを押す（無ければ何もしない） */
+export async function dismissDialog(page) {
+  const ok = page.locator('ons-alert-dialog:visible')
+    .locator('.alert-dialog-button', { hasText: 'OK' });
+  if (await ok.count()) {
+    await ok.first().click();
+    await page.waitForTimeout(500);
+  }
+}
+
+/**
+ * 新規投稿画面を開く（タイムラインのFABから）。
+ *
+ * OnsenUIのページ遷移はアニメーションするので、要素が見えた直後は
+ * まだ動いている。待たずに操作すると、クリックが前の画面の同名要素
+ * (#postBtn は複数コンポーネントで重複している)に当たって
+ * 何も起きないことがある。
+ */
 export async function openNewPost(page) {
   await page.locator('#timeline_page ons-fab').first().click();
   await expect(page.locator('#postForm')).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(700);
 }
 
 /**
@@ -34,6 +52,10 @@ export async function createPost(page, { title, body = '自動テストの本文
     page.locator('#postBtn').click(),
   ]);
   expect(res.status(), '投稿の作成に失敗した').toBe(200);
+
+  // 投稿後は「投稿しました」のダイアログが出て、OKを押すまで
+  // afterPost()(画面を戻して一覧を再取得)が走らない
+  await dismissDialog(page);
   return res;
 }
 
