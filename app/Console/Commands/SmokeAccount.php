@@ -174,7 +174,19 @@ class SmokeAccount extends Command
             $path = storage_path('app/public/' . preg_replace('#^storage/#', '', $rel));
             if (is_file($path) && @unlink($path)) $removed++;
         }
-        $this->info("削除: user_id={$existing} {$email} / 検証チーム " . count($teamIds) . " / 投稿 " . count($postIds) . " / 添付ファイル {$removed}");
+        // 画面から投稿を消すとDB行は消えるがファイルは残る(アプリの仕様)。
+        // 検証ユーザーの作成以降に置かれた、DBから参照されていないファイルを掃除する
+        $since = strtotime(DB::table('users')->where('id', $existing)->value('created_at') ?? 'now');
+        $orphans = 0;
+        foreach (['post_attachment' => 'post_attachments', 'comment_attachment' => 'post_comment_attachments'] as $dir => $table) {
+            foreach (glob(storage_path("app/public/{$dir}/*")) ?: [] as $path) {
+                if (!is_file($path) || filemtime($path) < $since) continue;
+                $name = basename($path);
+                if (DB::table($table)->where('file_path', 'like', "%{$name}")->exists()) continue;
+                if (@unlink($path)) $orphans++;
+            }
+        }
+        $this->info("削除: user_id={$existing} {$email} / 検証チーム " . count($teamIds) . " / 投稿 " . count($postIds) . " / 添付ファイル {$removed} / 参照の無い残骸ファイル {$orphans}");
         return self::SUCCESS;
     }
 }
