@@ -1136,6 +1136,7 @@ Playwright(chromium)を SSM ポートフォワード越しに実行: **32 passed
 | **再起動試験**(旧は 1197 日無再起動) | httpd / php-fpm / mariadb / SSM / certbot timer / queue が全て自動起動。TZ・php.ini・DB 設定・storage リンク・権限も維持 |
 | **利用者の端末 × TLS** | 新サーバは TLS 1.2+(AL2023 DEFAULT ポリシー)。旧は 1.0/1.1 も受けていたが、ログ上の 1.2 非対応クライアントは bot のみ。**iOS 14/15 の実機が 2.5 か月で 13 回**あり、Vite 7 の既定ビルド対象(Safari 16+)では画面が出ない可能性 → `vite.config.js` の `build.target` を `safari13/ios13` に下げた |
 | **IAM の机上シミュレーション** | `simulate-principal-policy` で `ses:SendRawEmail` が allowed、`ec2:TerminateInstances` は deny。SES は本番アクセス済み(sandbox ではない)、`smartj.mobi` ドメイン検証済み |
+| **当夜の DB 手順の通しリハーサル** — `deploy/cutover-db.sh` を本番 DB(稼働中)に対して実行 | **合計 183 秒**(境界 id 取り直し 8秒、ダンプ 9MB+75MB、取り込み 6秒+83秒、migrate 1件)。件数は旧と完全一致、時刻の整合も確認。旧サーバの空きは 7.5GB で圧縮ダンプ 84MB なら問題ない |
 | **第三者のプレモーテム**(文脈を持たない別エージェントに文書とスクリプトを読ませた) | 13 件の指摘。有効だったもの: **フル取り込みで検証アカウントが消える**(→ `smoke:account` コマンドを追加し当夜手順に組み込み)、**`ssm-run.sh` が 100 秒で待機を打ち切る**(→ 実測で再現。完了までポーリングする形に修正し 130 秒で確認)、**スモークの投稿通知がワーカー起動後に実メンバーへ飛ぶ**(→ スモーク中は `MAIL=log` のまま、`TRUNCATE jobs` 後に ses へ)、`.env` 戻しの時点が文書間で矛盾、EIP 付与後に `hosts` が死んだ IP を指す、当夜の DB 手順にスクリプトが無い(→ `cutover-db.sh` を追加)、旧サーバの外向き通信(→ 当夜の確認項目に)。誤認だったもの: webroot(古い記述を読んだもの。訂正済み)、`QUEUE=sync`(同)。確認して問題なし: パスワードは全件 bcrypt |
 
 ### まだ当夜まで踏めない経路
@@ -1288,7 +1289,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | -30分 | 全員の待機開始。旧サーバのEBSスナップショットを取得 | ○ |
 | -10分 | 利用中の利用者がいないことを確認。**新サーバの SG に 80/443 を開ける**(`sg-06a9c13cfebdfd595`。`--dry-run` 確認済み) | ○ |
 | **00:00** | **旧サーバをメンテナンスモードにする** — `cd /var/www/MyHighlights && php artisan down`(旧は mod_php で php-fpm は無い。同居する redsmylife に影響させずに tsubasa だけ 503 にできる)。以後、本番への書き込みは発生しない | ○ |
-| 00:02 | **`deploy/cutover-db.sh`** を実行。旧で境界 id の取り直し(8秒)→ ダンプ → S3 → 新で DB を作り直して取り込み → migrate → `TRUNCATE jobs, failed_jobs` → キャッシュ再生成 → 件数の突き合わせ、まで1本で行う(実測は §2.5 最終点検) | ○ |
+| 00:02 | **`deploy/cutover-db.sh`** を実行。旧で境界 id の取り直し(8秒)→ ダンプ → S3 → 新で DB を作り直して取り込み → migrate → `TRUNCATE jobs, failed_jobs` → キャッシュ再生成 → 件数の突き合わせ、まで1本で行う(**2026-09-07 リハーサル実測 183 秒**: 旧ダンプ+PUT 63秒、取り込み main 6秒 + logs 442万行 83秒) | ○ |
 | 00:10 | 添付ファイルの**差分**同期 `deploy/sync-attachments.sh --since <前回フル同期日> --to-server`(実測 11秒) | ○ |
 | 00:12 | **検証アカウントを作り直す**(フル取り込みで消えている) `sudo -u apache php artisan smoke:account create --password='…'` | ○ |
 | 00:15 | **`.env` を本番値に**: `APP_URL=https://tsubasa.smartj.mobi`(今は `:8443` 付き)、`API_RATE_LIMIT` の行を削除、`QUEUE_CONNECTION`/`QUEUE_DRIVER` が `database` であることを確認。**`MAIL_MAILER`/`MAIL_DRIVER` はまだ `log` のまま**(スモークの投稿通知が実メンバーに飛ばないように)。`sudo -u apache php artisan config:cache` | ○ |

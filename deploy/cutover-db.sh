@@ -10,7 +10,8 @@
 # - 取り込み後に migrate、jobs/failed_jobs を空に、キャッシュ再生成、件数の突き合わせ。
 # - 旧サーバの空きは 7.5GB。ダンプは圧縮して 1 本ずつ送って消す。
 #
-#   deploy/cutover-db.sh                        # 実行(所要を表示)
+#   deploy/cutover-db.sh                        # 実行(所要を表示)。2026-09-07 のリハーサル実測: 合計 183 秒
+#                                               #   (旧ダンプ+PUT 63秒 / 新 取り込み main 6秒 + logs 83秒 + migrate/cache)
 #   deploy/cutover-db.sh --boundary-from 9456353  # 境界 id の走査開始位置(既定は前回の値)
 #
 # 旧サーバを php artisan down にしてから実行すること(ダンプ中に書き込みが入らないように)。
@@ -64,10 +65,10 @@ U=$(grep "^DB_USERNAME=" "$APP/.env" | cut -d= -f2); export MYSQL_PWD=$(grep "^D
 D=$(grep "^DB_DATABASE=" "$APP/.env" | cut -d= -f2)
 B=$(mysql -N -u "$U" "$D" -e "SELECT MIN(id) FROM logs WHERE id >= $FROM AND log_timestamp >= DATE_SUB(NOW(), INTERVAL 2 YEAR)")
 echo "  DB=$D  logs 境界 id=$B (それ以降 $(mysql -N -u "$U" "$D" -e "SELECT COUNT(*) FROM logs WHERE id >= $B") 行)"
-mysqldump --single-transaction --quick --default-character-set=utf8mb4 -u "$U" --ignore-table="$D.logs" "$D" | pigz > /var/tmp/main.sql.gz
+mysqldump --single-transaction --no-tablespaces --quick --default-character-set=utf8mb4 -u "$U" --ignore-table="$D.logs" "$D" | pigz > /var/tmp/main.sql.gz
 echo "  main.sql.gz $(du -h /var/tmp/main.sql.gz | cut -f1) -> HTTP $(curl -s -o /dev/null -w '%{http_code}' -X PUT --upload-file /var/tmp/main.sql.gz "$U_MAIN")"
 rm -f /var/tmp/main.sql.gz
-mysqldump --single-transaction --quick --default-character-set=utf8mb4 -u "$U" "$D" logs --where="id >= $B" | pigz > /var/tmp/logs.sql.gz
+mysqldump --single-transaction --no-tablespaces --quick --default-character-set=utf8mb4 -u "$U" "$D" logs --where="id >= $B" | pigz > /var/tmp/logs.sql.gz
 echo "  logs.sql.gz $(du -h /var/tmp/logs.sql.gz | cut -f1) -> HTTP $(curl -s -o /dev/null -w '%{http_code}' -X PUT --upload-file /var/tmp/logs.sql.gz "$U_LOGS")"
 rm -f /var/tmp/logs.sql.gz
 echo "  旧の件数: $(mysql -N -u "$U" "$D" -e "SELECT CONCAT('posts=',(SELECT COUNT(*) FROM posts),' post_comments=',(SELECT COUNT(*) FROM post_comments),' schedules=',(SELECT COUNT(*) FROM schedules),' users=',(SELECT COUNT(*) FROM users),' logs(境界以降)=',(SELECT COUNT(*) FROM logs WHERE id >= $B))")"
