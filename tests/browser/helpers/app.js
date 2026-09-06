@@ -27,8 +27,11 @@ export async function login(page, email = creds.email, password = creds.password
   await page.locator('#password').fill(password);
   await page.locator('#login_btn').click();
 
-  // SPAの初期化を待つ。URLだけ見ると描画前に進んでしまう
+  // SPAの初期化を待つ。URLだけ見ると描画前に進んでしまう。
+  // ons-page はDOMに残り続けるので、一覧の中身が来るまで待つ
   await expect(page.locator('#timeline_page')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#timeline_list ons-list-item').first())
+    .toBeVisible({ timeout: 30_000 });
 }
 
 /**
@@ -36,9 +39,47 @@ export async function login(page, email = creds.email, password = creds.password
  * 各テストが毎回ログインするとポートフォワード経由では遅すぎるため、
  * 通常のテストはこちらを使う。
  */
-export async function gotoApp(page) {
-  await page.goto('/home');
-  await expect(page.locator('#timeline_page')).toBeVisible({ timeout: 30_000 });
+/**
+ * 保存済みの認証状態でアプリを開き、タイムラインの中身が出るまで待つ。
+ *
+ * レート制限(429)を踏んだ場合は Retry-After の分だけ待って開き直す。
+ * bootstrap/app.php の throttleApi('60,1') は 60リクエスト/分で、
+ * スイートを通しで回すと1つのIPからの合算で普通に超える。
+ * 利用者1人では当たらない水準なのでアプリの不具合ではないが、
+ * アプリ側に429のハンドリングが無いため画面が黙って空になる。
+ * (本番設定をテストの都合で緩めるのは筋が違うので、こちらが待つ)
+ */
+export async function gotoApp(page, { attempts = 3 } = {}) {
+  let lastError;
+
+  for (let i = 0; i < attempts; i++) {
+    let retryAfter = 0;
+    const onResponse = (res) => {
+      if (res.url().includes('/api/') && res.status() === 429) {
+        retryAfter = Math.max(retryAfter, Number(res.headers()['retry-after'] || 10));
+      }
+    };
+    page.on('response', onResponse);
+
+    try {
+      await page.goto('/home');
+      // OnsenUIは全ページをDOMに残すので #timeline_page の可視性では
+      // 「描画が終わった」ことにならない。一覧の中身が入るまで待つ
+      await expect(page.locator('#timeline_page')).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator('#timeline_list ons-list-item').first())
+        .toBeVisible({ timeout: 15_000 });
+      page.off('response', onResponse);
+      return;
+    } catch (e) {
+      page.off('response', onResponse);
+      lastError = e;
+      if (!retryAfter) throw e;   // 429以外は素直に失敗させる
+      // eslint-disable-next-line no-console
+      console.log(`  レート制限(429)。${retryAfter + 1}秒待って開き直す`);
+      await page.waitForTimeout((retryAfter + 1) * 1000);
+    }
+  }
+  throw lastError;
 }
 
 /** 設定画面からログアウトする */

@@ -25,7 +25,8 @@ export default defineConfig({
   // (2回続けて落ちるなら本物の不具合として扱ってよい)
   retries: 1,
   // SSMポートフォワード経由だとトンネルの分だけ遅い。余裕を持たせる
-  timeout: 60_000,
+  // レート制限(429)に当たると Retry-After の分だけ待つので長めに取る
+  timeout: 150_000,
   expect: { timeout: 20_000 },
 
   reporter: [

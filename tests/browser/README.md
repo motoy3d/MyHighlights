@@ -68,9 +68,27 @@ TSUBASA_URL=https://tsubasa.smartj.mobi TSUBASA_EMAIL=xxx TSUBASA_PASSWORD=yyy n
 | `02-timeline` | 投稿一覧、投稿を開く、**投稿の作成と削除**、タブ移動でJSエラーや5xxが出ないこと |
 | `03-calendar` | 当月表示（年月がAsia/Tokyoとずれていないこと）、前月・翌月移動、カレンダー描画 |
 | `04-members-teams` | メンバー一覧、設定画面、**チーム切り替えで表示が入れ替わること** |
-| `05-security` | `.env` が読めないこと、**添付の `Content-Disposition: attachment` と `nosniff`**、CSRFトークン |
+| `05-security` | `.env` が読めないこと、**添付の `Content-Disposition` と `nosniff`**、CSRFトークン |
+| `06-attachments` | **添付のアップロードと表示**、**1000px超の画像がリサイズされること**、非画像の添付、複数添付、既存ファイルの配信 |
+| `07-schedules` | **予定の登録・編集・削除**、終日予定 |
+| `08-comments-likes` | **コメントの投稿・削除**、**いいねと解除**、添付付きコメント |
+| `09-questionnaire` | **アンケートの作成・回答・集計・CSV取得** |
 
 `05-security` は Apache 設定に依存するため PHPUnit では検証できない項目。
+
+`06-attachments` の「1000px超の画像がリサイズされる」は、
+バックエンド側の同名テストが `post_attachments` の件数しか見ていないのに対し、
+**実際のピクセル数を検証している**。
+
+### テスト用のファイル
+
+`fixtures/` に置いてある。PILに依存せず生成した単色PNG。
+
+| ファイル | 用途 |
+| --- | --- |
+| `large-image.png` (1600x1200) | リサイズの検証 |
+| `small-image.png` (200x150) | 通常の画像添付 |
+| `sample-note.txt` | 非画像の添付 |
 
 ## セレクタの方針
 
@@ -93,16 +111,38 @@ OnsenUI が内部生成するクラス名（`tabbar__item` など）には依存
 ### レート制限(429)
 
 `bootstrap/app.php` の `throttleApi('60,1')` で **60リクエスト/分**。
-テストを連続で回すと当たることがある。利用者1人では当たらない水準なので
-アプリの不具合ではないが、**アプリ側に429のハンドリングが無い**ため
-未処理のPromise拒否になり、画面が黙って更新されないだけになる。
+スイートを通しで回すと1つのIPからの合算で普通に超える。
+利用者1人では当たらない水準なのでアプリの不具合ではない。
 
-`watchPageErrors()` は429由来を `errors.rateLimited` に分離している。
+**`gotoApp()` は429を検出すると `Retry-After` の分だけ待って開き直す。**
+本番設定をテストの都合で緩めるのは筋が違うので、テスト側が待つ方針。
+通しで回すと30〜60秒の待ちが数回入り、Chromiumだけで約5分かかる。
 
-> axios の interceptor が無く、429も500もネットワーク断も
-> すべて同じ「黙って失敗」になる。移行中に踏んだ
-> 「`/api/*` が全て500だがログインはできる」が読みにくかったのも同じ理由。
+> **PCとモバイルを同時に流すと待ちが倍増する。**
+> 急ぐときは `--project=chromium` のように片方ずつ流すとよい。
+
+`watchPageErrors()` は429由来のエラーを `errors.rateLimited` に分離している。
+
+> アプリ側に429のハンドリングが無く、axios の interceptor も無いため、
+> 429も500もネットワーク断もすべて「黙って画面が更新されない」になる。
+> 移行中に踏んだ「`/api/*` が全て500だがログインはできる」が
+> 読みにくかったのも同じ理由。
 > Vue 3 化のタイミングで共通のエラーハンドリングを入れるとよい。
+
+### DOMのid重複に注意
+
+`<v-ons-page id="post">` は **7コンポーネント**
+（EditPost / AddSchedule / EditSchedule / Member / AddMember / ICal / Post）で、
+`<form id="postForm">` は **4コンポーネント**で重複している。
+OnsenUIは全ページをDOMに残すため、同時に複数存在しうる。
+
+そのため `#post` や `#postForm` だけでは画面を特定できない。
+`#addScheduleForm` のような一意なもの、または
+「表示されている要素」（`:visible`）で絞ること。
+
+同じ理由で、FABもタブごとにDOM上に存在する。
+`ons-page:has(...)` は入れ子の外側にも一致するので、
+`ons-fab:visible` で特定する。
 
 ### 更新系テストはデータを作る
 
