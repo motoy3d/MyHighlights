@@ -88,6 +88,28 @@ class DevelopmentSeeder extends Seeder
                 'name_kana' => $user->name_kana,
             ]));
 
+        // メンバー画面は 選手/監督・コーチ/家族 の3セグメントに分かれている。
+        // 選手だけだと他の2つが常に空になり、切り替えの確認ができない
+        User::factory()
+            ->count(2)
+            ->create()
+            ->each(fn (User $user) => Member::factory()->staff()->create([
+                'user_id' => $user->id,
+                'team_id' => $team->id,
+                'name' => $user->name,
+                'name_kana' => $user->name_kana,
+            ]));
+
+        User::factory()
+            ->count(2)
+            ->create()
+            ->each(fn (User $user) => Member::factory()->family()->create([
+                'user_id' => $user->id,
+                'team_id' => $team->id,
+                'name' => $user->name,
+                'name_kana' => $user->name_kana,
+            ]));
+
         Category::factory()->count(4)->create(['team_id' => $team->id]);
 
         // iCal出力の3パターンを網羅する
