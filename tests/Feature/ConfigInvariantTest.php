@@ -111,6 +111,24 @@ class ConfigInvariantTest extends TestCase
         );
     }
 
+    public function test_APIのレート制限がconfig経由で解決できる(): void
+    {
+        // bootstrap/app.php から config() で引いている。
+        // env() を直接呼ぶと config:cache 後に null になり、
+        // throttleApi(',1') という不正な指定になってしまう。
+        $limit = config('tsubasa.api_rate_limit');
+        $this->assertIsInt($limit);
+        $this->assertGreaterThan(0, $limit);
+
+        // 緩めるのは移行のテスト時だけ。本番に持ち込まないための警告。
+        // 当夜は .env から API_RATE_LIMIT を消すこと。
+        if ($limit > 60) {
+            $this->addWarning(
+                "API_RATE_LIMIT が {$limit} に緩められている。本番へ持ち込まないこと。"
+            );
+        }
+    }
+
     public function test_旧env名のフォールバックが効く(): void
     {
         // 本番の .env は MAIL_DRIVER / QUEUE_DRIVER などの旧キー名のままなので、
