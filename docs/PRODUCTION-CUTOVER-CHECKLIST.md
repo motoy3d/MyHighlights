@@ -271,7 +271,8 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
 - [ ] `SELECT COUNT(*) FROM jobs;` が 0 であることを確認してから `tsubasa-queue` を起動する
       （スモークテストの投稿通知が実メンバー宛に積まれている可能性がある。
       ユニットは登録・enable 済みで、リハーサルで実際にジョブを処理させて確認済み）
-- [ ] 検証アカウントを消す `sudo -u apache php artisan smoke:account delete`
+- [ ] 検証アカウントと検証チームを消す `sudo -u apache php artisan smoke:account delete`
+- [ ] 移行用 S3 バケットを削除し、ロールから `MigrationBucketRead` を外す(1週間以内)
 - [ ] 旧サーバの renewal から tsubasa を外す `sudo certbot delete --cert-name tsubasa.smartj.mobi`
 - [ ] **全ユーザーが一度ログアウトされる**ことを周知する
       （Laravel 7以降、暗号化Cookieの形式が変わったため、

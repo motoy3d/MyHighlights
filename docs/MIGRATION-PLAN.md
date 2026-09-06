@@ -1139,6 +1139,17 @@ Playwright(chromium)を SSM ポートフォワード越しに実行: **32 passed
 | **当夜の DB 手順の通しリハーサル** — `deploy/cutover-db.sh` を本番 DB(稼働中)に対して実行 | **合計 183 秒**(境界 id 取り直し 8秒、ダンプ 9MB+75MB、取り込み 6秒+83秒、migrate 1件)。件数は旧と完全一致、時刻の整合も確認。旧サーバの空きは 7.5GB で圧縮ダンプ 84MB なら問題ない |
 | **第三者のプレモーテム**(文脈を持たない別エージェントに文書とスクリプトを読ませた) | 13 件の指摘。有効だったもの: **フル取り込みで検証アカウントが消える**(→ `smoke:account` コマンドを追加し当夜手順に組み込み)、**`ssm-run.sh` が 100 秒で待機を打ち切る**(→ 実測で再現。完了までポーリングする形に修正し 130 秒で確認)、**スモークの投稿通知がワーカー起動後に実メンバーへ飛ぶ**(→ スモーク中は `MAIL=log` のまま、`TRUNCATE jobs` 後に ses へ)、`.env` 戻しの時点が文書間で矛盾、EIP 付与後に `hosts` が死んだ IP を指す、当夜の DB 手順にスクリプトが無い(→ `cutover-db.sh` を追加)、旧サーバの外向き通信(→ 当夜の確認項目に)。誤認だったもの: webroot(古い記述を読んだもの。訂正済み)、`QUEUE=sync`(同)。確認して問題なし: パスワードは全件 bcrypt |
 
+### 最終点検 その2（2026-09-07）— 本番データの複製と露出の棚卸し
+
+| 観点 | 発見 | 対処 |
+| --- | --- | --- |
+| **検証データが実メンバーに見える** | 検証アカウントが実チーム(41st/42nd)に所属していた。スモーク中の投稿は削除するまで実メンバーのタイムラインに見え、通知ジョブも実メンバー宛に積まれる | `smoke:account` を**検証専用チーム2つを作る方式に変更**(実チームには一切触れない)。delete は検証チーム配下だけを添付ファイルごと消し、検証チーム外に検証ユーザーのデータがあれば止まる。実チームの members/posts が変わらないことを確認 |
+| **S3 移行バケット** | 失敗した中継経路の残骸を含め **7.4GB / 5,697 オブジェクトの本番添付・ダンプ**が残っていた(ライフサイクル30日) | 全削除。当夜はスクリプトが必要な分だけ再アップロードし、取り込み後に消す。切り替え後はバケットごと削除し `MigrationBucketRead` ポリシーも外す |
+| **手元の複製** `~/tsubasa-migration-backup` | `.env`(APP_KEY/DB/SMTP)、letsencrypt(秘密鍵)、ダンプ 110MB、失敗した中継の添付 5.2GB。権限 700 | `.env` / letsencrypt / ダンプは切り替え完了まで保持する価値がある。**添付 5.2GB は新サーバに取り込み済みで冗長**(削除は所有者判断) |
+| **テストの成果物** | Playwright の失敗時スクリーンショット・動画・trace には本番の投稿が写る | `test-results/` `.auth/` は gitignore 済み。実行後に空であることを確認。/tmp の作業ファイル(iCal トークン入りの URL 一覧など)は削除 |
+| **スナップショット** | 2022 年の2本(40GB×2)は移行と無関係に残っている | コスト項目として別途(ユーザー判断) |
+| **容量** | 旧 t3.medium は実負荷で 3.7GB を使い切りスワップしていたが、新はスワップ無し。瞬間的な増加で OOM killer が mariadb を落とす | `configure-runtime.sh` で 2GB のスワップファイルと `vm.swappiness=10` |
+
 ### まだ当夜まで踏めない経路
 
 - `certbot renew --dry-run` の HTTP-01: DNS が旧サーバを向いている間は必ず失敗する。設定の読み込みまでは正常
@@ -1291,8 +1302,8 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 | **00:00** | **旧サーバをメンテナンスモードにする** — `cd /var/www/MyHighlights && php artisan down`(旧は mod_php で php-fpm は無い。同居する redsmylife に影響させずに tsubasa だけ 503 にできる)。以後、本番への書き込みは発生しない | ○ |
 | 00:02 | **`deploy/cutover-db.sh`** を実行。旧で境界 id の取り直し(8秒)→ ダンプ → S3 → 新で DB を作り直して取り込み → migrate → `TRUNCATE jobs, failed_jobs` → キャッシュ再生成 → 件数の突き合わせ、まで1本で行う(**2026-09-07 リハーサル実測 183 秒**: 旧ダンプ+PUT 63秒、取り込み main 6秒 + logs 442万行 83秒) | ○ |
 | 00:10 | 添付ファイルの**差分**同期 `deploy/sync-attachments.sh --since <前回フル同期日> --to-server`(実測 11秒) | ○ |
-| 00:12 | **検証アカウントを作り直す**(フル取り込みで消えている) `sudo -u apache php artisan smoke:account create --password='…'` | ○ |
-| 00:15 | **`.env` を本番値に**: `APP_URL=https://tsubasa.smartj.mobi`(今は `:8443` 付き)、`API_RATE_LIMIT` の行を削除、`QUEUE_CONNECTION`/`QUEUE_DRIVER` が `database` であることを確認。**`MAIL_MAILER`/`MAIL_DRIVER` はまだ `log` のまま**(スモークの投稿通知が実メンバーに飛ばないように)。`sudo -u apache php artisan config:cache` | ○ |
+| 00:12 | **検証アカウントを作り直す**(フル取り込みで消えている) `sudo -u apache php artisan smoke:account create --password='…'`。**実チームには所属せず、【検証】チームを2つ作ってそこに投稿・予定を入れる**。スモーク中の投稿が実メンバーに見えたり、通知ジョブが実メンバー宛に積まれたりしない | ○ |
+| 00:15 | **`.env` を本番値に**: `APP_URL=https://tsubasa.smartj.mobi`(今は `:8443` 付き)、`API_RATE_LIMIT` の行を削除、`QUEUE_CONNECTION`/`QUEUE_DRIVER` が `database` であることを確認。**`MAIL_MAILER`/`MAIL_DRIVER` はまだ `log` のまま**(検証チームは隔離してあるが二重の保険)。`sudo -u apache php artisan config:cache` | ○ |
 | 00:18 | **切り替え前スモークテスト**(下記)。投稿の作成→削除まで | ○ |
 | 00:25 | `TRUNCATE jobs;`(スモークで積まれた通知ジョブを捨てる)→ `MAIL_MAILER`/`MAIL_DRIVER` を `ses` に → `config:cache` → **自分のアカウントでパスワード再設定メールを送り、届くことを確認**(IAM ロール経由の SES 送信の実地確認) | ○ |
 | **00:30** | **切り替え実行** — EIP を新インスタンスに付け替え(数秒)。直後に作業端末の `hosts` / `TSUBASA_RESOLVE` を外す(新サーバの自動割当IPは EIP 付与で解放され、残すと死んだIPを指す) | **ここから切り戻しにコストが発生** |
@@ -1380,7 +1391,7 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
 
 ### 当日中
 
-- 検証アカウントを消す `sudo -u apache php artisan smoke:account delete`
+- 検証アカウントと検証チームを消す `sudo -u apache php artisan smoke:account delete`(検証チーム配下の投稿・添付ごと消える)
 - **旧サーバの renewal から tsubasa を外す** `sudo certbot delete --cert-name tsubasa.smartj.mobi`(旧の root cron が毎日 tsubasa の更新に失敗し続けるのを止める。新サーバ側の証明書には影響しない)
 
 - [ ] `storage/logs/laravel.log` と `logs` テーブルのエラー確認
@@ -1395,6 +1406,8 @@ DNSもEIPも触らない。**SSM経由で構築し、ポートフォワードで
       `aws ec2 describe-addresses`
 
 ### 1週間
+
+- 移行用 S3 バケット `tsubasa-migration-796478799102` を削除し、IAM ロール `TsubasaAppServer` から `MigrationBucketRead` を外す
 
 - [ ] 添付アップロードが実際に使われて問題ないこと
 - [ ] ディスク使用量の推移（`AppServiceProvider` が全SQLをログ出力
