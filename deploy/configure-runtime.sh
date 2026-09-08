@@ -11,7 +11,9 @@
 #   - php.ini: upload_max_filesize 旧20M/新2M, post_max_size 旧20M/新8M,
 #       memory_limit 旧256M/新128M。2MB超の写真投稿が新サーバで失敗する。
 #   - MariaDB: character_set_server 旧utf8mb4/新latin1,
-#       innodb_buffer_pool_size 旧512M/新128M (logs 440万行がある)
+#       innodb_buffer_pool_size 旧512M/新128M (logs 440万行がある)、
+#       sql_mode に ONLY_FULL_GROUP_BY / NO_ZERO_IN_DATE / NO_ZERO_DATE が無い
+#       (旧は7年これで運用。無いと '0000-00-00' の挿入が通ってしまう)
 #   - certbot の自動更新が無い(旧は root cron)
 #   - tsubasa-queue.service が未インストール
 #
@@ -37,6 +39,9 @@ cat > /etc/my.cnf.d/99-tsubasa.cnf <<'CNF'
 character-set-server = utf8mb4
 collation-server = utf8mb4_general_ci
 innodb_buffer_pool_size = 512M
+# 旧サーバと同じ sql_mode。既定では ONLY_FULL_GROUP_BY / NO_ZERO_IN_DATE /
+# NO_ZERO_DATE が抜けており、旧なら弾かれるゼロ日付が通ってしまう
+sql_mode = ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
 CNF
 
 echo "==> certbot 自動更新 (systemd timer)"
@@ -85,10 +90,34 @@ systemctl start certbot-renew.timer
 # tsubasa-queue はここでは起動しない(本番切替の手順で起動する)
 systemctl restart mariadb php-fpm httpd
 
-echo "==> 確認"
-date +%Z
-php -r 'foreach(["upload_max_filesize","post_max_size","memory_limit","date.timezone"] as $k) echo "  $k=".ini_get($k)."\n";'
-mysql -N -e "SELECT CONCAT('  system_time_zone=',@@system_time_zone,' charset=',@@character_set_server,' buffer_pool=',@@innodb_buffer_pool_size/1024/1024,'M')"
-systemctl list-timers certbot-renew.timer --no-pager --no-legend
-echo "  tsubasa-queue: $(systemctl is-enabled tsubasa-queue) / $(systemctl is-active tsubasa-queue)"
-echo "  swap: $(swapon --show --noheadings | awk '{print $3}')"
+echo "==> 確認（旧サーバと一致しない場合はここで止める）"
+fail=0
+check() {  # check <名前> <実際> <期待>
+  if [ "$2" = "$3" ]; then printf "  OK   %-22s %s\n" "$1" "$2"
+  else printf "  NG   %-22s %s (期待: %s)\n" "$1" "$2" "$3"; fail=1; fi
+}
+check タイムゾーン "$(date +%Z)" "JST"
+check upload_max_filesize "$(php -r 'echo ini_get("upload_max_filesize");')" "20M"
+check post_max_size       "$(php -r 'echo ini_get("post_max_size");')" "20M"
+check memory_limit        "$(php -r 'echo ini_get("memory_limit");')" "256M"
+check date.timezone       "$(php -r 'echo ini_get("date.timezone");')" "Asia/Tokyo"
+check character_set_server "$(mysql -N -e 'SELECT @@character_set_server')" "utf8mb4"
+check system_time_zone     "$(mysql -N -e 'SELECT @@system_time_zone')" "JST"
+check innodb_buffer_pool  "$(mysql -N -e 'SELECT @@innodb_buffer_pool_size/1048576')" "512.0000"
+check sql_mode "$(mysql -N -e 'SELECT @@sql_mode')" \
+  "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+check swap "$(swapon --show=SIZE --noheadings | head -1 | tr -d ' ')" "2G"
+check certbot_timer "$(systemctl is-active certbot-renew.timer)" "active"
+check queue_unit "$(systemctl is-enabled tsubasa-queue)" "enabled"
+
+# DBとアプリの時刻が一致すること(TIMESTAMP列が9時間ずれた原因の再発防止)
+DB_T=$(mysql -N -e "SELECT UNIX_TIMESTAMP()")
+OS_T=$(date +%s)
+if [ "$(( DB_T > OS_T ? DB_T - OS_T : OS_T - DB_T ))" -le 2 ]; then
+  printf "  OK   %-22s DB と OS の時刻が一致\n" "時刻の整合"
+else
+  printf "  NG   %-22s DB=%s OS=%s\n" "時刻の整合" "$DB_T" "$OS_T"; fail=1
+fi
+
+[ "$fail" = "0" ] || { echo "==> 旧サーバと一致しない項目がある。上記 NG を直すこと"; exit 1; }
+echo "==> 完了"
