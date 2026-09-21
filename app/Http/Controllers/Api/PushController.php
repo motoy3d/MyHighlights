@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Notifications\PushNotice;
 use App\Support\PushRollout;
+use App\Support\PushSentLog;
 use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -110,6 +111,20 @@ class PushController extends Controller
     }
 
     /**
+     * GET /api/push/recent
+     * 最近この利用者に送った通知 → { now: サーバの今(ミリ秒), notices: [{ tag, url, at }] }
+     * アプリが前面に戻ったとき、通知センターから消えた通知（＝タップされた通知）を探すのに使う（PushSentLog）。
+     * now は、端末とサーバの時計のずれを直すために返す。
+     */
+    public function recent(Request $request): JsonResponse
+    {
+        return response()->json([
+            'now' => (int) floor(microtime(true) * 1000),
+            'notices' => PushSentLog::recent($request->user()),
+        ]);
+    }
+
+    /**
      * POST /api/push/test
      * この利用者の全端末にテスト通知を、キューを通さずその場で送る → { sent: 端末数 }
      */
@@ -124,12 +139,14 @@ class PushController extends Controller
         $count = $user->pushSubscriptions()->count();
         if ($count > 0) {
             try {
-                Notification::sendNow($user, new PushNotice(
+                $notice = new PushNotice(
                     'Tsubasa⬆︎UP',
                     'テスト通知です。この端末で通知を受け取れます。',
                     'test',
                     '/home?launcher=true'
-                ));
+                );
+                Notification::sendNow($user, $notice);
+                PushSentLog::record($user, $notice);
             } catch (\Throwable $e) {
                 Log::error('テスト通知の送信エラー user_id=' . $user->id . ': ' . $e->getMessage());
                 return response()->json(['message' => 'テスト通知を送れませんでした。'], 500);

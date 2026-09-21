@@ -13,10 +13,13 @@
  *   控え：sw.js が同じ内容を Cache Storage に書き置きするので、知らせを取りこぼしても前面に戻ったときに読む
  *   最後の手段：iPhone ではアプリがバックグラウンドだとタップが sw.js に届かないことがある
  *     （WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 。上の2つがどちらも起きない）。
- *     そこで前面に戻ったとき、sw.js が控えた「表示した通知」と通知センターに残っている通知を比べ、
- *     1件だけ消えていればそれがタップされた通知とみなして開く（checkVanishedNotification）。
+ *     そこで前面に戻ったとき、バックグラウンドにいた間にサーバが送った通知（GET /api/push/recent）と
+ *     通知センターに残っている通知を比べ、1件だけ消えていればそれがタップされた通知とみなして開く
+ *     （checkVanishedNotification）。控えを端末でなくサーバに置くのは、iOS では sw.js が保存したものを
+ *     画面から読めなかったため（2026-09-22 実機で確認）。
  * 同じタップ（tapId。通知ごとの目印）はどの経路で受けても一度しか開かない。
  */
+import axios from 'axios';
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
 
@@ -24,13 +27,15 @@ const TAB_TIMELINE = 0;
 // sw.js と合わせる
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
-const SHOWN_KEY = '/__shown__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
 // 確認用アドレスでだけ、どの段階まで進んだかをサーバのアクセス記録に残す（sw.js と同じ）
 const DIAG = window.location.hostname.startsWith('tsubasa-stg.');
 // 開いたタップ。知らせと書き置きの両方で届いても一度だけ開く
 const handledTaps = new Set();
+// 最後に開いたアドレスと時刻。経路が違っても、同じアドレスをこの間に二度は開かない
+let lastOpened = null;
+const SAME_OPEN_MS = 10 * 1000;
 
 function diag(step, tapId, extra) {
   if (!DIAG) return;
@@ -101,8 +106,6 @@ export function openFromUrl(store) {
   if (!handled) {
     // アドレスにパラメータが無くても、通知のタップで開始 URL のまま起動した場合は書き置きがある
     afterLoad(() => checkDeepLink(store));
-    // アイコンから起動した場合、それまでに消された通知は開かない（控えを片付けるだけ）
-    afterLoad(() => checkVanishedNotification(store, false));
     return;
   }
 
@@ -110,10 +113,6 @@ export function openFromUrl(store) {
   // launcher=true はホーム画面からの起動の目印として既存の処理が見ているので残す
   const rest = p.get('launcher') === 'true' ? '?launcher=true' : '';
   window.history.replaceState(null, '', window.location.pathname + rest);
-
-  // 通知のタップで起動した場合、その通知は通知センターから消えている。前面に戻ったときに
-  // もう一度開かないよう、消えた通知の控えを片付けておく
-  afterLoad(() => checkVanishedNotification(store, false));
 
   // この起動で開くので、書き置きが残っていれば消す（前面に戻ったときに二重に開かないように）。
   // 消し終わる前に読み込み完了の pageshow などで書き置きを読んでしまわないよう、少しの間は読まない
@@ -195,6 +194,12 @@ function openDeepLinkInApp(store, urlString, tapId, via) {
   if (url.origin !== window.location.origin) {
     return;
   }
+  // タップが sw.js から届いた環境（Chrome など）では、前面に戻ったときの「消えた通知」でも同じ画面が見つかる。
+  // 経路ごとに目印が違うので、同じアドレスを続けて開かないようにする
+  if (lastOpened && lastOpened.href === url.href && Date.now() - lastOpened.at < SAME_OPEN_MS) {
+    return;
+  }
+  lastOpened = { href: url.href, at: Date.now() };
   diag('page-open', tapId, { via });
   const team = url.searchParams.get('team');
   if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
@@ -237,13 +242,6 @@ async function checkDeepLink(store) {
   }
 }
 
-/** sw.js が控えた「表示した通知」を読む（[{ id, tag, url, at }]） */
-async function readShown(cache) {
-  const response = await cache.match(SHOWN_KEY);
-  const list = response ? await response.json() : [];
-  return Array.isArray(list) ? list : [];
-}
-
 /** 通知センターに残っている、このアプリの通知の tag */
 async function displayedTags() {
   const registration = await navigator.serviceWorker.getRegistration('/');
@@ -251,47 +249,48 @@ async function displayedTags() {
   return new Set(list.map((x) => x.tag));
 }
 
+// バックグラウンドに回った時刻（端末の時計）。前面に戻ったら、この後に送られた通知だけを調べる
+let hiddenAt = null;
+// サーバの送った時刻がこれだけ前でも「バックグラウンドの間に届いた」とみなす（送ってから表示までの遅れと時計の誤差）
+const SENT_MARGIN_MS = 5000;
 let vanishChecking = false;
 /**
- * 通知センターから消えた通知を探し、1件だけならそれを開く（open が false なら控えを片付けるだけ）。
+ * バックグラウンドにいた間に届いた通知のうち、通知センターから消えたものを探し、1件だけならそれを開く。
  *
  * iOS は、タップされた通知を通知センターから消してからアプリを前面に出す。
  * 前面に戻った直後はまだ消えていないことがあるので、少し待って読み直す。
  * 2件以上消えていたら「すべて消去」などで消されたとみなし、開かない。
- * 消えた通知は控えから除くので、同じ通知で二度開くことはない。
+ * スワイプで1件消した後、アプリ切り替えから前面に戻したときも「消えた」と見分けがつかず開いてしまう
+ * （タップで移れないよりはよいとして受け入れている）。
  */
-async function checkVanishedNotification(store, open) {
-  if (vanishChecking || !('caches' in window) || !('serviceWorker' in navigator)) {
+async function checkVanishedNotification(store, since) {
+  if (vanishChecking || !('serviceWorker' in navigator)) {
     return;
   }
   vanishChecking = true;
   try {
-    const cache = await caches.open(DEEPLINK_MAILBOX);
+    const { data } = await axios.get('/api/push/recent');
+    // サーバの時計に直す
+    const from = since + (data.now - Date.now()) - SENT_MARGIN_MS;
+    const arrived = (data.notices || []).filter((x) => x.at >= from);
+    if (!arrived.length) {
+      diag('page-vanished-none', '', { arrived: 0, total: (data.notices || []).length });
+      return;
+    }
     for (const wait of [0, 400, 1200]) {
       if (wait) {
         await new Promise((resolve) => setTimeout(resolve, wait));
       }
-      const shown = await readShown(cache);
-      if (!shown.length) {
-        diag('page-vanished-none', '', { wait, shown: 0 });
-        return;
-      }
       const tags = await displayedTags();
-      const vanished = shown.filter((x) => !tags.has(x.tag));
+      const vanished = arrived.filter((x) => !tags.has(x.tag));
       if (!vanished.length) {
-        diag('page-vanished-none', '', { wait, shown: shown.length, displayed: tags.size,
-          last: shown[shown.length - 1].tag });
+        diag('page-vanished-none', '', { wait, arrived: arrived.length, displayed: tags.size });
         continue;
       }
-      // 読んでいる間に sw.js が足した通知を消さないよう、読み直してから除く
-      const ids = new Set(vanished.map((x) => x.id));
-      const latest = await readShown(cache);
-      await cache.put(SHOWN_KEY, new Response(JSON.stringify(latest.filter((x) => !ids.has(x.id))), {
-        headers: { 'Content-Type': 'application/json' }
-      }));
-      diag('page-vanished', vanished.length === 1 ? vanished[0].id : '', { n: vanished.length, open: open ? 1 : 0 });
-      if (open && vanished.length === 1 && vanished[0].url) {
-        openDeepLinkInApp(store, vanished[0].url, vanished[0].id, 'vanished');
+      diag('page-vanished', '', { n: vanished.length, tag: vanished[0].tag });
+      if (vanished.length === 1) {
+        const x = vanished[0];
+        openDeepLinkInApp(store, x.url, x.tag + '@' + x.at, 'vanished');
       }
       return;
     }
@@ -309,10 +308,16 @@ async function checkVanishedNotification(store, open) {
 export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now();
+    } else if (document.visibilityState === 'visible') {
       diag('page-visible');
       check();
-      checkVanishedNotification(store, true);
+      if (hiddenAt !== null) {
+        const since = hiddenAt;
+        hiddenAt = null;
+        checkVanishedNotification(store, since);
+      }
     }
   });
   window.addEventListener('focus', check);

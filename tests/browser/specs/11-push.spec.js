@@ -272,66 +272,83 @@ test.describe('通知のタップの書き置き', () => {
 
 /**
  * 通知をタップしてもタップが sw.js に届かないとき(iPhone でアプリがバックグラウンドのとき。WebKit bug 268797)：
- * 前面に戻ったときに、sw.js が控えた「表示した通知」のうち通知センターから消えたものを、タップされた通知とみなす。
- * ここではテスト用のブラウザに通知が無いので、控えに置いた通知はすべて「消えた」扱いになる。
+ * 前面に戻ったときに、バックグラウンドの間にサーバが送った通知(GET /api/push/recent)のうち、
+ * 通知センターから消えたものをタップされた通知とみなす。
+ * ここではテスト用のブラウザに通知が無いので、送った通知はすべて「消えた」扱いになる。
+ * サーバの応答は差し替え、バックグラウンドに回って戻ったことにして確かめる。
  */
 test.describe('通知センターから消えた通知', () => {
-  async function remember(page, entries) {
-    await page.evaluate(async (entries) => {
-      const cache = await caches.open('tsubasa-deeplink');
-      await cache.put('/__shown__', new Response(JSON.stringify(entries.map((e) => ({ ...e, at: Date.now() }))),
-        { headers: { 'Content-Type': 'application/json' } }));
-    }, entries);
-  }
-  async function shownLeft(page) {
-    return page.evaluate(async () => {
-      const r = await (await caches.open('tsubasa-deeplink')).match('/__shown__');
-      return r ? (await r.json()).length : 0;
+  // バックグラウンドに回る → sentDuring 件がその間に送られた → 前面に戻る
+  async function backgroundAndReturn(page, notices) {
+    await page.evaluate(() => {
+      window.__vis = 'visible';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      window.__vis = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(100);
+    await page.route('**/api/push/recent', (route) => {
+      const now = Date.now();
+      route.fulfill({ json: { now, notices: notices.map((x) => ({ ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
+    });
+    await page.evaluate(() => {
+      window.__vis = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
     });
   }
-  const becomeVisible = (page) => page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-
-  test('1件だけ消えていれば、その投稿を読み込み直さずに開き、控えから除く', async ({ page }) => {
-    await gotoApp(page);
+  async function firstPost(page) {
     const res = await fetchInPage(page, '/api/posts');
-    const post = JSON.parse(res.text).posts.data[0];
+    expect(res.status).toBe(200);
+    return JSON.parse(res.text).posts.data[0];
+  }
+  const pages = (page) => page.locator('ons-navigator > ons-page').count();
+
+  test('バックグラウンドの間に届いた通知が1件だけ消えていれば、その投稿を読み込み直さずに開く', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
     expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
     let reloaded = false;
     page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
-    await remember(page, [{ id: 'n1', tag: 'post-' + post.id, url: '/home?launcher=true&post=' + post.id }]);
-    await becomeVisible(page);
+    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url: '/home?launcher=true&post=' + post.id }]);
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
     expect(reloaded, '読み込み直さずに開くはず').toBe(false);
-    expect(await shownLeft(page)).toBe(0);
-    // もう一度前面に戻っても二度は開かない
-    await becomeVisible(page);
-    await page.waitForTimeout(2500);
-    expect(await page.locator('ons-navigator > ons-page').count()).toBe(2);
   });
 
-  test('2件以上消えていたら(すべて消去など)開かず、控えだけ片付ける', async ({ page }) => {
+  test('2件以上消えていたら(すべて消去など)開かない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
-    const before = await page.locator('ons-navigator > ons-page').count();
-    await remember(page, [
-      { id: 'n1', tag: 'post-1', url: '/home?launcher=true&post=1' },
-      { id: 'n2', tag: 'post-2', url: '/home?launcher=true&post=2' },
+    const before = await pages(page);
+    await backgroundAndReturn(page, [
+      { tag: 'post-1', url: '/home?launcher=true&post=1' },
+      { tag: 'post-2', url: '/home?launcher=true&post=2' },
     ]);
-    await becomeVisible(page);
-    await page.waitForTimeout(2500);
-    expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
-    expect(await shownLeft(page)).toBe(0);
+    await page.waitForTimeout(3000);
+    expect(await pages(page)).toBe(before);
   });
 
-  test('アイコンから起動したときは、それまでに消えた通知を開かない', async ({ page }) => {
+  test('バックグラウンドに回る前に送られた通知は、消えていても開かない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
-    await remember(page, [{ id: 'n1', tag: 'post-1', url: '/home?launcher=true&post=1' }]);
+    const before = await pages(page);
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1', old: true }]);
+    await page.waitForTimeout(3000);
+    expect(await pages(page)).toBe(before);
+  });
+
+  test('sw.js からの知らせで開いた直後に、同じ通知が消えていても二度は開かない', async ({ page }) => {
     await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
-    expect(await page.locator('ons-navigator > ons-page').count()).toBe(1);
-    expect(await shownLeft(page)).toBe(0);
+    const url = '/home?launcher=true&post=' + post.id;
+    await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
+      { data: { type: 'open-url', url, tapId: 'tap-a' } })), url);
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);
+    await page.waitForTimeout(3000);
+    expect(await pages(page)).toBe(2);
   });
 });

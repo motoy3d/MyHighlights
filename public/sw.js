@@ -26,10 +26,6 @@ self.addEventListener('activate', (event) => {
 
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
-// 表示した通知の控え（deep-link.js が、前面に戻ったときに消えた通知＝タップされた通知を探すのに使う）
-const SHOWN_KEY = '/__shown__';
-const SHOWN_MAX = 30;
-const SHOWN_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
 
 function diag(step, tapId, extra) {
@@ -45,7 +41,8 @@ function diag(step, tapId, extra) {
 // （app/Notifications/PushNotice.php）。mutable なので iOS も push を Service Worker に渡してくる。
 // 通知はどの環境でもここで表示する。iOS に表示を任せると、アプリがバックグラウンドのときにタップしても
 // 目的の画面に移れず（WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 ）、
-// 自分で表示した通知でなければ、前面に戻ったときにどれがタップされたかも調べられないため。
+// 自分で表示した通知でなければ、前面に戻ったときにどれがタップされたかを getNotifications() で調べられないため
+// （resources/assets/js/deep-link.js の checkVanishedNotification）。
 self.addEventListener('push', (event) => {
   let payload = null;
   try {
@@ -82,33 +79,9 @@ self.addEventListener('push', (event) => {
   // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する
   event.waitUntil(Promise.all([
     self.registration.showNotification(title, options),
-    rememberShown({ id: data.id, tag: options.tag, url: data.url || '', at: Date.now() }).catch(() => {}),
     diag('sw-push-show', data.id, { tag: options.tag, declarative: event.notification ? 1 : 0 }),
   ]));
 });
-
-// 表示した通知の控えを足す。同じ tag は置き換わった通知なので古い方を消す
-async function rememberShown(entry) {
-  await updateShown((list) => list.filter((x) => x.tag !== entry.tag).concat(entry));
-}
-
-async function forgetShown(id) {
-  await updateShown((list) => list.filter((x) => x.id !== id));
-}
-
-async function updateShown(fn) {
-  const cache = await caches.open(DEEPLINK_MAILBOX);
-  const response = await cache.match(SHOWN_KEY);
-  let list = [];
-  try {
-    list = response ? await response.json() : [];
-  } catch (e) {
-    list = [];
-  }
-  const now = Date.now();
-  list = fn(Array.isArray(list) ? list : []).filter((x) => now - x.at < SHOWN_MAX_AGE_MS).slice(-SHOWN_MAX);
-  await cache.put(SHOWN_KEY, new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } }));
-}
 
 // 通知をタップしたら該当画面を開く。
 //
@@ -140,10 +113,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil((async () => {
     diag('sw-click', tapId);
-    // タップが届いたので、前面に戻ったときの「消えた通知」探しの対象から外す
-    if (data.id) {
-      await forgetShown(data.id).catch(() => {});
-    }
     // 控えの書き置きは最初に済ませる（アプリが前面に出た瞬間に読みに来ても間に合うように）
     try {
       await leaveDeepLink(target, tapId);
