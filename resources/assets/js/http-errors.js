@@ -49,15 +49,6 @@ export function installHttpErrorHandling(axios, getOns) {
     return attempt; // 1秒 → 2秒
   }
 
-  function firstValidationMessage(data) {
-    if (!data) return null;
-    if (data.errors) {
-      const first = Object.values(data.errors)[0];
-      if (first) return Array.isArray(first) ? first[0] : String(first);
-    }
-    return data.message || null;
-  }
-
   axios.interceptors.response.use(response => response, error => {
     // 明示的に取り消した通信は利用者に知らせる必要がない
     if (axios.isCancel(error)) {
@@ -100,12 +91,10 @@ export function installHttpErrorHandling(axios, getOns) {
       toast(MSG_RATE_LIMIT);
     } else if (status >= 500) {
       toast(MSG_SERVER);
-    } else if (status === 422 && typeof FormData !== 'undefined' && config.data instanceof FormData) {
-      // 添付ファイルのサイズ超過などは各画面で表示していないため、
-      // ファイル送信時だけサーバの検証メッセージを出す
-      const message = firstValidationMessage(error.response.data);
-      if (message) toast(message);
     }
+    // 422(入力の検証エラー)はここでは知らせない。ファイルを送る画面(投稿・投稿編集・コメント)と
+    // メンバー登録は、それぞれの画面でサーバのメッセージを表示する(#45 #79)。
+    // ここでも出すと同じ内容が二重に表示される
     return Promise.reject(error);
   });
 }
