@@ -472,4 +472,9 @@
   };
 </script>
 
-<style></style>
+<style>
+  /* 通知の種類の項目名が2行に折り返したとき、2行目が中央に寄らないようにする */
+  .push_pref_item .list-item__center {
+    text-align: left;
+  }
+</style>
