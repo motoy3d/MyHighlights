@@ -41,14 +41,14 @@ class PushNotice extends Notification
     }
 
     /**
-     * Declarative Web Push の形式（{ web_push: 8030, notification: {...} }）で送る。
+     * Declarative Web Push の形式（{ web_push: 8030, notification: {...}, mutable: true }）で送る。
      *
-     * iOS 18.4 以降のホーム画面アプリは、この形式の通知を iOS 自身が表示し、タップされたら navigate の
-     * アドレスへ iOS 自身が移動する（Service Worker の notificationclick を通らない）。
-     * 2026-09-22 の実機確認で、アプリがバックグラウンドにいるとタップの知らせ（notificationclick）が
-     * Service Worker に届かず、目的の画面に移れなかったため、この形式にした。
-     * 対応していないブラウザ（Android の Chrome など）には通常の push として届き、sw.js が notification を読んで表示する。
-     * そのため data.url（相対）も残す。
+     * mutable にして、iOS 18.4 以降でも push を Service Worker に渡させ、通知は sw.js が表示する。
+     * 2026-09-22 の実機確認で、iOS に表示を任せても（navigate を指定しても）、アプリがバックグラウンドだと
+     * タップで目的の画面に移れなかった（WebKit の既知の不具合 bug 268797）。sw.js が表示した通知なら、
+     * 前面に戻ったときに消えた通知からタップされた通知を割り出せる（resources/assets/js/deep-link.js）。
+     * Service Worker が動かなかったときは、この形式のおかげで iOS が代わりに表示する。
+     * 対応していないブラウザ（Android の Chrome など）には通常の push として届く。どちらも sw.js が data.url を使う。
      */
     public function toWebPush(mixed $notifiable, mixed $notification = null): WebPushMessageInterface
     {
@@ -68,6 +68,7 @@ class PushNotice extends Notification
             // タップしたときに iOS が移る先。完全なアドレスでなければならない
             ->navigate($origin . $this->url)
             ->lang('ja')
+            ->mutable(true)
             // 端末がオフラインでも1日は再送を試みる。iOSは urgency が低いと届くのが遅れる
             ->options(['TTL' => 86400, 'urgency' => 'high']);
     }

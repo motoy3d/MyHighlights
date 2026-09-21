@@ -268,6 +268,8 @@ class PushNotificationJobTest extends TestCase
         $this->assertSame('https://tsubasa.example.test/home?launcher=true&team=1&post=2', $payload['notification']['navigate']);
         // iOS は icon を基準なしで読むので、相対だとこの形式として認識されない
         $this->assertSame('https://tsubasa.example.test/appicon.png', $payload['notification']['icon']);
+        // 通知は sw.js が表示する（前面に戻ったときにタップされた通知を割り出すため）
+        $this->assertTrue($payload['mutable']);
         // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
         $this->assertSame(['url' => '/home?launcher=true&team=1&post=2'], $payload['notification']['data']);
     }

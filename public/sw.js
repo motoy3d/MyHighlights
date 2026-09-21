@@ -26,6 +26,10 @@ self.addEventListener('activate', (event) => {
 
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
+// 表示した通知の控え（deep-link.js が、前面に戻ったときに消えた通知＝タップされた通知を探すのに使う）
+const SHOWN_KEY = '/__shown__';
+const SHOWN_MAX = 30;
+const SHOWN_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
 
 function diag(step, tapId, extra) {
@@ -37,50 +41,74 @@ function diag(step, tapId, extra) {
 
 // 通知を表示する。
 //
-// サーバは Declarative Web Push の形式 { web_push: 8030, notification: { title, body, navigate, tag, data: { url } ... } }
-// で送る（app/Notifications/PushNotice.php）。
-// - iOS 18.4 以降のホーム画面アプリ：iOS がこの形式を読んで通知を用意し、event.notification に入れて渡してくる。
-//   ここで自分で showNotification すると iOS の通知が捨てられ、タップしたときに iOS が navigate へ移る仕組みも
-//   効かなくなる（アプリがバックグラウンドだとタップの知らせが Service Worker に届かないため、移れなくなる）。
-//   だから何もせず iOS に任せる。
-// - それ以外（Android の Chrome など）：通常の push として届くので、notification を読んでここで表示する。
+// サーバは Declarative Web Push の形式 { web_push: 8030, notification: {...}, mutable: true } で送る
+// （app/Notifications/PushNotice.php）。mutable なので iOS も push を Service Worker に渡してくる。
+// 通知はどの環境でもここで表示する。iOS に表示を任せると、アプリがバックグラウンドのときにタップしても
+// 目的の画面に移れず（WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 ）、
+// 自分で表示した通知でなければ、前面に戻ったときにどれがタップされたかも調べられないため。
 self.addEventListener('push', (event) => {
-  if (event.notification) {
-    // 通知を出さずに終わる(iOS が用意した通知がそのまま出る)。記録は waitUntil で確実に送る
-    event.waitUntil(diag('sw-push-declarative', '', { nav: event.notification.navigate ? 1 : 0 }));
-    return;
-  }
-  diag('sw-push-show', '', { keys: Object.keys(Object.getPrototypeOf(event)).join('.').slice(0, 60) });
-
-  let payload = {};
+  let payload = null;
   try {
-    payload = event.data ? event.data.json() : {};
+    payload = event.data ? event.data.json() : null;
   } catch (e) {
     // JSON でなければ本文として扱う
     payload = { body: event.data ? event.data.text() : '' };
   }
   // Declarative Web Push の形式なら中身は notification にある（古い形式にも対応しておく）
-  const n = (payload.web_push === 8030 && payload.notification) ? payload.notification : payload;
+  let n = (payload && payload.web_push === 8030 && payload.notification) ? payload.notification : (payload || {});
+  if (!payload && event.notification) {
+    n = { title: event.notification.title, body: event.notification.body, tag: event.notification.tag,
+      navigate: event.notification.navigate, data: event.notification.data };
+  }
 
   const title = n.title || 'Tsubasa⬆︎UP';
   const data = Object.assign({}, n.data || {});
   if (!data.url && n.navigate) {
     data.url = n.navigate;
   }
+  // この通知の目印。タップの重複を防ぐ ID（tapId）としても使う
+  data.id = Math.random().toString(36).slice(2, 10);
   const options = {
     body: n.body || '新しいお知らせがあります',
     icon: n.icon || '/appicon.png',
     badge: n.badge,
     // 同じ投稿へのコメントが続いても積み上がらないよう、tag で置き換える
-    tag: n.tag,
+    tag: n.tag || data.id,
     renotify: !!(n.tag && n.renotify),
     lang: n.lang,
     data,
   };
 
   // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, options),
+    rememberShown({ id: data.id, tag: options.tag, url: data.url || '', at: Date.now() }).catch(() => {}),
+    diag('sw-push-show', data.id, { tag: options.tag, declarative: event.notification ? 1 : 0 }),
+  ]));
 });
+
+// 表示した通知の控えを足す。同じ tag は置き換わった通知なので古い方を消す
+async function rememberShown(entry) {
+  await updateShown((list) => list.filter((x) => x.tag !== entry.tag).concat(entry));
+}
+
+async function forgetShown(id) {
+  await updateShown((list) => list.filter((x) => x.id !== id));
+}
+
+async function updateShown(fn) {
+  const cache = await caches.open(DEEPLINK_MAILBOX);
+  const response = await cache.match(SHOWN_KEY);
+  let list = [];
+  try {
+    list = response ? await response.json() : [];
+  } catch (e) {
+    list = [];
+  }
+  const now = Date.now();
+  list = fn(Array.isArray(list) ? list : []).filter((x) => now - x.at < SHOWN_MAX_AGE_MS).slice(-SHOWN_MAX);
+  await cache.put(SHOWN_KEY, new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } }));
+}
 
 // 通知をタップしたら該当画面を開く。
 //
@@ -106,18 +134,16 @@ function withTimeout(promise, ms) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  // iOS が navigate へ移る通知（Declarative Web Push）では、移動は iOS に任せる（ここでも開くと二重になる）
-  if (event.notification.navigate) {
-    event.waitUntil(diag('sw-click-declarative'));
-    return;
-  }
-
   const data = event.notification.data || {};
   const target = new URL(data.url || '/home?launcher=true', self.location.origin).href;
-  const tapId = Math.random().toString(36).slice(2, 10);
+  const tapId = data.id || Math.random().toString(36).slice(2, 10);
 
   event.waitUntil((async () => {
     diag('sw-click', tapId);
+    // タップが届いたので、前面に戻ったときの「消えた通知」探しの対象から外す
+    if (data.id) {
+      await forgetShown(data.id).catch(() => {});
+    }
     // 控えの書き置きは最初に済ませる（アプリが前面に出た瞬間に読みに来ても間に合うように）
     try {
       await leaveDeepLink(target, tapId);

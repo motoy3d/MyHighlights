@@ -11,7 +11,11 @@
  * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合（installDeepLinkListeners）：
  *   主な経路：sw.js から「この画面を開いて」とアドレスごと届くので、読み込み直さずにその画面を開く
  *   控え：sw.js が同じ内容を Cache Storage に書き置きするので、知らせを取りこぼしても前面に戻ったときに読む
- * 同じタップ（tapId）はどちらで受けても一度しか開かない。
+ *   最後の手段：iPhone ではアプリがバックグラウンドだとタップが sw.js に届かないことがある
+ *     （WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 。上の2つがどちらも起きない）。
+ *     そこで前面に戻ったとき、sw.js が控えた「表示した通知」と通知センターに残っている通知を比べ、
+ *     1件だけ消えていればそれがタップされた通知とみなして開く（checkVanishedNotification）。
+ * 同じタップ（tapId。通知ごとの目印）はどの経路で受けても一度しか開かない。
  */
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
@@ -20,6 +24,7 @@ const TAB_TIMELINE = 0;
 // sw.js と合わせる
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
+const SHOWN_KEY = '/__shown__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
 // 確認用アドレスでだけ、どの段階まで進んだかをサーバのアクセス記録に残す（sw.js と同じ）
@@ -96,6 +101,8 @@ export function openFromUrl(store) {
   if (!handled) {
     // アドレスにパラメータが無くても、通知のタップで開始 URL のまま起動した場合は書き置きがある
     afterLoad(() => checkDeepLink(store));
+    // アイコンから起動した場合、それまでに消された通知は開かない（控えを片付けるだけ）
+    afterLoad(() => checkVanishedNotification(store, false));
     return;
   }
 
@@ -103,6 +110,10 @@ export function openFromUrl(store) {
   // launcher=true はホーム画面からの起動の目印として既存の処理が見ているので残す
   const rest = p.get('launcher') === 'true' ? '?launcher=true' : '';
   window.history.replaceState(null, '', window.location.pathname + rest);
+
+  // 通知のタップで起動した場合、その通知は通知センターから消えている。前面に戻ったときに
+  // もう一度開かないよう、消えた通知の控えを片付けておく
+  afterLoad(() => checkVanishedNotification(store, false));
 
   // この起動で開くので、書き置きが残っていれば消す（前面に戻ったときに二重に開かないように）。
   // 消し終わる前に読み込み完了の pageshow などで書き置きを読んでしまわないよう、少しの間は読まない
@@ -226,6 +237,68 @@ async function checkDeepLink(store) {
   }
 }
 
+/** sw.js が控えた「表示した通知」を読む（[{ id, tag, url, at }]） */
+async function readShown(cache) {
+  const response = await cache.match(SHOWN_KEY);
+  const list = response ? await response.json() : [];
+  return Array.isArray(list) ? list : [];
+}
+
+/** 通知センターに残っている、このアプリの通知の tag */
+async function displayedTags() {
+  const registration = await navigator.serviceWorker.getRegistration('/');
+  const list = registration ? await registration.getNotifications() : [];
+  return new Set(list.map((x) => x.tag));
+}
+
+let vanishChecking = false;
+/**
+ * 通知センターから消えた通知を探し、1件だけならそれを開く（open が false なら控えを片付けるだけ）。
+ *
+ * iOS は、タップされた通知を通知センターから消してからアプリを前面に出す。
+ * 前面に戻った直後はまだ消えていないことがあるので、少し待って読み直す。
+ * 2件以上消えていたら「すべて消去」などで消されたとみなし、開かない。
+ * 消えた通知は控えから除くので、同じ通知で二度開くことはない。
+ */
+async function checkVanishedNotification(store, open) {
+  if (vanishChecking || !('caches' in window) || !('serviceWorker' in navigator)) {
+    return;
+  }
+  vanishChecking = true;
+  try {
+    const cache = await caches.open(DEEPLINK_MAILBOX);
+    for (const wait of [0, 400, 1200]) {
+      if (wait) {
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+      const shown = await readShown(cache);
+      if (!shown.length) {
+        return;
+      }
+      const tags = await displayedTags();
+      const vanished = shown.filter((x) => !tags.has(x.tag));
+      if (!vanished.length) {
+        continue;
+      }
+      // 読んでいる間に sw.js が足した通知を消さないよう、読み直してから除く
+      const ids = new Set(vanished.map((x) => x.id));
+      const latest = await readShown(cache);
+      await cache.put(SHOWN_KEY, new Response(JSON.stringify(latest.filter((x) => !ids.has(x.id))), {
+        headers: { 'Content-Type': 'application/json' }
+      }));
+      diag('page-vanished', vanished.length === 1 ? vanished[0].id : '', { n: vanished.length, open: open ? 1 : 0 });
+      if (open && vanished.length === 1 && vanished[0].url) {
+        openDeepLinkInApp(store, vanished[0].url, vanished[0].id, 'vanished');
+      }
+      return;
+    }
+  } catch (e) {
+    diag('page-vanished-fail', '', { e: String(e && e.message || e).slice(0, 40) });
+  } finally {
+    vanishChecking = false;
+  }
+}
+
 /**
  * アプリが前面に戻ったとき（通知のタップで iOS がアプリを前に出したとき）に、書き置きを読む。
  * AppNavigator.vue の mounted から一度だけ呼ぶ。
@@ -234,14 +307,9 @@ export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      // 確認用：前面に戻ったとき通知センターに残っている通知(タップした通知が消えているか)
-      if (DIAG && navigator.serviceWorker) {
-        navigator.serviceWorker.getRegistration('/')
-          .then((r) => (r ? r.getNotifications() : []))
-          .then((list) => diag('page-visible', '', { n: list.length, tags: list.map((x) => x.tag).join(',').slice(0, 80) }))
-          .catch(() => diag('page-visible', '', { n: 'err' }));
-      }
+      diag('page-visible');
       check();
+      checkVanishedNotification(store, true);
     }
   });
   window.addEventListener('focus', check);
