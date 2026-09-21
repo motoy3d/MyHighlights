@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\ValidationException;
 
 class MemberController extends Controller
 {
@@ -78,6 +79,9 @@ class MemberController extends Controller
     if ($request->invitationFlg == "1") {
       $existingUser = User::where('email', $request->email)->first();
       if ($existingUser) {
+        // すでにこのチームの有効メンバーなら登録させない(#79)。
+        // 招待メールを送る前・members を作る前に弾くこと。
+        $this->assertNotActiveMemberOfTeam($existingUser->id, $team->id);
         // 追加登録招待メール送信
         $fromUser = User::findOrFail(Auth::id());
         Mail::to($request->email)->send(new UserInvitation($fromUser, $existingUser, $team->name, null));
@@ -165,6 +169,16 @@ class MemberController extends Controller
     //TODO 管理者権限チェック
     if (!$member || $member->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
+    }
+
+    // 招待で別ユーザーを紐づける場合、そのユーザーがすでにこのチームの有効メンバーなら弾く(#79)。
+    // members/users の更新や招待メール送信より前に確認する(途中まで保存されて 422 になるのを防ぐ)。
+    // 自分自身の members 行(同じ user のまま再招待する場合)は重複ではないので除外する。
+    if ($request->invitationFlg == "1") {
+      $existingUser = User::where('email', $request->email)->first();
+      if ($existingUser && $existingUser->id != $member->user_id) {
+        $this->assertNotActiveMemberOfTeam($existingUser->id, $member->team_id, $member->id);
+      }
     }
 
     $userId = $member->user_id;
@@ -270,5 +284,33 @@ class MemberController extends Controller
 
     $result = ["deleted_count" => $count];
     return Response::json($result);
+  }
+
+  /**
+   * 指定ユーザーがすでにチームの有効メンバー(退会・削除されていない)なら 422 を投げる。
+   *
+   * 同じ team_id + user_id の members が2行あると、members を user_id + team_id で
+   * JOIN している箇所(記事のコメント一覧など)で同じ行が2回表示されてしまう(#79)。
+   * 退会済み(withdrawal_date あり)のメンバーは再登録できるよう対象外にする。
+   *
+   * @param int $userId
+   * @param int $teamId
+   * @param int|null $exceptMemberId 更新中のメンバー自身は除外する
+   * @throws ValidationException
+   */
+  private function assertNotActiveMemberOfTeam($userId, $teamId, $exceptMemberId = null)
+  {
+    // Member は SoftDeletes なので deleted_at IS NULL は Eloquent が自動で付ける
+    $query = Member::where('user_id', $userId)
+      ->where('team_id', $teamId)
+      ->whereNull('withdrawal_date');
+    if ($exceptMemberId) {
+      $query->where('id', '!=', $exceptMemberId);
+    }
+    if ($query->exists()) {
+      throw ValidationException::withMessages([
+        'email' => 'このメールアドレスの方はすでにこのチームのメンバーです。',
+      ]);
+    }
   }
 }
