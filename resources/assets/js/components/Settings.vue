@@ -449,7 +449,18 @@
       showIOSInstallGuide() {
         webPush.showIOSInstallGuide(this.$ons);
       },
-      logout() {
+      async logout() {
+        // ログアウトしたら、この端末の通知の購読も解除する。家族で端末を共有していると、
+        // 残したままでは前の人宛ての通知（投稿の冒頭など）が届き続けてしまうため。
+        // 通信が遅くてもログアウトを待たせないよう、最大3秒で打ち切る
+        try {
+          await Promise.race([
+            webPush.unsubscribe(),
+            new Promise(resolve => setTimeout(resolve, 3000))
+          ]);
+        } catch (e) {
+          // 解除に失敗してもログアウトは続ける（サーバの購読は次の送信で無効と分かった時点で消える）
+        }
         $('#logout-form').submit();
       },
       withdraw() {
