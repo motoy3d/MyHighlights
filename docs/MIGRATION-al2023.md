@@ -13,15 +13,30 @@ PHP と Laravel を同時に上げる必要があった。
 
 ## 対応後の構成
 
-| | 移行前 | 移行後 |
+| 項目 | 移行前 | 移行後 |
 | --- | --- | --- |
-| OS | Amazon Linux 1 (2018.03) | Amazon Linux 2023 |
+| サーバ | EC2 t3.medium（x86） | EC2 **t4g.medium（Graviton / arm64）**、40GB gp3 |
+| OS | Amazon Linux 1（2018.03、EOL） | Amazon Linux 2023 |
+| Web サーバ | Apache 2.4.48 + mod_php | Apache 2.4.68 + php-fpm |
 | PHP | 7.1.33 | 8.4 |
-| Laravel | 5.6.40 | 13.x |
-| DB | MySQL | MariaDB 10.11 |
-| APIの認証 | Laravel Passport | Laravel Sanctum |
-| フロントのビルド | Laravel Mix 4 (webpack 4) | Vite |
-| キューワーカー | supervisord（手動起動のまま2年以上稼働） | systemd（`tsubasa-queue.service`、OS起動時に自動で立ち上がる） |
+| フレームワーク | Laravel 5.6.40 | Laravel 13.29 |
+| DB | MySQL 5.7.35 | MariaDB 10.11 |
+| API 認証 | Laravel Passport 7 | Laravel Sanctum 4 |
+| 主要ライブラリ | Carbon 1.26 / Intervention Image 2.4 / eluceo/ical 0.14 | Carbon 3.13 / Intervention Image 3.11 / eluceo/ical 2.17 |
+| フロント | Vue 2.6 + OnsenUI 2.10 + Vuex 3 | Vue 2.7 + OnsenUI 2.12 + Vuex 3（据え置き） |
+| ビルド | Laravel Mix 4（webpack 4） | Vite 7、Node 24 |
+| キューワーカー | supervisord（手動起動のまま稼働） | systemd（`tsubasa-queue`、OS 起動時に自動起動） |
+| 証明書更新 | certbot 0.38（root の cron） | certbot 2.6（systemd タイマー） |
+| TLS | 1.0 以上 | 1.2 以上 |
+| サーバ操作 | SSH（ポート 36180） | SSM（インバウンドポートなし） |
+| メール送信 | SES（EC2 の IAM ロール経由） | 同じ（新ロール `TsubasaAppServer`） |
+| バックアップ | EBS 日次スナップショット | 同じポリシーに新サーバを追加 |
+| 同居サイト | tsubasa / tsubasademo / smartj.mobi / redsmylife | **tsubasa のみ**（demo は廃止、他は旧サーバに残す） |
+| 自動テスト | PHPUnit 8 ファイル | PHPUnit 199 件 + Playwright 65 件 |
+
+運用値（タイムゾーン JST、php.ini、sql_mode、文字セット、バッファプールなど）は
+旧サーバの実測値に合わせてあり、`deploy/configure-runtime.sh` が構築時に一致を確認する
+（一致しなければ非0で止まる）。
 
 Vue 2 / OnsenUI はそのまま据え置いている（後述）。
 
