@@ -195,3 +195,52 @@ test.describe('通知のリンクで該当画面を開く', () => {
     expect(jsErrors, `JSエラー: ${jsErrors.join(', ')}`).toHaveLength(0);
   });
 });
+
+/**
+ * 通知をタップしたとき(#110)：sw.js は開きたい画面を Cache Storage に書き置きし、
+ * アプリは前面に戻ったときにそれを読んで開く(iPhone では navigate による遷移が効かなかったため)。
+ * ここでは sw.js の代わりに書き置きを置き、前面に戻ったことにして確かめる。
+ */
+test.describe('通知のタップの書き置き', () => {
+  async function leave(page, url, at) {
+    await page.evaluate(async ({ url, at }) => {
+      const cache = await caches.open('tsubasa-deeplink');
+      await cache.put('/__deeplink__', new Response(JSON.stringify({ url, at: at || Date.now() }),
+        { headers: { 'Content-Type': 'application/json' } }));
+    }, { url, at });
+  }
+  async function firstPost(page) {
+    const res = await fetchInPage(page, '/api/posts');
+    const body = JSON.parse(res.text);
+    const posts = Array.isArray(body) ? body : (body.data || body.posts || []);
+    return posts[0];
+  }
+
+  test('前面に戻ると、書き置きの投稿が読み込み直さずに開く', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    test.skip(!post, '投稿が無い');
+    await page.waitForTimeout(3500); // 起動直後は書き置きを読まない期間がある
+    let reloaded = false;
+    page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
+    await leave(page, '/home?launcher=true&post=' + post.id);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(page.locator('ons-page:visible').getByText(post.title).first()).toBeVisible({ timeout: 15000 });
+    expect(reloaded, '読み込み直さずに開くはず').toBe(false);
+    // 書き置きは取り出したら消える
+    const left = await page.evaluate(async () => !!(await (await caches.open('tsubasa-deeplink')).match('/__deeplink__')));
+    expect(left).toBe(false);
+  });
+
+  test('古い書き置き(5分より前)は開かない', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    test.skip(!post, '投稿が無い');
+    await page.waitForTimeout(3500);
+    const before = await page.locator('ons-navigator > ons-page').count();
+    await leave(page, '/home?launcher=true&post=' + post.id, Date.now() - 10 * 60 * 1000);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(2500);
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
+  });
+});

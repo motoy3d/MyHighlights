@@ -44,7 +44,23 @@ self.addEventListener('push', (event) => {
 });
 
 // 通知をタップしたら該当画面を開く。
-// アプリが開いていればそのウィンドウを使う（ウィンドウを増やさない）
+//
+// 開いたアプリに「このアドレスを読み込み直せ」と指示する方法（WindowClient.navigate / postMessage）は、
+// iPhone のホーム画面アプリがバックグラウンドにいると効かなかった（2026-09-21 の実機確認。
+// タップしてもアプリが前面に出るだけで、サーバへの読み込みが1件も来なかった）。
+// そこで、開きたい画面を端末内に書き置きし（Cache Storage を郵便受けとして使う。取得のキャッシュには使わない）、
+// アプリ側が前面に戻ったとき・起動したときにそれを読んで開く（deep-link.js）。
+// 書き置きさえ残せば、iOS がアプリを前面に出すだけで目的の画面に移れる。
+const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
+const DEEPLINK_KEY = '/__deeplink__';
+
+async function leaveDeepLink(url) {
+  const cache = await caches.open(DEEPLINK_MAILBOX);
+  await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, at: Date.now() }), {
+    headers: { 'Content-Type': 'application/json' }
+  }));
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
@@ -52,31 +68,28 @@ self.addEventListener('notificationclick', (event) => {
   const target = new URL(data.url || '/home?launcher=true', self.location.origin).href;
 
   event.waitUntil((async () => {
+    // アプリが前面に出る前に書き置きを済ませる（前面に出た瞬間にアプリが読みに来る）
+    try {
+      await leaveDeepLink(target);
+    } catch (e) {
+      // 書き置きできなくても、アプリを前面に出すことは続ける
+    }
+
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const client = windows.find((c) => new URL(c.url).origin === self.location.origin);
 
     if (!client) {
+      // アプリが起動していなければ、そのアドレスで開く（起動時のリンク処理が開く。
+      // 開始 URL で開かれても、起動時に書き置きを読む）
       await self.clients.openWindow(target);
       return;
     }
-
-    // 前面に出すのは先に行う（タップ直後でないと focus が許されない環境がある）
     try {
       await client.focus();
     } catch (e) {
-      // 前面に出せなくても遷移は続ける
+      // 前面に出せない環境でも、書き置きは次にアプリが前面に出たときに読まれる
     }
-
-    // 画面を読み込み直せば、起動時のリンク処理（deep-link.js）がパラメータを読んで該当画面を開く
-    if ('navigate' in client) {
-      try {
-        await client.navigate(target);
-        return;
-      } catch (e) {
-        // navigate できない（制御下にないウィンドウなど）ときは下の方法に回す
-      }
-    }
-    // navigate が使えない環境では、画面側に遷移を頼む（push.js で受ける）
-    client.postMessage({ type: 'open-url', url: target });
+    // 既に前面にいて visibilitychange が起きない場合に備えて、読みに来るよう知らせる
+    client.postMessage({ type: 'deeplink' });
   })());
 });

@@ -11,7 +11,7 @@
 <script>
   import AppTabbar from './AppTabbar.vue';
   import Cookies from 'js-cookie';
-  import { applyUrlToStore, openFromUrl } from '../deep-link.js';
+  import { applyUrlToStore, openFromUrl, installDeepLinkListeners } from '../deep-link.js';
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -46,6 +46,8 @@
     mounted() {
       // 通知のリンク(/home?post=… など)で起動したら、そのタブ・投稿を開く(deep-link.js)
       openFromUrl(this.$store);
+      // アプリが開いたまま通知をタップしたときは、前面に戻ったときに sw.js の書き置きを読んで開く
+      installDeepLinkListeners(this.$store);
     },
     data() {
       return {

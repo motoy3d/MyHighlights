@@ -68,17 +68,7 @@ export function initPwa() {
     } else {
       window.addEventListener('load', () => registerServiceWorker());
     }
-    // sw.js が navigate を使えない環境では、遷移先をメッセージで送ってくる。
-    // 読み込み直せば起動時のリンク処理（deep-link.js）が該当画面を開く
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      const data = event.data || {};
-      if (data.type === 'open-url' && typeof data.url === 'string') {
-        const url = new URL(data.url, location.origin);
-        if (url.origin === location.origin) {
-          location.href = url.href;
-        }
-      }
-    });
+    // 通知をタップしたときの画面の切り替えは deep-link.js（installDeepLinkListeners）が受け持つ
   }
 
   installState.dismissed = isInstallGuideDismissed();

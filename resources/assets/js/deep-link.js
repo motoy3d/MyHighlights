@@ -7,13 +7,21 @@
  *   削除された予定：/home?launcher=true&team={team_id}&date={YYYY-MM-DD}
  *
  * Vue Router は使わず、起動時に URL のパラメータを読んで画面を開く。
- * アプリが開いている状態で通知をタップした場合も、sw.js がそのウィンドウを
- * このリンクへ遷移させる（読み込み直す）ので、同じ処理で開ける。
+ *
+ * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合は、
+ * sw.js が開きたい画面を Cache Storage に書き置きするので、アプリが前面に戻ったときに
+ * それを読んで、読み込み直さずにその画面を開く（installDeepLinkListeners）。
+ * iPhone ではアプリへの遷移の指示（navigate / postMessage）が効かなかったため、この方式にした。
  */
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
 
 const TAB_TIMELINE = 0;
+// sw.js と合わせる
+const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
+const DEEPLINK_KEY = '/__deeplink__';
+// 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
+const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
 const TAB_CALENDAR = 1; // ブログのタブは 3 番目なので、カレンダーは常に 1
 
 function params() {
@@ -76,6 +84,8 @@ export function openFromUrl(store) {
   const p = params();
   const handled = ['team', 'post', 'schedule', 'date'].some((k) => p.has(k));
   if (!handled) {
+    // アドレスにパラメータが無くても、通知のタップで開始 URL のまま起動した場合は書き置きがある
+    afterLoad(() => checkDeepLink(store));
     return;
   }
 
@@ -84,24 +94,138 @@ export function openFromUrl(store) {
   const rest = p.get('launcher') === 'true' ? '?launcher=true' : '';
   window.history.replaceState(null, '', window.location.pathname + rest);
 
-  const post = p.get('post');
-  const date = p.get('date');
-  const open = () => {
-    if (isId(post)) {
-      // タイムラインで投稿を開くのと同じ処理（Timeline.vue の openArticle）
-      store.commit('tabbar/setIndex', TAB_TIMELINE);
-      store.commit('navigator/push', {
-        extends: Article,
-        onsNavigatorOptions: { animation: 'none' }
-      });
-    } else if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      store.commit('tabbar/setIndex', TAB_CALENDAR);
-    }
-  };
-  const later = () => setTimeout(open, 100);
+  // この起動で開くので、書き置きが残っていれば消す（前面に戻ったときに二重に開かないように）。
+  // 消し終わる前に読み込み完了の pageshow などで書き置きを読んでしまわないよう、少しの間は読まない
+  ignoreDeepLinkUntil = Date.now() + 3000;
+  clearDeepLink();
+  const open = () => openTarget(store, p);
+  afterLoad(open);
+}
+
+/** 画面の読み込みが終わってから少し待って実行する（OnsenUI のタブバーの初期化を待つ。openFromUrl の説明参照） */
+function afterLoad(fn) {
+  const later = () => setTimeout(fn, 100);
   if (document.readyState === 'complete') {
     later();
   } else {
     window.addEventListener('load', later, { once: true });
+  }
+}
+
+/** パラメータが指す画面を開く（投稿なら投稿の画面、日付ならカレンダー） */
+function openTarget(store, p) {
+  const post = p.get('post');
+  const date = p.get('date');
+  const schedule = p.get('schedule');
+  if (isId(post)) {
+    // タイムラインで投稿を開くのと同じ処理（Timeline.vue の openArticle）
+    store.commit('article/setPostId', Number(post));
+    store.commit('tabbar/setIndex', TAB_TIMELINE);
+    store.commit('navigator/push', {
+      extends: Article,
+      onsNavigatorOptions: { animation: 'none' }
+    });
+  } else if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    store.commit('calendar/requestDate', {
+      date,
+      scheduleId: isId(schedule) ? Number(schedule) : null
+    });
+    store.commit('tabbar/setIndex', TAB_CALENDAR);
+  }
+}
+
+/** sw.js の書き置きを取り出す（取り出したら消す）。無い・古いときは null */
+async function takeDeepLink() {
+  if (!('caches' in window)) {
+    return null;
+  }
+  try {
+    const cache = await caches.open(DEEPLINK_MAILBOX);
+    const response = await cache.match(DEEPLINK_KEY);
+    if (!response) {
+      return null;
+    }
+    await cache.delete(DEEPLINK_KEY);
+    const { url, at } = await response.json();
+    if (!url || !at || Date.now() - at > DEEPLINK_MAX_AGE_MS) {
+      return null;
+    }
+    return url;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearDeepLink() {
+  if ('caches' in window) {
+    caches.open(DEEPLINK_MAILBOX).then((cache) => cache.delete(DEEPLINK_KEY)).catch(() => {});
+  }
+}
+
+/** 書き置きの画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
+function openDeepLinkInApp(store, urlString) {
+  const url = new URL(urlString, window.location.origin);
+  if (url.origin !== window.location.origin) {
+    return;
+  }
+  const team = url.searchParams.get('team');
+  if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
+    // 表示中のデータは今のチームのものなので、読み込み直す（起動時の処理が開く）
+    window.location.replace(url.href);
+    return;
+  }
+  openTarget(store, url.searchParams);
+}
+
+let checking = false;
+let ignoreDeepLinkUntil = 0;
+/**
+ * 書き置きがあれば開く。前面に戻った直後は sw.js の書き込みが終わっていないことがあるので、少し待って読み直す。
+ * 前面に戻ったとき・フォーカス・sw.js からの知らせが同時に来ても、一度だけ開く（取り出したら消えるので）
+ */
+async function checkDeepLink(store) {
+  if (checking) {
+    return;
+  }
+  if (Date.now() < ignoreDeepLinkUntil) {
+    clearDeepLink();
+    return;
+  }
+  checking = true;
+  try {
+    for (const wait of [0, 400, 1200]) {
+      if (wait) {
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+      const url = await takeDeepLink();
+      if (url) {
+        openDeepLinkInApp(store, url);
+        return;
+      }
+    }
+  } finally {
+    checking = false;
+  }
+}
+
+/**
+ * アプリが前面に戻ったとき（通知のタップで iOS がアプリを前に出したとき）に、書き置きを読む。
+ * AppNavigator.vue の mounted から一度だけ呼ぶ。
+ */
+export function installDeepLinkListeners(store) {
+  const check = () => checkDeepLink(store);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      check();
+    }
+  });
+  window.addEventListener('focus', check);
+  window.addEventListener('pageshow', check);
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'deeplink') {
+        check();
+      }
+    });
   }
 }
