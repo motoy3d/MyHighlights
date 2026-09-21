@@ -14,7 +14,9 @@ Type=simple
 User=apache
 Group=apache
 WorkingDirectory=/var/www/MyHighlights
-ExecStart=/usr/bin/php artisan queue:work --timeout=3600 --sleep=60 --tries=3
+# --sleep は仕事が無いときに次を見に行くまでの秒数。旧サーバの 60 のままだと、
+# プッシュ通知(#110)が最大 1 分遅れる。3 秒ごとの確認は jobs テーブルへの軽い問い合わせ 1 回で、負荷は無視できる
+ExecStart=/usr/bin/php artisan queue:work --timeout=3600 --sleep=3 --tries=3
 # デプロイ時に `php artisan queue:restart` を実行すると、ワーカーが
 # 現在のジョブを終えてから自分で終了する。systemdがそれを再起動する。
 Restart=always
