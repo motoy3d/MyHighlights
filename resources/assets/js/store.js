@@ -1,3 +1,6 @@
+// カレンダーの読み込みの通し番号(calendar/load で、古い応答を捨てるため)
+let calendarLoadSeq = 0;
+
 export default {
   modules: {
     navigator: {
@@ -246,7 +249,11 @@ export default {
       state: {
         loading: false,
         schedules: null,
-        holidays: null
+        holidays: null,
+        // 読み込みの基準にした年月(yyyyMM)。null なら今月
+        month: null,
+        // 通知のリンクで開くよう頼まれた日 { date: 'YYYY-MM-DD', scheduleId }（deep-link.js → Calendar.vue）
+        requestedDate: null
       },
       mutations: {
         set(state, data) {
@@ -255,20 +262,38 @@ export default {
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
+        },
+        setMonth(state, month) {
+          state.month = month;
+        },
+        requestDate(state, request) {
+          state.requestedDate = request;
         }
       },
       actions: {
-        load(context, $http) {
+        /**
+         * 予定を読み込む。引数は $http か { http, month: 'yyyyMM' }。
+         * サーバは基準の月の前後数か月分を返すので、通知のリンクで離れた月を開くときは month を渡す。
+         * month を省くと前回の基準の月(無ければ今月)で読み直す
+         */
+        load(context, arg) {
+          const $http = arg && arg.http ? arg.http : arg;
+          if (arg && arg.month) {
+            context.commit('setMonth', arg.month);
+          }
+          const yearMonth = context.state.month || window.fn.dateFormat.format(new Date(), 'yyyyMM');
+          // 起動時の読み込みと通知のリンクの読み込みが並んだとき、古い応答で上書きしないようにする
+          const seq = ++calendarLoadSeq;
           context.commit('setLoading', true);
-          var yearMonth = window.fn.dateFormat.format(new Date(), 'yyyyMM');
-          $http.get('/api/schedules?month=' + yearMonth)
+          return $http.get('/api/schedules?month=' + yearMonth)
             .then((response)=>{
+              if (seq !== calendarLoadSeq) {return;}
               context.commit('set', response.data);
               context.commit('setLoading', false)
             })
             .catch(error => {
               console.log(error);
-              if (error.response.status === 401) {
+              if (error.response && error.response.status === 401) {
                 window.location.href = "/login";
               }
               context.commit('setLoading', false);

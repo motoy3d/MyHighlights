@@ -11,6 +11,7 @@
 <script>
   import AppTabbar from './AppTabbar.vue';
   import Cookies from 'js-cookie';
+  import { applyUrlToStore, openFromUrl } from '../deep-link.js';
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -21,6 +22,14 @@
           // globalにユーザー情報セット
           console.log('⭐me=' + response.data);
           self.$store.commit('navigator/setUser', response.data);
+          // 通知のリンクでチームを切り替えた場合(deep-link.js)、チーム名のクッキーが古いままなので合わせる。
+          // 所属外のチームを指定された場合は、サーバが直した current_team_id がここで読める
+          const teamId = Cookies.get('current_team_id');
+          const team = (response.data.myTeams || []).find(t => String(t.id) === String(teamId));
+          if (team && team.name !== Cookies.get('current_team_name')) {
+            Cookies.set('current_team_name', team.name);
+            self.$store.commit('navigator/setCurrentTeamName', team.name);
+          }
         })
         // .catch(error => {
         //   // console.log(error);
@@ -29,8 +38,14 @@
         .catch(() => {}) // 401 のリダイレクトと利用者への通知は http-errors.js で行う
       ;
       this.$store.commit('navigator/setCurrentTeamName', Cookies.get('current_team_name'));
+      // 通知のリンク(/home?post=… など)で開く投稿・日付を、各画面を作る前に store に入れておく(deep-link.js)
+      applyUrlToStore(this.$store);
       // navigatorにTabbarをpush
       this.$store.commit('navigator/push', AppTabbar);
+    },
+    mounted() {
+      // 通知のリンク(/home?post=… など)で起動したら、そのタブ・投稿を開く(deep-link.js)
+      openFromUrl(this.$store);
     },
     data() {
       return {

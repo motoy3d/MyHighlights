@@ -8,6 +8,8 @@
         <v-ons-icon icon="fa-cog" size="20px"></v-ons-icon> 設定
       </div>
     </v-ons-toolbar>
+    <!-- ホーム画面への追加の案内(#55)。iPhone の Safari / Android の Chrome のときだけ出る -->
+    <install-guide></install-guide>
     <v-ons-row>
       <v-ons-col>
         <div v-if="loading" class="progress-div">
@@ -41,6 +43,42 @@
                             @click="updateMailNotificationFlg()"></v-ons-switch>
             </div>
           </v-ons-list-item>
+          <!-- #110 プッシュ通知。サーバが enabled を返した人にだけ出す(段階的な公開) -->
+          <template v-if="push.enabled">
+            <v-ons-list-item v-if="pushSupport === 'ok'" id="push_device_item">
+              <v-ons-icon icon="fa-bell" size="20px" class="gray mr-5"></v-ons-icon> この端末で通知を受け取る
+              <div class="right">
+                <v-ons-switch id="push_device_switch" v-model="deviceSwitch"
+                              :disabled="pushBusy"></v-ons-switch>
+              </div>
+            </v-ons-list-item>
+            <v-ons-list-item v-else id="push_unavailable_item">
+              <div style="text-align: left; width: 100%;">
+                <div>
+                  <v-ons-icon icon="fa-bell" size="20px" class="lightgray mr-5"></v-ons-icon> この端末で通知を受け取る
+                </div>
+                <p class="gray small mt-5 mb-0" id="push_unavailable_message">{{ pushUnavailableMessage }}</p>
+                <v-ons-button v-if="pushSupport === 'ios-needs-home-screen'" modifier="quiet" class="small pl-0"
+                              @click="showIOSInstallGuide()">ホーム画面に追加する方法</v-ons-button>
+              </div>
+            </v-ons-list-item>
+            <!-- 通知の種類ごとのオン・オフ(ユーザー単位。端末でオンにしているときだけ出す) -->
+            <template v-if="pushSupport === 'ok' && deviceOn">
+              <v-ons-list-item v-for="item in pushPreferenceItems" :key="item.key" class="push_pref_item">
+                <span class="ml-20 small">{{ item.label }}</span>
+                <div class="right">
+                  <v-ons-switch v-model="push.preferences[item.key]"
+                                @change="savePushPreferences()"></v-ons-switch>
+                </div>
+              </v-ons-list-item>
+              <v-ons-list-item>
+                <div class="right">
+                  <v-ons-button modifier="outline" class="smallBtn" id="push_test_btn"
+                                :disabled="pushTesting" @click="sendTestPush()">テスト通知を送る</v-ons-button>
+                </div>
+              </v-ons-list-item>
+            </template>
+          </template>
           <v-ons-list-item modifier="chevron" @click="openICal()">
             <v-ons-icon icon="fa-calendar-alt" size="20px" class="gray mr-5"></v-ons-icon> カレンダー同期
           </v-ons-list-item>
@@ -104,17 +142,66 @@
 
 <script>
   import ICal from './ICal.vue';
+  import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
+  import * as webPush from '../push.js';
+
+  // 通知の種類(docs/design/110-web-push.md §7.3)。並びは画面の表示順
+  const PUSH_PREFERENCE_ITEMS = [
+    {key: 'new_post', label: '新しい投稿'},
+    {key: 'comment_on_mine', label: '自分の投稿・自分がコメントした投稿へのコメント'},
+    {key: 'comment_on_others', label: 'その他の投稿へのコメント'},
+    {key: 'schedule_change', label: '予定の変更・中止'},
+    {key: 'schedule_comment', label: '予定へのコメント（届くのは予定を作った人と指導者だけ）'}
+  ];
+
   export default {
+    components: { InstallGuide },
     data() {
       return {
         loading: false,
         errored: false,
         posting: false,
-        isIOSAndPWA: this.$ons.platform.isIOS() && location.href.indexOf('launcher=true') != -1
+        isIOSAndPWA: this.$ons.platform.isIOS() && location.href.indexOf('launcher=true') != -1,
+        push: {
+          enabled: false,
+          vapidPublicKey: null,
+          preferences: {}
+        },
+        pushSupport: webPush.pushSupport(),
+        pushPreferenceItems: PUSH_PREFERENCE_ITEMS,
+        deviceOn: false,   // この端末で購読しているか
+        pushBusy: false,   // 購読・解除の処理中
+        pushTesting: false
       }
     },
+    mounted() {
+      this.loadPushConfig();
+    },
     computed: {
+      // 「この端末で通知を受け取る」スイッチ。
+      // 通知の許可は iOS では利用者の操作の中でしか求められないので、セッターの中で(await より前に)求める
+      deviceSwitch: {
+        get() {return this.deviceOn;},
+        set(on) {
+          this.deviceOn = on; // いったん見た目どおりにし、失敗したら戻す(戻したことがスイッチに伝わるように)
+          if (on) {
+            this.turnOnPush();
+          } else {
+            this.turnOffPush();
+          }
+        }
+      },
+      pushUnavailableMessage() {
+        switch (this.pushSupport) {
+          case 'ios-needs-home-screen':
+            return 'iPhoneでは、ホーム画面に追加したアイコンから開くと通知を受け取れます。';
+          case 'denied':
+            return '通知が拒否されています。端末の設定からこのアプリの通知を許可してください。';
+          default:
+            return 'この端末・ブラウザでは通知を使えません。メール通知をご利用ください。';
+        }
+      },
       mailNotificationFlg: {
         get() {return this.$store.state.navigator.user.mail_notification_flg == 1},
         set(mailNotificationFlg) {this.$store.state.navigator.user.mail_notification_flg = mailNotificationFlg;}
@@ -257,6 +344,110 @@
           if (error.response.status === 401) {window.location.href = "/login";}
           this.loading = false; this.posting = false;
         });
+      },
+      /** 通知の設定を読み込み、この端末の購読状態をスイッチに反映する */
+      loadPushConfig() {
+        this.$http.get('/api/push/config')
+          .then(response => {
+            const data = response.data || {};
+            this.push.enabled = !!data.enabled;
+            this.push.vapidPublicKey = data.vapid_public_key;
+            this.push.preferences = Object.assign({}, data.preferences || {});
+            if (this.push.enabled) {
+              this.refreshDeviceState();
+            }
+          })
+          .catch(() => {
+            // 設定が取れないときはスイッチを出さない(メール通知はそのまま使える)
+            this.push.enabled = false;
+          });
+      },
+      refreshDeviceState() {
+        this.pushSupport = webPush.pushSupport();
+        if (this.pushSupport !== 'ok' || Notification.permission !== 'granted') {
+          this.deviceOn = false;
+          return;
+        }
+        webPush.currentSubscription()
+          .then(subscription => {
+            this.deviceOn = !!subscription;
+            if (subscription) {
+              // サーバ側の購読情報を最新にする。同じ端末で別の人がログインした場合も、
+              // 今ログインしている人の購読として付け替わる
+              webPush.sendSubscription(subscription).catch(() => {});
+            }
+          })
+          .catch(() => { this.deviceOn = false; });
+      },
+      turnOnPush() {
+        if (this.pushBusy) {return;}
+        this.pushBusy = true;
+        // ここより前に await を挟まないこと(iOS は操作の直後でないと許可を求められない)
+        webPush.requestPermission()
+          .then(permission => {
+            if (permission !== 'granted') {
+              this.deviceOn = false;
+              this.pushSupport = webPush.pushSupport();
+              // 許可のダイアログを閉じただけ(default)なら、もう一度スイッチから求められるので何も出さない
+              if (permission === 'denied') {
+                this.$ons.notification.alert(
+                  '通知が拒否されています。端末の設定からこのアプリの通知を許可してください。', {title: ''});
+              }
+              return;
+            }
+            return webPush.subscribe(this.push.vapidPublicKey)
+              .then(() => {
+                this.$ons.notification.toast('この端末で通知を受け取ります', {timeout: 2000});
+              });
+          })
+          .catch(error => {
+            console.log(error);
+            this.deviceOn = false;
+            // 通信エラーは http-errors.js が知らせる。それ以外(購読の失敗)はここで知らせる
+            if (!error || !error.response) {
+              this.$ons.notification.alert('通知の登録に失敗しました。時間をおいてもう一度お試しください。', {title: ''});
+            }
+          })
+          .then(() => { this.pushBusy = false; });
+      },
+      turnOffPush() {
+        if (this.pushBusy) {return;}
+        this.pushBusy = true;
+        webPush.unsubscribe()
+          .catch(error => {
+            // 端末側の購読は取り消し済み。サーバに残った分は次の送信で消える
+            console.log(error);
+          })
+          .then(() => { this.pushBusy = false; });
+      },
+      savePushPreferences() {
+        // v-model の反映を待ってから送る
+        this.$nextTick(() => {
+          this.$http.put('/api/push/preferences', {preferences: this.push.preferences})
+            .then(response => {
+              if (response.data && response.data.preferences) {
+                this.push.preferences = Object.assign({}, response.data.preferences);
+              }
+            })
+            .catch(error => {
+              console.log(error);
+              // 保存できなかったので、サーバの状態に戻す
+              this.loadPushConfig();
+            });
+        });
+      },
+      sendTestPush() {
+        this.pushTesting = true;
+        this.$http.post('/api/push/test')
+          .then(response => {
+            const sent = response.data ? response.data.sent : 0;
+            this.$ons.notification.toast('テスト通知を送りました（' + sent + '台）', {timeout: 3000});
+          })
+          .catch(error => { console.log(error); })
+          .then(() => { this.pushTesting = false; });
+      },
+      showIOSInstallGuide() {
+        webPush.showIOSInstallGuide(this.$ons);
       },
       logout() {
         $('#logout-form').submit();

@@ -80,6 +80,8 @@
               <v-ons-icon icon="fa-spinner" size="26px" spin></v-ons-icon>
             </span>
           </v-ons-pull-hook>
+          <!-- ホーム画面への追加の案内(#55)。iPhone の Safari / Android の Chrome のときだけ出る -->
+          <install-guide></install-guide>
           <v-ons-list id="timeline_list">
             <v-ons-list-item
               v-for="post in posts"
@@ -127,8 +129,10 @@
 <script>
   import Article from './Article.vue';
   import Post from './Post.vue';
+  import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
   export default {
+    components: { InstallGuide },
     mounted() {
       try {
         this.load();

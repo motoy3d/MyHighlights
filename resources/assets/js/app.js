@@ -92,6 +92,16 @@ Vue.filter('truncate', function(value, len, omission) {
 });
 console.warn('>>>>>>>> アプリ起動');
 
+// #110 Web プッシュ通知: Service Worker の登録と、ホーム画面への追加の案内の準備。
+// 登録だけなら通知の許可は求めないので、全員に対して行ってよい
+import { initPwa } from './push.js';
+initPwa();
+
+// 通知のリンク(/home?team=…&post=…)でチームが指定されていれば、
+// 最初の API 呼び出しより前にチームのクッキーを切り替える(deep-link.js)
+import { applyTeamFromUrl } from './deep-link.js';
+applyTeamFromUrl();
+
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
   el: '#app',
