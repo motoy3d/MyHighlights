@@ -289,7 +289,7 @@ test.describe('通知センターから消えた通知', () => {
     await page.waitForTimeout(100);
     await page.route('**/api/push/recent', (route) => {
       const now = Date.now();
-      route.fulfill({ json: { now, notices: notices.map((x) => ({ ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
+      route.fulfill({ json: { now, notices: notices.map((x, i) => ({ nid: 'nid' + i, ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
     });
     await page.evaluate(() => {
       window.__vis = 'visible';

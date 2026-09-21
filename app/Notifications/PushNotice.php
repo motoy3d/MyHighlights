@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\DeclarativeWebPushMessage;
 use NotificationChannels\WebPush\WebPushMessageInterface;
@@ -24,12 +25,19 @@ class PushNotice extends Notification
 
     public const ICON = '/appicon.png';
 
+    /**
+     * 通知ごとの目印。tag は同じ投稿で共通だが、iOS は同じ tag の通知を置き換えずに並べるため、
+     * どの通知がタップされた（通知センターから消えた）かを見分けるのに使う（PushSentLog）
+     */
+    public readonly string $nid;
+
     public function __construct(
         public readonly string $title,
         public readonly string $body,
         public readonly string $tag,
         public readonly string $url,
     ) {
+        $this->nid = Str::random(12);
     }
 
     /**
@@ -64,7 +72,7 @@ class PushNotice extends Notification
             ->tag($this->tag)
             // 同じtagで置き換えたときも音・バイブで知らせる
             ->renotify(true)
-            ->data(['url' => $this->url])
+            ->data(['url' => $this->url, 'nid' => $this->nid])
             // タップしたときに iOS が移る先。完全なアドレスでなければならない
             ->navigate($origin . $this->url)
             ->lang('ja')

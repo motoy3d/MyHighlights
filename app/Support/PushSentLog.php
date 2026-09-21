@@ -26,13 +26,13 @@ class PushSentLog
     public static function record(User $user, PushNotice $notice): void
     {
         $now = (int) floor(microtime(true) * 1000);
-        $list = array_values(array_filter(self::recent($user), fn (array $x) => $x['tag'] !== $notice->tag));
-        $list[] = ['tag' => $notice->tag, 'url' => $notice->url, 'at' => $now];
+        $list = self::recent($user);
+        $list[] = ['nid' => $notice->nid, 'tag' => $notice->tag, 'url' => $notice->url, 'at' => $now];
         Cache::put(self::key($user), array_slice($list, -self::MAX), self::TTL_SECONDS);
     }
 
     /**
-     * @return array<int, array{tag: string, url: string, at: int}> 古い順。at はミリ秒
+     * @return array<int, array{nid: string, tag: string, url: string, at: int}> 古い順。at はミリ秒
      */
     public static function recent(User $user): array
     {

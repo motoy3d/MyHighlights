@@ -242,11 +242,31 @@ async function checkDeepLink(store) {
   }
 }
 
-/** 通知センターに残っている、このアプリの通知の tag */
-async function displayedTags() {
+/** 通知センターに残っている、このアプリの通知（[{ nid, tag }]。nid はサーバが通知ごとに付ける目印） */
+async function displayedNotifications() {
   const registration = await navigator.serviceWorker.getRegistration('/');
   const list = registration ? await registration.getNotifications() : [];
-  return new Set(list.map((x) => x.tag));
+  return list.map((x) => ({ nid: (x.data && x.data.nid) || null, tag: x.tag }));
+}
+
+/**
+ * 送った通知のうち、通知センターから消えたもの。
+ * iOS は同じ tag の通知を置き換えずに並べるので、tag ではなく通知ごとの目印（nid）で比べる。
+ * ただし同じ tag の新しい通知に置き換わって消えた場合（Chrome など）は、タップされたのではないので除く。
+ */
+function findVanished(arrived, notices, displayed) {
+  const sentAt = new Map(notices.map((x) => [x.nid, x.at]));
+  const nids = new Set(displayed.map((d) => d.nid));
+  return arrived.filter((x) => {
+    if (!x.nid) {
+      return !displayed.some((d) => d.tag === x.tag);
+    }
+    if (nids.has(x.nid)) {
+      return false;
+    }
+    const replaced = displayed.some((d) => d.tag === x.tag && (sentAt.get(d.nid) || 0) > x.at);
+    return !replaced;
+  });
 }
 
 // バックグラウンドに回った時刻（端末の時計）。前面に戻ったら、この後に送られた通知だけを調べる
@@ -272,25 +292,26 @@ async function checkVanishedNotification(store, since) {
     const { data } = await axios.get('/api/push/recent');
     // サーバの時計に直す
     const from = since + (data.now - Date.now()) - SENT_MARGIN_MS;
-    const arrived = (data.notices || []).filter((x) => x.at >= from);
+    const notices = data.notices || [];
+    const arrived = notices.filter((x) => x.at >= from);
     if (!arrived.length) {
-      diag('page-vanished-none', '', { arrived: 0, total: (data.notices || []).length });
+      diag('page-vanished-none', '', { arrived: 0, total: notices.length });
       return;
     }
     for (const wait of [0, 400, 1200]) {
       if (wait) {
         await new Promise((resolve) => setTimeout(resolve, wait));
       }
-      const tags = await displayedTags();
-      const vanished = arrived.filter((x) => !tags.has(x.tag));
+      const displayed = await displayedNotifications();
+      const vanished = findVanished(arrived, notices, displayed);
       if (!vanished.length) {
-        diag('page-vanished-none', '', { wait, arrived: arrived.length, displayed: tags.size });
+        diag('page-vanished-none', '', { wait, arrived: arrived.length, displayed: displayed.length });
         continue;
       }
       diag('page-vanished', '', { n: vanished.length, tag: vanished[0].tag });
       if (vanished.length === 1) {
         const x = vanished[0];
-        openDeepLinkInApp(store, x.url, x.tag + '@' + x.at, 'vanished');
+        openDeepLinkInApp(store, x.url, x.nid || (x.tag + '@' + x.at), 'vanished');
       }
       return;
     }

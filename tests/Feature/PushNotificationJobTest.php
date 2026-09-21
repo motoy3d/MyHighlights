@@ -97,10 +97,9 @@ class PushNotificationJobTest extends TestCase
         // 名前はそのチームでのメンバー名
         $this->assertSame('山田さんが投稿しました：9/27 練習試合のお知らせ', $payload['body']);
         $this->assertSame('post-' . $post->id, $payload['tag']);
-        $this->assertSame(
-            ['url' => "/home?launcher=true&team={$this->team->id}&post={$post->id}"],
-            $payload['data']
-        );
+        $this->assertSame("/home?launcher=true&team={$this->team->id}&post={$post->id}", $payload['data']['url']);
+        // 通知ごとの目印(同じ tag の通知が並んでも、どれがタップされたか見分ける)
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{12}$/', $payload['data']['nid']);
         $this->assertSame(rtrim(config('app.url'), '/') . '/appicon.png', $payload['icon']);
         $this->assertTrue($payload['renotify']);
     }
@@ -271,7 +270,7 @@ class PushNotificationJobTest extends TestCase
         // 通知は sw.js が表示する（前面に戻ったときにタップされた通知を割り出すため）
         $this->assertTrue($payload['mutable']);
         // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
-        $this->assertSame(['url' => '/home?launcher=true&team=1&post=2'], $payload['notification']['data']);
+        $this->assertSame(['url' => '/home?launcher=true&team=1&post=2', 'nid' => $notice->nid], $payload['notification']['data']);
     }
 
     public function test_TTLとurgencyを指定している(): void
