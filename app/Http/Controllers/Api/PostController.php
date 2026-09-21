@@ -9,6 +9,7 @@ use App\Post;
 use App\PostAttachment;
 use App\PostResponse;
 use App\Questionnaire;
+use App\Rules\NotEmptyFile;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -122,6 +123,10 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
+    // 添付ファイルのチェックは投稿・アンケートの登録より前に行う。
+    // 後で弾くと、添付の無い投稿だけが登録されてしまい、選び直して
+    // 再投稿すると投稿が二重になるため。
+    $this->validateAttachments($request);
 
     // アンケート登録
     $questionnaire = null;
@@ -347,6 +352,8 @@ class PostController extends Controller
     }
 
     //TODO validate
+    // 添付ファイルのチェックは投稿・アンケートの更新より前に行う(storeと同じ理由)
+    $this->validateAttachments($request);
     $questionnaire = null;
     Log::info("added_questionnaire_selections:" . $request->added_questionnaire_selections);
     if ($request->added_questionnaire_selections && $request->added_questionnaire_selections != 'null') {
@@ -417,16 +424,27 @@ class PostController extends Controller
   }
 
   /**
+   * 添付ファイルをチェックする。不正な場合は422を返す(ValidationException)。
+   * DBへの書き込みより前に呼ぶこと。
+   * @param Request $request
+   */
+  private function validateAttachments(Request $request): void
+  {
+    $request->validate([
+      // 0バイトのファイルは壊れた添付になるため弾く(#45)
+      'files.*' => ['file', new NotEmptyFile(), 'max:' . config('tsubasa.attachment_max_kb')],
+    ]);
+  }
+
+  /**
    * 添付ファイルを保存する。
+   * チェックは validateAttachments() で済ませておくこと。
    * @param Request $request
    * @param $post
    */
   private function saveAttachment(Request $request, $post): void
   {
     if ($request->allFiles()) { //添付がある場合
-      $request->validate([
-        'files.*' => ['file', 'max:' . config('tsubasa.attachment_max_kb')],
-      ]);
       $files = $request->file('files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();

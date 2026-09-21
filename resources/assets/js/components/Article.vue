@@ -241,6 +241,7 @@
 </template>
 
 <script>
+  import {emptyFileMessage, validationErrorMessage} from '../attachment.js';
   import EditPost from './EditPost.vue';
   import IFrameWindow from './IFrameWindow.vue';
   export default {
@@ -329,6 +330,10 @@
         if (!this.comment_text && this.comment_files.length == 0) {
           return;
         }
+        // 0バイトのファイルは送らない(#45)。iPhoneで写真を選んだ後にアプリが
+        // バックグラウンドへ回ると中身が読めなくなり、壊れた添付になるため。
+        const emptyMsg = emptyFileMessage(this.comment_files);
+        if (emptyMsg) {this.$ons.notification.alert(emptyMsg, {title: ''});return;}
         if (!this.comment_text && 0 < this.comment_files.length) {
           this.comment_text = '　'; //添付ファイルのみの場合、ダミー
         }
@@ -355,6 +360,14 @@
             this.posting_comment = false;
           })
           .catch(error => {
+            // バリデーションエラー(0バイトの添付など)はサーバのメッセージを表示し、
+            // 記事画面はそのまま残して選び直せるようにする(エラー画面にしない)
+            const validationMsg = validationErrorMessage(error);
+            if (validationMsg) {
+              this.$ons.notification.alert(validationMsg, {title: ''});
+              this.posting_comment = false;
+              return;
+            }
             this.errored = true;
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
