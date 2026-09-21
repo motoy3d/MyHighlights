@@ -268,6 +268,15 @@ LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
       消し忘れると本番のレート制限が緩んだままになる）
 - [ ] （`.env` の本番値への戻しは**切り替え前**に行う。計画書 §4 のタイムライン 00:15 / 00:25 を正とする。
       `APP_URL` の `:8443` を外し忘れると Sanctum の stateful 判定が外れて API が 401 になる）
+- [ ] **実機確認用のアドレス（`tsubasa-stg.smartj.mobi`、2026-09-21 に用意）を片付ける**
+      - `.env`：`APP_URL=https://tsubasa.smartj.mobi` に戻し、`SANCTUM_STATEFUL_DOMAINS` の行を消す
+        （残すと本番のアドレスが Sanctum の同一サイト扱いから外れ、API が 401 になる）
+      - `/etc/httpd/conf.d/tsubasa-stg.conf` を削除して `systemctl reload httpd`
+      - `sudo certbot delete --cert-name tsubasa-stg.smartj.mobi`（残すと毎日の更新が失敗し続ける）
+      - セキュリティグループ `sg-06a9c13cfebdfd595` から「tsubasa-stg home only」の 443 の許可を外す
+        （切り替え当夜は 80/443 を全体に開けるので、その後で外してよい）
+      - 本番の EIP を付け替えると確認用の EIP（`eipalloc-0365416ee47287597`）は外れるので、**解放する**（残すと課金が続く）
+      - DNS（お名前.com）の `tsubasa-stg` の A レコードを削除する
 - [ ] **Web プッシュ通知（#110）の設定を `.env` に残す**（切り替え前の `.env` の書き換えで消さない）
       - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`：**作り直すと全員の購読が無効になる**。新サーバで作った値をそのまま使う
       - `VAPID_SUBJECT=mailto:...`（送信元の連絡先）
