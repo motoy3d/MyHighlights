@@ -211,21 +211,22 @@ test.describe('通知のタップの書き置き', () => {
   }
   async function firstPost(page) {
     const res = await fetchInPage(page, '/api/posts');
-    const body = JSON.parse(res.text);
-    const posts = Array.isArray(body) ? body : (body.data || body.posts || []);
-    return posts[0];
+    expect(res.status).toBe(200);
+    return JSON.parse(res.text).posts.data[0];
   }
 
   test('前面に戻ると、書き置きの投稿が読み込み直さずに開く', async ({ page }) => {
     await gotoApp(page);
     const post = await firstPost(page);
-    test.skip(!post, '投稿が無い');
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500); // 起動直後は書き置きを読まない期間がある
     let reloaded = false;
     page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
     await leave(page, '/home?launcher=true&post=' + post.id);
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await expect(page.locator('ons-page:visible').getByText(post.title).first()).toBeVisible({ timeout: 15000 });
+    // ナビゲーターに積まれた 2 枚目のページ(投稿の詳細)に、その投稿のタイトルが出る
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
     expect(reloaded, '読み込み直さずに開くはず').toBe(false);
     // 書き置きは取り出したら消える
     const left = await page.evaluate(async () => !!(await (await caches.open('tsubasa-deeplink')).match('/__deeplink__')));
@@ -235,7 +236,7 @@ test.describe('通知のタップの書き置き', () => {
   test('古い書き置き(5分より前)は開かない', async ({ page }) => {
     await gotoApp(page);
     const post = await firstPost(page);
-    test.skip(!post, '投稿が無い');
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
     const before = await page.locator('ons-navigator > ons-page').count();
     await leave(page, '/home?launcher=true&post=' + post.id, Date.now() - 10 * 60 * 1000);
