@@ -16,10 +16,32 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
+const DEEPLINK_KEY = '/__deeplink__';
+const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
+
+function diag(step, tapId, extra) {
+  if (!DIAG) return Promise.resolve();
+  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
+  return fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' })
+    .catch(() => {});
+}
+
 // 通知を表示する。
-// サーバ（laravel-notification-channels/webpush の WebPushMessage::toArray()）から
-// { title, body, icon, badge, tag, renotify, data: { url } } の形で届く
+//
+// サーバは Declarative Web Push の形式 { web_push: 8030, notification: { title, body, navigate, tag, data: { url } ... } }
+// で送る（app/Notifications/PushNotice.php）。
+// - iOS 18.4 以降のホーム画面アプリ：iOS がこの形式を読んで通知を用意し、event.notification に入れて渡してくる。
+//   ここで自分で showNotification すると iOS の通知が捨てられ、タップしたときに iOS が navigate へ移る仕組みも
+//   効かなくなる（アプリがバックグラウンドだとタップの知らせが Service Worker に届かないため、移れなくなる）。
+//   だから何もせず iOS に任せる。
+// - それ以外（Android の Chrome など）：通常の push として届くので、notification を読んでここで表示する。
 self.addEventListener('push', (event) => {
+  if (event.notification) {
+    diag('sw-push-declarative');
+    return;
+  }
+
   let payload = {};
   try {
     payload = event.data ? event.data.json() : {};
@@ -27,16 +49,23 @@ self.addEventListener('push', (event) => {
     // JSON でなければ本文として扱う
     payload = { body: event.data ? event.data.text() : '' };
   }
+  // Declarative Web Push の形式なら中身は notification にある（古い形式にも対応しておく）
+  const n = (payload.web_push === 8030 && payload.notification) ? payload.notification : payload;
 
-  const title = payload.title || 'Tsubasa⬆︎UP';
+  const title = n.title || 'Tsubasa⬆︎UP';
+  const data = Object.assign({}, n.data || {});
+  if (!data.url && n.navigate) {
+    data.url = n.navigate;
+  }
   const options = {
-    body: payload.body || '新しいお知らせがあります',
-    icon: payload.icon || '/appicon.png',
-    badge: payload.badge,
+    body: n.body || '新しいお知らせがあります',
+    icon: n.icon || '/appicon.png',
+    badge: n.badge,
     // 同じ投稿へのコメントが続いても積み上がらないよう、tag で置き換える
-    tag: payload.tag,
-    renotify: !!(payload.tag && payload.renotify),
-    data: payload.data || {},
+    tag: n.tag,
+    renotify: !!(n.tag && n.renotify),
+    lang: n.lang,
+    data,
   };
 
   // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する
@@ -53,17 +82,6 @@ self.addEventListener('push', (event) => {
 //
 // 2026-09-21 の実機確認で、タップ後に iPhone からの読み込みが1件も来なかった。
 // どの段階で止まるかを確かめるため、確認用アドレスでだけ各段階をサーバのアクセス記録に残す（diag）。
-const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
-const DEEPLINK_KEY = '/__deeplink__';
-const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
-
-function diag(step, tapId, extra) {
-  if (!DIAG) return Promise.resolve();
-  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
-  return fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' })
-    .catch(() => {});
-}
-
 async function leaveDeepLink(url, tapId) {
   const cache = await caches.open(DEEPLINK_MAILBOX);
   await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, tapId, at: Date.now() }), {
@@ -77,6 +95,12 @@ function withTimeout(promise, ms) {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  // iOS が navigate へ移る通知（Declarative Web Push）では、移動は iOS に任せる（ここでも開くと二重になる）
+  if (event.notification.navigate) {
+    event.waitUntil(diag('sw-click-declarative'));
+    return;
+  }
 
   const data = event.notification.data || {};
   const target = new URL(data.url || '/home?launcher=true', self.location.origin).href;

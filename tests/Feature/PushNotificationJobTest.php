@@ -71,7 +71,7 @@ class PushNotificationJobTest extends TestCase
         $payload = null;
         Notification::assertSentTo($user, PushNotice::class,
             function (PushNotice $notice, array $channels) use ($user, &$payload) {
-                $payload = $notice->toWebPush($user)->toArray();
+                $payload = $notice->toWebPush($user)->toArray()['notification'];
 
                 return $channels === [WebPushChannel::class];
             });
@@ -241,7 +241,7 @@ class PushNotificationJobTest extends TestCase
     public function test_本文は全角60文字程度で切る(): void
     {
         $notice = new PushNotice('チーム', str_repeat('あ', 100), 'post-1', '/home');
-        $body = $notice->toWebPush($this->coach)->toArray()['body'];
+        $body = $notice->toWebPush($this->coach)->toArray()['notification']['body'];
 
         // '…' の幅をいくつと数えるかはPHPの版で違うので、幅の上限と末尾だけを確かめる
         $this->assertLessThanOrEqual(PushNotice::BODY_WIDTH, mb_strwidth($body, 'UTF-8'));
@@ -254,7 +254,20 @@ class PushNotificationJobTest extends TestCase
     {
         $notice = new PushNotice('チーム', '短い本文', 'post-1', '/home');
 
-        $this->assertSame('短い本文', $notice->toWebPush($this->coach)->toArray()['body']);
+        $this->assertSame('短い本文', $notice->toWebPush($this->coach)->toArray()['notification']['body']);
+    }
+
+    public function test_Declarative_Web_Pushの形式でnavigateは完全なアドレス(): void
+    {
+        config(['app.url' => 'https://tsubasa.example.test']);
+        $notice = new PushNotice('チーム', '本文', 'post-1', '/home?launcher=true&team=1&post=2');
+        $payload = $notice->toWebPush($this->coach)->toArray();
+
+        $this->assertSame(8030, $payload['web_push']);
+        $this->assertSame('チーム', $payload['notification']['title']);
+        $this->assertSame('https://tsubasa.example.test/home?launcher=true&team=1&post=2', $payload['notification']['navigate']);
+        // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
+        $this->assertSame(['url' => '/home?launcher=true&team=1&post=2'], $payload['notification']['data']);
     }
 
     public function test_TTLとurgencyを指定している(): void

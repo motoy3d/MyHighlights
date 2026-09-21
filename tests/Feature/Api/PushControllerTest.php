@@ -284,7 +284,7 @@ class PushControllerTest extends TestCase
 
         Notification::assertSentTo($this->user, PushNotice::class,
             function (PushNotice $notice, array $channels) {
-                $payload = $notice->toWebPush($this->user)->toArray();
+                $payload = $notice->toWebPush($this->user)->toArray()['notification'];
 
                 return $channels === [WebPushChannel::class]
                     && $payload['title'] === 'Tsubasa⬆︎UP'

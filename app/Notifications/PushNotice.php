@@ -4,7 +4,8 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
-use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\WebPush\DeclarativeWebPushMessage;
+use NotificationChannels\WebPush\WebPushMessageInterface;
 
 /**
  * Webプッシュ通知の1件(#110)。
@@ -39,9 +40,19 @@ class PushNotice extends Notification
         return [WebPushChannel::class];
     }
 
-    public function toWebPush(mixed $notifiable, mixed $notification = null): WebPushMessage
+    /**
+     * Declarative Web Push の形式（{ web_push: 8030, notification: {...} }）で送る。
+     *
+     * iOS 18.4 以降のホーム画面アプリは、この形式の通知を iOS 自身が表示し、タップされたら navigate の
+     * アドレスへ iOS 自身が移動する（Service Worker の notificationclick を通らない）。
+     * 2026-09-22 の実機確認で、アプリがバックグラウンドにいるとタップの知らせ（notificationclick）が
+     * Service Worker に届かず、目的の画面に移れなかったため、この形式にした。
+     * 対応していないブラウザ（Android の Chrome など）には通常の push として届き、sw.js が notification を読んで表示する。
+     * そのため data.url（相対）も残す。
+     */
+    public function toWebPush(mixed $notifiable, mixed $notification = null): WebPushMessageInterface
     {
-        return (new WebPushMessage)
+        return (new DeclarativeWebPushMessage)
             ->title($this->title)
             ->body(self::truncate($this->body))
             ->icon(self::ICON)
@@ -50,6 +61,9 @@ class PushNotice extends Notification
             // 同じtagで置き換えたときも音・バイブで知らせる
             ->renotify(true)
             ->data(['url' => $this->url])
+            // タップしたときに iOS が移る先。完全なアドレスでなければならない
+            ->navigate(rtrim((string) config('app.url'), '/') . $this->url)
+            ->lang('ja')
             // 端末がオフラインでも1日は再送を試みる。iOSは urgency が低いと届くのが遅れる
             ->options(['TTL' => 86400, 'urgency' => 'high']);
     }
