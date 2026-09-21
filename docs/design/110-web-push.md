@@ -78,6 +78,9 @@ LINE Notify の終了（2025 年 3 月）で、通知手段はメールだけに
 - 扱うのは `push`（通知を表示）と `notificationclick`（該当画面を開く。アプリが開いていればそのウィンドウを使う）だけ。
   **`fetch` は扱わない（キャッシュしない）**。キャッシュを入れると古い画面が残る問題が起きやすいので、今回はやらない
 - 同じ投稿へのコメントが続いたときに通知が積み上がらないよう、`tag`（例 `post-123`）で置き換える
+  （Android の Chrome などは置き換える。**iPhone は置き換えずに並べる**。2026-09-22 実機で確認）
+- 通知は iPhone でも Service Worker が表示する（§7.3.1 の `mutable`）。iOS に表示を任せると、§6.4.1 の方法で
+  どの通知がタップされたかを調べられないため
 
 ### 6.2 購読と設定画面
 
@@ -107,6 +110,33 @@ LINE Notify の終了（2025 年 3 月）で、通知手段はメールだけに
   3. 処理が終わったら `history.replaceState` でパラメータを消す（再読み込みで同じ画面が開き直さないように）
 - 同じリンクを通知メールの本文にも入れる（#9 の本来の要望）
 
+### 6.4.1 通知をタップしたときの経路（2026-09-22 実機確認）
+
+| アプリの状態 | 経路 |
+| --- | --- |
+| 終了している | `notificationclick` → `clients.openWindow(リンク)` で起動し、上の起動時の処理で開く |
+| 開いている（Android など） | `notificationclick` → 開いているアプリに `postMessage` でリンクを伝え、読み込み直さずに開く。控えとして Cache Storage にも書き置きし、前面に戻ったときに読む |
+| バックグラウンド・前面（**iPhone / iPad**） | **タップが Service Worker に届かない**（下記）。前面に戻ったときに、通知センターから消えた通知を探して開く |
+
+**iOS の不具合**：ホーム画面のアプリが起動していると、通知をタップしてもアプリが前面に出るだけで、
+`notificationclick` も `notificationclose` も起きない（[WebKit bug 268797](https://bugs.webkit.org/show_bug.cgi?id=268797)、2024-02 報告・未修正）。
+Declarative Web Push の `navigate`（iOS 18.4 以降）も、起動中のアプリでは効かない。どちらも実機で確認した。
+Web の標準の方法では解決できないため、次の独自の方法で補う（同じ結論の例：[romp-on/romp#1219](https://github.com/romp-on/romp/pull/1219)）。
+
+**消えた通知から開く方法**（`resources/assets/js/deep-link.js` の `checkVanishedNotification`。iPhone / iPad のときだけ）
+
+1. サーバは送った通知を利用者ごとに控える（`PushSentLog`。キャッシュに最大 20 件・3 日）。通知ごとに目印 `nid` を付け、通知の `data` にも入れる
+2. アプリはバックグラウンドに回った時刻を覚えておく
+3. 前面に戻ったら、その間に送られた通知を `GET /api/push/recent` で取り、`registration.getNotifications()`（通知センターに残っている通知）と `nid` で比べる
+4. **1 件だけ**消えていれば、タップされた通知とみなしてそのリンクを開く。2 件以上なら「すべて消去」などとみなして開かない。同じ `tag` の新しい通知に置き換わって消えたもの（Android など）は除く
+
+- 控えを端末（Service Worker の Cache Storage）でなくサーバに置くのは、iOS では Service Worker が保存したものを画面から読めなかったため
+- `tag` でなく `nid` で比べるのは、iPhone は同じ `tag` の通知を並べるため（古い通知が残っていると、タップした通知が消えても見分けられない）
+- 経路が違っても、同じリンクを 10 秒以内に二度は開かない
+- **弱点（受け入れ済み）**：通知を 1 件だけスワイプで消し、通知を経由せずにアプリ切り替えで前面に戻すと、その通知の画面が開く。タップと見分けがつかないため。iPhone / iPad だけで起きる
+- 実機で確認したパターン（2026-09-22、iPhone 14 Pro）：バックグラウンドですぐタップ・終了状態からタップ・画面を開いたまま届いたバナーをタップ・ロック画面からタップ・15 分後にタップ・3 件中 2 件目をタップ・同じ投稿の通知のまとまりから古い方をタップ・すべて消去してからアイコンで起動（開かない）
+- Android は実機で未確認（パソコンの Chrome とブラウザテストで確認）
+
 ## 7. サーバ側
 
 ### 7.1 ライブラリ
@@ -130,6 +160,7 @@ PHP 拡張は curl / openssl / mbstring が必須。gmp は任意（あると暗
 | POST | `/api/push/subscriptions` | `PushSubscription.toJSON()` の形 `{ endpoint, keys: { p256dh, auth } }` と `content_encoding` | 204 |
 | DELETE | `/api/push/subscriptions` | `{ endpoint }` | 204 |
 | POST | `/api/push/test` | — | この利用者の全端末にテスト通知を送る。送った件数 `{ sent }` |
+| GET | `/api/push/recent` | — | 最近この利用者に送った通知 `{ now, notices: [{ nid, tag, url, at }] }`（§6.4.1。`now` と `at` はサーバの時刻のミリ秒） |
 
 - `enabled`：§8 の段階的な公開の判定結果。`false` のとき画面はスイッチを出さない
 - `preferences` のキーと既定値
@@ -146,15 +177,23 @@ PHP 拡張は curl / openssl / mbstring が必須。gmp は任意（あると暗
 
 ### 7.3.1 通知の中身（Service Worker に届く JSON）
 
+Declarative Web Push の形式（iOS 18.4 以降の決まり。Android の Chrome などには通常の push として届き、`sw.js` が読む）：
+
 ```json
-{ "title": "チーム名", "body": "山田さんが投稿しました：9/27 練習試合のお知らせ",
-  "tag": "post-123", "data": { "url": "/home?launcher=true&team=41&post=123" } }
+{ "web_push": 8030, "mutable": true,
+  "notification": { "title": "チーム名", "body": "山田さんが投稿しました：9/27 練習試合のお知らせ",
+    "tag": "post-123", "icon": "https://…/appicon.png", "lang": "ja",
+    "navigate": "https://…/home?launcher=true&team=41&post=123",
+    "data": { "url": "/home?launcher=true&team=41&post=123", "nid": "通知ごとの目印" } } }
 ```
+
+- `icon` と `navigate` は完全なアドレスにする。iOS は `icon` を基準なしで読むので、`/appicon.png` だとこの形式ごと無効になる（2026-09-22 実機で確認）
+- `mutable: true` で iOS にも push を Service Worker へ渡させ、通知は `sw.js` が表示する（§6.1）
 
 - リンクの形
   - 投稿：`/home?launcher=true&team={team_id}&post={post_id}`
   - 予定：`/home?launcher=true&team={team_id}&schedule={schedule_id}&date={YYYY-MM-DD}`（予定を ID で取る API が無いので、カレンダーでその日を開くために日付を付ける）
-- `tag` は `post-{id}` / `schedule-{id}`。同じ投稿へのコメントが続いても通知が積み上がらない
+- `tag` は `post-{id}` / `schedule-{id}`。同じ投稿へのコメントが続いても通知が積み上がらない（iPhone は置き換えずに並べる）
 - 本文は 60 文字程度で切る
 
 ### 7.4 送信

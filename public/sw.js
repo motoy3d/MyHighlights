@@ -13,27 +13,11 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(Promise.all([
-    self.clients.claim(),
-    // 確認用アドレスでだけ、この端末が Declarative Web Push に関わる機能を持つかを記録する
-    diag('sw-caps', '', {
-      pe_notification: (typeof PushEvent !== 'undefined' && 'notification' in PushEvent.prototype) ? 1 : 0,
-      n_navigate: (typeof Notification !== 'undefined' && 'navigate' in Notification.prototype) ? 1 : 0,
-      pushnotification: ('onpushnotification' in self) ? 1 : 0,
-    }),
-  ]));
+  event.waitUntil(self.clients.claim());
 });
 
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
-const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
-
-function diag(step, tapId, extra) {
-  if (!DIAG) return Promise.resolve();
-  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
-  return fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' })
-    .catch(() => {});
-}
 
 // 通知を表示する。
 //
@@ -77,10 +61,7 @@ self.addEventListener('push', (event) => {
   };
 
   // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する
-  event.waitUntil(Promise.all([
-    self.registration.showNotification(title, options),
-    diag('sw-push-show', data.id, { tag: options.tag, declarative: event.notification ? 1 : 0 }),
-  ]));
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // 通知をタップしたら該当画面を開く。
@@ -90,9 +71,8 @@ self.addEventListener('push', (event) => {
 // 控え：iPhone ではバックグラウンドのアプリに送った知らせを取りこぼすことがあるので、
 //   開きたい画面を端末内にも書き置きし（Cache Storage を郵便受けとして使う。取得のキャッシュには使わない）、
 //   アプリが前面に戻ったときに読む。どちらで開いても、同じタップ（tapId）は一度しか開かない。
-//
-// 2026-09-21 の実機確認で、タップ後に iPhone からの読み込みが1件も来なかった。
-// どの段階で止まるかを確かめるため、確認用アドレスでだけ各段階をサーバのアクセス記録に残す（diag）。
+// iPhone でアプリがバックグラウンドのときはタップ自体がここに届かない（WebKit bug 268797）。
+// その場合は deep-link.js が、前面に戻ったときに通知センターから消えた通知を探して開く。
 async function leaveDeepLink(url, tapId) {
   const cache = await caches.open(DEEPLINK_MAILBOX);
   await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, tapId, at: Date.now() }), {
@@ -112,20 +92,17 @@ self.addEventListener('notificationclick', (event) => {
   const tapId = data.id || Math.random().toString(36).slice(2, 10);
 
   event.waitUntil((async () => {
-    diag('sw-click', tapId);
     // 控えの書き置きは最初に済ませる（アプリが前面に出た瞬間に読みに来ても間に合うように）
     try {
       await leaveDeepLink(target, tapId);
     } catch (e) {
-      diag('sw-mailbox-fail', tapId);
+      // 書き置きできなくても、知らせと openWindow で開ける
     }
 
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const client = windows.find((c) => new URL(c.url).origin === self.location.origin);
-    diag('sw-clients', tapId, { n: windows.length });
 
     if (!client) {
-      diag('sw-openwindow', tapId);
       await self.clients.openWindow(target);
       return;
     }
@@ -133,15 +110,12 @@ self.addEventListener('notificationclick', (event) => {
     const message = { type: 'open-url', url: target, tapId };
     // 前面に出す処理が終わらない環境でも指示は届くよう、先に一度伝える
     client.postMessage(message);
-    diag('sw-posted', tapId);
     try {
       await withTimeout(client.focus(), 3000);
-      diag('sw-focused', tapId);
     } catch (e) {
-      diag('sw-focus-fail', tapId, { e: String(e && e.message || e).slice(0, 40) });
+      // 前面に出せなくても、次の知らせか書き置きで開く
     }
     // 前面に出た後にもう一度伝える（バックグラウンド中に送った分を取りこぼしていても開けるように）
     client.postMessage(message);
-    diag('sw-posted2', tapId);
   })());
 });

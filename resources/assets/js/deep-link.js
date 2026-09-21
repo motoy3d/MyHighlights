@@ -29,19 +29,12 @@ const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
-// 確認用アドレスでだけ、どの段階まで進んだかをサーバのアクセス記録に残す（sw.js と同じ）
-const DIAG = window.location.hostname.startsWith('tsubasa-stg.');
 // 開いたタップ。知らせと書き置きの両方で届いても一度だけ開く
 const handledTaps = new Set();
 // 最後に開いたアドレスと時刻。経路が違っても、同じアドレスをこの間に二度は開かない
 let lastOpened = null;
 const SAME_OPEN_MS = 10 * 1000;
 
-function diag(step, tapId, extra) {
-  if (!DIAG) return;
-  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
-  fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' }).catch(() => {});
-}
 const TAB_CALENDAR = 1; // ブログのタブは 3 番目なので、カレンダーは常に 1
 
 function params() {
@@ -183,7 +176,7 @@ function clearDeepLink() {
 }
 
 /** 通知の画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
-function openDeepLinkInApp(store, urlString, tapId, via) {
+function openDeepLinkInApp(store, urlString, tapId) {
   if (tapId) {
     if (handledTaps.has(tapId)) {
       return;
@@ -200,7 +193,6 @@ function openDeepLinkInApp(store, urlString, tapId, via) {
     return;
   }
   lastOpened = { href: url.href, at: Date.now() };
-  diag('page-open', tapId, { via });
   const team = url.searchParams.get('team');
   if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
     // 表示中のデータは今のチームのものなので、読み込み直す（起動時の処理が開く）
@@ -232,8 +224,7 @@ async function checkDeepLink(store) {
       }
       const found = await takeDeepLink();
       if (found) {
-        diag('page-mailbox', found.tapId);
-        openDeepLinkInApp(store, found.url, found.tapId, 'mailbox');
+        openDeepLinkInApp(store, found.url, found.tapId);
         return;
       }
     }
@@ -305,7 +296,6 @@ async function checkVanishedNotification(store, since) {
     const notices = data.notices || [];
     const arrived = notices.filter((x) => x.at >= from);
     if (!arrived.length) {
-      diag('page-vanished-none', '', { arrived: 0, total: notices.length });
       return;
     }
     for (const wait of [0, 400, 1200]) {
@@ -315,18 +305,16 @@ async function checkVanishedNotification(store, since) {
       const displayed = await displayedNotifications();
       const vanished = findVanished(arrived, notices, displayed);
       if (!vanished.length) {
-        diag('page-vanished-none', '', { wait, arrived: arrived.length, displayed: displayed.length });
         continue;
       }
-      diag('page-vanished', '', { n: vanished.length, tag: vanished[0].tag });
       if (vanished.length === 1) {
         const x = vanished[0];
-        openDeepLinkInApp(store, x.url, x.nid || (x.tag + '@' + x.at), 'vanished');
+        openDeepLinkInApp(store, x.url, x.nid || (x.tag + '@' + x.at));
       }
       return;
     }
   } catch (e) {
-    diag('page-vanished-fail', '', { e: String(e && e.message || e).slice(0, 40) });
+    // 調べられなければ開かない（ふだんどおり前面に戻るだけ）
   } finally {
     vanishChecking = false;
   }
@@ -343,7 +331,6 @@ export function installDeepLinkListeners(store) {
     if (document.visibilityState === 'hidden') {
       hiddenAt = Date.now();
     } else if (document.visibilityState === 'visible') {
-      diag('page-visible');
       check();
       if (detectVanished && hiddenAt !== null) {
         const since = hiddenAt;
@@ -359,9 +346,8 @@ export function installDeepLinkListeners(store) {
     navigator.serviceWorker.addEventListener('message', (event) => {
       const data = event.data || {};
       if (data.type === 'open-url' && typeof data.url === 'string') {
-        diag('page-message', data.tapId);
         clearDeepLink(); // 控えの書き置きは要らなくなった
-        openDeepLinkInApp(store, data.url, data.tapId, 'message');
+        openDeepLinkInApp(store, data.url, data.tapId);
       }
     });
   }
