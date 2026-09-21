@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
+use App\Jobs\PushNotificationJob;
 use App\Post;
 use App\PostComment;
 use App\PostCommentAttachment;
@@ -93,6 +94,8 @@ class PostCommentController extends Controller
       Log::info('コメント通知実行');
       $startTime = microtime(true);
       $fromUser = User::findOrFail(Auth::id());
+      // プッシュはメールより先に積む(メールのジョブの後ろで待たされないように)
+      $this->dispatch(PushNotificationJob::postComment($post, $postCommentResult, (int) Auth::id()));
       $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult, $hasAttachment));
       $runningTime =  microtime(true) - $startTime;
       Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');

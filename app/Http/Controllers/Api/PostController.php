@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Category;
 use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
+use App\Jobs\PushNotificationJob;
 use App\Post;
 use App\PostAttachment;
 use App\PostResponse;
@@ -484,6 +485,9 @@ class PostController extends Controller
     $startTime = microtime(true);
     $fromMember = DB::table('members')->where('user_id', Auth::id())
       ->where('team_id', $post->team_id)->first();
+    // プッシュはメールより先に積む。メールのジョブは1通ごとに待つので、
+    // 後ろに積むとワーカーが1つの間はプッシュがメールを送り終えるまで待たされる
+    $this->dispatch(PushNotificationJob::newPost($post, (int) Auth::id()));
     $this->dispatch(new PostNotificationJob($fromMember, $post, null, $hasAttachment));
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');

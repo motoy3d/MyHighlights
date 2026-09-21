@@ -83,6 +83,9 @@ class PostNotificationJob implements ShouldQueue
       $content .= PHP_EOL . '(添付あり)';
     }
     Log::info('タイトル：' . $title);
+    // 投稿を直接開くリンク(#9)。プッシュ通知と同じ形
+    $postLink = rtrim((string) config('app.url'), '/')
+      . PushNotificationJob::postUrl((int) $team->id, (int) $this->post->id);
 
     // 一人ずつ間隔を空けながら送信
     $totalCount = count($mailUsers);
@@ -96,7 +99,7 @@ class PostNotificationJob implements ShouldQueue
         }
         // メール送信実行
         Mail::to($user->email)->send(
-          new PostNotification($this->fromMember, $title, $content, $team));
+          new PostNotification($this->fromMember, $title, $content, $team, $postLink));
         sleep(1);
       } catch(\Exception $ex) {
         Log::error('メール送信エラー: ' . $ex->getMessage());
