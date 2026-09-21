@@ -18,6 +18,11 @@ import axios from 'axios';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 Vue.prototype.$http = axios;
 
+// 通信エラー(通信断・419・429・5xx など)を利用者に知らせる共通処理。
+// トーストは vue-onsenui が登録した $ons を使う(Vue.use 後に参照するので遅延取得)
+import { installHttpErrorHandling } from './http-errors.js';
+installHttpErrorHandling(axios, () => Vue.prototype.$ons);
+
 /**
  * Next we will register the CSRF Token as a common header with Axios so that
  * all outgoing HTTP requests automatically have it attached. This is just

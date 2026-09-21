@@ -153,7 +153,8 @@
                   self.$http.get('/api/me')
                     .then((response)=>{
                       self.$store.commit('navigator/setUser', response.data);
-                    });
+                    })
+                    .catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
                 }
               });
           });
@@ -191,7 +192,8 @@
                         // globalにユーザー情報セット
                         // console.log('⭐me=' + response.data);
                         self.$store.commit('navigator/setUser', response.data);
-                      });
+                      })
+                      .catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
                   }
               });
           });
@@ -247,7 +249,7 @@
         this.$http.post('/api/users/updateMailNotificationFlg', formData).then(response => {
           this.$http.get('/api/me').then((response)=>{
             this.$store.commit('navigator/setUser', response.data);
-          });
+          }).catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
           this.loading = false; this.posting = false;
         })
         .catch(error => {
