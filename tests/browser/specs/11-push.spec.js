@@ -277,7 +277,13 @@ test.describe('通知のタップの書き置き', () => {
  * ここではテスト用のブラウザに通知が無いので、送った通知はすべて「消えた」扱いになる。
  * サーバの応答は差し替え、バックグラウンドに回って戻ったことにして確かめる。
  */
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36';
+
 test.describe('通知センターから消えた通知', () => {
+  // iOS の不具合への対策なので、iPhone のときだけ動く
+  test.use({ userAgent: IPHONE_UA });
+
   // バックグラウンドに回る → sentDuring 件がその間に送られた → 前面に戻る
   async function backgroundAndReturn(page, notices) {
     await page.evaluate(() => {
@@ -350,5 +356,27 @@ test.describe('通知センターから消えた通知', () => {
     await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(2);
+  });
+});
+
+test.describe('通知センターから消えた通知(Android)', () => {
+  test.use({ userAgent: ANDROID_UA });
+
+  test('Android ではタップが sw.js に届くので、消えた通知からは開かない', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await page.locator('ons-navigator > ons-page').count();
+    let asked = false;
+    page.on('request', (r) => { if (r.url().includes('/api/push/recent')) asked = true; });
+    await page.evaluate(() => {
+      window.__vis = 'hidden';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.__vis = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(2500);
+    expect(asked, 'Android では問い合わせない').toBe(false);
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
   });
 });

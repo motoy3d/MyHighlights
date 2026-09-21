@@ -11,7 +11,7 @@
  * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合（installDeepLinkListeners）：
  *   主な経路：sw.js から「この画面を開いて」とアドレスごと届くので、読み込み直さずにその画面を開く
  *   控え：sw.js が同じ内容を Cache Storage に書き置きするので、知らせを取りこぼしても前面に戻ったときに読む
- *   最後の手段：iPhone ではアプリがバックグラウンドだとタップが sw.js に届かないことがある
+ *   最後の手段（iPhone / iPad だけ）：iPhone ではアプリがバックグラウンドだとタップが sw.js に届かないことがある
  *     （WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 。上の2つがどちらも起きない）。
  *     そこで前面に戻ったとき、バックグラウンドにいた間にサーバが送った通知（GET /api/push/recent）と
  *     通知センターに残っている通知を比べ、1件だけ消えていればそれがタップされた通知とみなして開く
@@ -269,6 +269,16 @@ function findVanished(arrived, notices, displayed) {
   });
 }
 
+/**
+ * iPhone / iPad か。消えた通知から判断する方法は iOS の不具合への対策なので、iOS でだけ使う。
+ * Android などはタップが sw.js に届くので要らず、使うとスワイプで消した通知を開いてしまう弱点だけが残る。
+ * iPadOS の Safari は Mac と同じ UA を名乗るので、タッチ対応かどうかで見分ける。
+ */
+export function isAppleMobile() {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
 // バックグラウンドに回った時刻（端末の時計）。前面に戻ったら、この後に送られた通知だけを調べる
 let hiddenAt = null;
 // サーバの送った時刻がこれだけ前でも「バックグラウンドの間に届いた」とみなす（送ってから表示までの遅れと時計の誤差）
@@ -328,13 +338,14 @@ async function checkVanishedNotification(store, since) {
  */
 export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
+  const detectVanished = isAppleMobile();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       hiddenAt = Date.now();
     } else if (document.visibilityState === 'visible') {
       diag('page-visible');
       check();
-      if (hiddenAt !== null) {
+      if (detectVanished && hiddenAt !== null) {
         const since = hiddenAt;
         hiddenAt = null;
         checkVanishedNotification(store, since);
