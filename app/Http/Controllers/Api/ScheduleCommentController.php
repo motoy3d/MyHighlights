@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\PostNotificationJob;
+use App\Jobs\PushNotificationJob;
 use App\Jobs\ScheduleNotificationJob;
 use App\Schedule;
 use App\ScheduleComment;
@@ -93,6 +94,8 @@ class ScheduleCommentController extends Controller
       $startTime = microtime(true);
       $fromMember = DB::table('members')->where('user_id', Auth::id())
         ->where('team_id', $schedule->team_id)->first();
+      // プッシュはメールより先に積む(メールのジョブの後ろで待たされないように)
+      $this->dispatch(PushNotificationJob::scheduleComment($schedule, $scheduleCommentResult, (int) Auth::id()));
       $this->dispatch(new ScheduleNotificationJob($fromMember, $schedule, $scheduleCommentResult));
       $runningTime =  microtime(true) - $startTime;
       Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');

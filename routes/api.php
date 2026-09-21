@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PostCommentController;
 use App\Http\Controllers\Api\PostCommentResponseController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PostResponseController;
+use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\QuestionnaireController;
 use App\Http\Controllers\Api\ScheduleCommentController;
 use App\Http\Controllers\Api\ScheduleController;
@@ -56,4 +57,11 @@ Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::post('questionnaires/answer', [QuestionnaireController::class, 'store']);
     Route::get('blog', [BlogController::class, 'index']);
     Route::get('ical/config', [ICalendarController::class, 'getConfig'])->name('ical.config');
+
+    // Webプッシュ通知(#110)
+    Route::get('push/config', [PushController::class, 'showConfig']);
+    Route::put('push/preferences', [PushController::class, 'updatePreferences']);
+    Route::post('push/subscriptions', [PushController::class, 'subscribe']);
+    Route::delete('push/subscriptions', [PushController::class, 'unsubscribe']);
+    Route::post('push/test', [PushController::class, 'test']);
 });
