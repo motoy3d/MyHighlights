@@ -116,6 +116,122 @@ class MemberControllerTest extends TestCase
         Mail::assertSent(UserInvitation::class);
     }
 
+    // #79 同じチームに同じユーザーの members が重複して作られないこと -----------------
+
+    public function test_すでにこのチームのメンバーであるユーザは招待できず422になりメールも送られない(): void
+    {
+        Mail::fake();
+        $existing = User::factory()->create(['email' => 'already@example.com']);
+        Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $existing->id,
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/members', [
+                'name' => '重複さん',
+                'email' => 'already@example.com',
+                'memberTypeSegment' => 1,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'このメールアドレスの方はすでにこのチームのメンバーです。');
+
+        // members は増えていない
+        $this->assertSame(1, Member::where('team_id', $this->team->id)
+            ->where('user_id', $existing->id)->count());
+        $this->assertDatabaseMissing('members', ['name' => '重複さん']);
+        // 弾かれた登録で招待メールが送られていない
+        Mail::assertNothingSent();
+    }
+
+    public function test_このチームを退会済みのユーザは再登録できる(): void
+    {
+        Mail::fake();
+        $existing = User::factory()->create(['email' => 'rejoin@example.com']);
+        Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $existing->id,
+            'withdrawal_date' => now()->subMonth()->toDateString(),
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/members', [
+                'name' => '復帰さん',
+                'email' => 'rejoin@example.com',
+                'memberTypeSegment' => 1,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])->assertStatus(200);
+
+        $this->assertDatabaseHas('members', [
+            'name' => '復帰さん',
+            'team_id' => $this->team->id,
+            'user_id' => $existing->id,
+            'withdrawal_date' => null,
+        ]);
+        Mail::assertSent(UserInvitation::class);
+    }
+
+    public function test_更新で招待したメールアドレスがすでにこのチームのメンバーなら422で何も変わらない(): void
+    {
+        Mail::fake();
+        $existing = User::factory()->create(['email' => 'already@example.com']);
+        Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $existing->id,
+        ]);
+        // アカウントを持たないメンバー(子どもなど)に、既存メンバーのメールアドレスで招待しようとする
+        $child = Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => null,
+            'name' => '変更前の名前',
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->putJson('/api/members/' . $child->id, [
+                'name' => '変更後の名前',
+                'email' => 'already@example.com',
+                'memberTypeSegment' => 0,
+                'adminFlg' => 0,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+
+        // 途中まで保存されていない
+        $child->refresh();
+        $this->assertNull($child->user_id);
+        $this->assertSame('変更前の名前', $child->name);
+        Mail::assertNothingSent();
+    }
+
+    public function test_更新で自分自身のメールアドレスに再招待するのは重複扱いにならない(): void
+    {
+        Mail::fake();
+        $memberUser = User::factory()->create(['email' => 'self@example.com']);
+        $member = Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $memberUser->id,
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->putJson('/api/members/' . $member->id, [
+                'name' => '再招待さん',
+                'email' => 'self@example.com',
+                'memberTypeSegment' => 1,
+                'adminFlg' => 0,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])->assertStatus(200);
+
+        $this->assertSame($memberUser->id, $member->fresh()->user_id);
+        Mail::assertSent(UserInvitation::class);
+    }
+
     public function test_メンバー詳細にメールアドレスが含まれる(): void
     {
         $member = Member::factory()->create([
