@@ -16,6 +16,7 @@
         "aws/aws-sdk-php-laravel": "^3.11",
         "eluceo/ical": "^2.14",
         "intervention/image": "^3.11",
+        "laravel-notification-channels/webpush": "^13.0",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.11 || ^3.0",
