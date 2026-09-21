@@ -234,7 +234,13 @@ export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      diag('page-visible');
+      // 確認用：前面に戻ったとき通知センターに残っている通知(タップした通知が消えているか)
+      if (DIAG && navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistration('/')
+          .then((r) => (r ? r.getNotifications() : []))
+          .then((list) => diag('page-visible', '', { n: list.length, tags: list.map((x) => x.tag).join(',').slice(0, 80) }))
+          .catch(() => diag('page-visible', '', { n: 'err' }));
+      }
       check();
     }
   });

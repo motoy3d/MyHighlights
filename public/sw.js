@@ -13,7 +13,15 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(Promise.all([
+    self.clients.claim(),
+    // 確認用アドレスでだけ、この端末が Declarative Web Push に関わる機能を持つかを記録する
+    diag('sw-caps', '', {
+      pe_notification: (typeof PushEvent !== 'undefined' && 'notification' in PushEvent.prototype) ? 1 : 0,
+      n_navigate: (typeof Notification !== 'undefined' && 'navigate' in Notification.prototype) ? 1 : 0,
+      pushnotification: ('onpushnotification' in self) ? 1 : 0,
+    }),
+  ]));
 });
 
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
@@ -38,9 +46,11 @@ function diag(step, tapId, extra) {
 // - それ以外（Android の Chrome など）：通常の push として届くので、notification を読んでここで表示する。
 self.addEventListener('push', (event) => {
   if (event.notification) {
-    diag('sw-push-declarative');
+    // 通知を出さずに終わる(iOS が用意した通知がそのまま出る)。記録は waitUntil で確実に送る
+    event.waitUntil(diag('sw-push-declarative', '', { nav: event.notification.navigate ? 1 : 0 }));
     return;
   }
+  diag('sw-push-show', '', { keys: Object.keys(Object.getPrototypeOf(event)).join('.').slice(0, 60) });
 
   let payload = {};
   try {
