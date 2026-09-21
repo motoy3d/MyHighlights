@@ -351,6 +351,7 @@
           .then(response => {
             const data = response.data || {};
             this.push.enabled = !!data.enabled;
+            webPush.installState.pushEnabled = this.push.enabled;
             this.push.vapidPublicKey = data.vapid_public_key;
             this.push.preferences = Object.assign({}, data.preferences || {});
             if (this.push.enabled) {

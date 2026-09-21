@@ -18,8 +18,28 @@ const A2HS_HIDE_DAYS = 14;
 export const installState = Vue.observable({
   deferredPrompt: null,
   // 案内を閉じたか(設定画面とタイムラインの両方の案内を一緒に消すため、ここで持つ)
-  dismissed: false
+  dismissed: false,
+  // この利用者に通知を開放しているか(設計書 §8 の段階的な公開)。
+  // 案内は「通知も受け取れます」と書いているので、開放していない人には出さない
+  pushEnabled: false
 });
+
+let pushConfigPromise = null;
+
+/** 通知を開放しているかを一度だけサーバに聞き、installState.pushEnabled に入れる */
+export function loadPushEnabled() {
+  if (!pushConfigPromise) {
+    pushConfigPromise = axios.get('/api/push/config')
+      .then((response) => {
+        installState.pushEnabled = !!(response.data && response.data.enabled);
+      })
+      .catch(() => {
+        installState.pushEnabled = false;
+        pushConfigPromise = null; // 次に呼ばれたときにやり直す
+      });
+  }
+  return pushConfigPromise;
+}
 
 let registrationPromise = null;
 

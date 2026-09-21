@@ -19,7 +19,7 @@
 <script>
   import {
     installState, isIOS, isStandalone, dismissInstallGuide,
-    showIOSInstallGuide, promptInstall
+    showIOSInstallGuide, promptInstall, loadPushEnabled
   } from '../push.js';
   export default {
     data() {
@@ -36,9 +36,15 @@
       canPrompt() {
         return !!installState.deferredPrompt;
       },
-      // iPhone は Safari で開いているとき、Android は追加できるときだけ出す
+      // 通知を開放している人で、iPhone は Safari で開いているとき、Android は追加できるときだけ出す
       visible() {
-        return !this.dismissed && !this.standalone && (this.ios || this.canPrompt);
+        return installState.pushEnabled && !this.dismissed && !this.standalone && (this.ios || this.canPrompt);
+      }
+    },
+    created() {
+      // ホーム画面から開いている人には出さないので、問い合わせも要らない
+      if (!this.standalone && (this.ios || this.canPrompt || 'onbeforeinstallprompt' in window)) {
+        loadPushEnabled();
       }
     },
     methods: {
