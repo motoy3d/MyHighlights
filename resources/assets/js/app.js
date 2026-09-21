@@ -109,13 +109,6 @@ var vm = new Vue({
     // this.$ons.enableAutoStatusBarFill();
     // this.$ons.disableAutoStatusBarFill();
   },
-  beforeMount() {
-    const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX()
-        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
-      document.body.style.marginBottom = '21px';
-      // html.setAttribute('onsflag-iphonex-portrait', '');
-      // html.setAttribute('onsflag-iphonex-landscape', '');
-    }
-  },
+  // 画面下端のセーフエリアは app.scss の --safe-area-bottom で扱う
+  // (以前はここで iPhone X 系と判定したら body に 21px の余白を足していた)
 });
