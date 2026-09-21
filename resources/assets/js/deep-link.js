@@ -273,11 +273,14 @@ async function checkVanishedNotification(store, open) {
       }
       const shown = await readShown(cache);
       if (!shown.length) {
+        diag('page-vanished-none', '', { wait, shown: 0 });
         return;
       }
       const tags = await displayedTags();
       const vanished = shown.filter((x) => !tags.has(x.tag));
       if (!vanished.length) {
+        diag('page-vanished-none', '', { wait, shown: shown.length, displayed: tags.size,
+          last: shown[shown.length - 1].tag });
         continue;
       }
       // 読んでいる間に sw.js が足した通知を消さないよう、読み直してから除く
