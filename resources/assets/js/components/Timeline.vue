@@ -206,7 +206,7 @@
         }
         this.$http.get('/api/me').then((response)=>{
           this.$store.commit('navigator/setUser', response.data);// globalにユーザー情報セット
-        });
+        }).catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
         // 検索条件リセット
         this.searchKeyword = null;
         this.searchCategoryId = null;

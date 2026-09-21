@@ -26,6 +26,7 @@
         //   // console.log(error);
         //   if (error.response.status == 401) {window.location.href = "/login";}
         // })
+        .catch(() => {}) // 401 のリダイレクトと利用者への通知は http-errors.js で行う
       ;
       this.$store.commit('navigator/setCurrentTeamName', Cookies.get('current_team_name'));
       // navigatorにTabbarをpush
