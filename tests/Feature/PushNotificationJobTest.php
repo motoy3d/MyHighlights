@@ -101,7 +101,7 @@ class PushNotificationJobTest extends TestCase
             ['url' => "/home?launcher=true&team={$this->team->id}&post={$post->id}"],
             $payload['data']
         );
-        $this->assertSame('/appicon.png', $payload['icon']);
+        $this->assertSame(rtrim(config('app.url'), '/') . '/appicon.png', $payload['icon']);
         $this->assertTrue($payload['renotify']);
     }
 
@@ -266,6 +266,8 @@ class PushNotificationJobTest extends TestCase
         $this->assertSame(8030, $payload['web_push']);
         $this->assertSame('チーム', $payload['notification']['title']);
         $this->assertSame('https://tsubasa.example.test/home?launcher=true&team=1&post=2', $payload['notification']['navigate']);
+        // iOS は icon を基準なしで読むので、相対だとこの形式として認識されない
+        $this->assertSame('https://tsubasa.example.test/appicon.png', $payload['notification']['icon']);
         // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
         $this->assertSame(['url' => '/home?launcher=true&team=1&post=2'], $payload['notification']['data']);
     }

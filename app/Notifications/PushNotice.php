@@ -52,17 +52,21 @@ class PushNotice extends Notification
      */
     public function toWebPush(mixed $notifiable, mixed $notification = null): WebPushMessageInterface
     {
+        $origin = rtrim((string) config('app.url'), '/');
+
         return (new DeclarativeWebPushMessage)
             ->title($this->title)
             ->body(self::truncate($this->body))
-            ->icon(self::ICON)
-            ->badge(self::ICON)
+            // アドレスは完全な形にする。iOS は icon を基準なしで読むため、'/appicon.png' だと
+            // この形式として読めず（2026-09-22 実機で確認）、通常の push 扱いになってタップで画面を移れない
+            ->icon($origin . self::ICON)
+            ->badge($origin . self::ICON)
             ->tag($this->tag)
             // 同じtagで置き換えたときも音・バイブで知らせる
             ->renotify(true)
             ->data(['url' => $this->url])
             // タップしたときに iOS が移る先。完全なアドレスでなければならない
-            ->navigate(rtrim((string) config('app.url'), '/') . $this->url)
+            ->navigate($origin . $this->url)
             ->lang('ja')
             // 端末がオフラインでも1日は再送を試みる。iOSは urgency が低いと届くのが遅れる
             ->options(['TTL' => 86400, 'urgency' => 'high']);
