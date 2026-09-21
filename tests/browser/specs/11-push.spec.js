@@ -233,6 +233,30 @@ test.describe('通知のタップの書き置き', () => {
     expect(left).toBe(false);
   });
 
+  test('sw.js からの「この画面を開いて」で投稿が開き、同じタップは書き置きがあっても二度開かない', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const url = '/home?launcher=true&post=' + post.id;
+    // sw.js は同じタップを、書き置き・知らせ(2回)の3通りで届ける
+    await leave(page, url);
+    await page.evaluate(async (url) => {
+      const c = await caches.open('tsubasa-deeplink');
+      await c.put('/__deeplink__', new Response(JSON.stringify({ url, tapId: 'tap-dup', at: Date.now() }),
+        { headers: { 'Content-Type': 'application/json' } }));
+      const send = () => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
+        { data: { type: 'open-url', url, tapId: 'tap-dup' } }));
+      send(); send();
+      window.dispatchEvent(new Event('focus'));
+    }, url);
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await page.waitForTimeout(2500);
+    // 投稿の画面は1枚だけ積まれる(タイムライン + 投稿 = 2枚)
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(2);
+  });
+
   test('古い書き置き(5分より前)は開かない', async ({ page }) => {
     await gotoApp(page);
     const post = await firstPost(page);

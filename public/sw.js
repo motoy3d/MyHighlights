@@ -45,20 +45,34 @@ self.addEventListener('push', (event) => {
 
 // 通知をタップしたら該当画面を開く。
 //
-// 開いたアプリに「このアドレスを読み込み直せ」と指示する方法（WindowClient.navigate / postMessage）は、
-// iPhone のホーム画面アプリがバックグラウンドにいると効かなかった（2026-09-21 の実機確認。
-// タップしてもアプリが前面に出るだけで、サーバへの読み込みが1件も来なかった）。
-// そこで、開きたい画面を端末内に書き置きし（Cache Storage を郵便受けとして使う。取得のキャッシュには使わない）、
-// アプリ側が前面に戻ったとき・起動したときにそれを読んで開く（deep-link.js）。
-// 書き置きさえ残せば、iOS がアプリを前面に出すだけで目的の画面に移れる。
+// 主な経路：開いているアプリに「この画面を開いて」とアドレスごと伝え（postMessage）、
+//   アプリが読み込み直さずにその画面を開く（deep-link.js）。起動していなければそのアドレスで開く（openWindow）。
+// 控え：iPhone ではバックグラウンドのアプリに送った知らせを取りこぼすことがあるので、
+//   開きたい画面を端末内にも書き置きし（Cache Storage を郵便受けとして使う。取得のキャッシュには使わない）、
+//   アプリが前面に戻ったときに読む。どちらで開いても、同じタップ（tapId）は一度しか開かない。
+//
+// 2026-09-21 の実機確認で、タップ後に iPhone からの読み込みが1件も来なかった。
+// どの段階で止まるかを確かめるため、確認用アドレスでだけ各段階をサーバのアクセス記録に残す（diag）。
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
+const DIAG = self.location.hostname.startsWith('tsubasa-stg.');
 
-async function leaveDeepLink(url) {
+function diag(step, tapId, extra) {
+  if (!DIAG) return Promise.resolve();
+  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
+  return fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' })
+    .catch(() => {});
+}
+
+async function leaveDeepLink(url, tapId) {
   const cache = await caches.open(DEEPLINK_MAILBOX);
-  await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, at: Date.now() }), {
+  await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, tapId, at: Date.now() }), {
     headers: { 'Content-Type': 'application/json' }
   }));
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 }
 
 self.addEventListener('notificationclick', (event) => {
@@ -66,30 +80,39 @@ self.addEventListener('notificationclick', (event) => {
 
   const data = event.notification.data || {};
   const target = new URL(data.url || '/home?launcher=true', self.location.origin).href;
+  const tapId = Math.random().toString(36).slice(2, 10);
 
   event.waitUntil((async () => {
-    // アプリが前面に出る前に書き置きを済ませる（前面に出た瞬間にアプリが読みに来る）
+    diag('sw-click', tapId);
+    // 控えの書き置きは最初に済ませる（アプリが前面に出た瞬間に読みに来ても間に合うように）
     try {
-      await leaveDeepLink(target);
+      await leaveDeepLink(target, tapId);
     } catch (e) {
-      // 書き置きできなくても、アプリを前面に出すことは続ける
+      diag('sw-mailbox-fail', tapId);
     }
 
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const client = windows.find((c) => new URL(c.url).origin === self.location.origin);
+    diag('sw-clients', tapId, { n: windows.length });
 
     if (!client) {
-      // アプリが起動していなければ、そのアドレスで開く（起動時のリンク処理が開く。
-      // 開始 URL で開かれても、起動時に書き置きを読む）
+      diag('sw-openwindow', tapId);
       await self.clients.openWindow(target);
       return;
     }
+
+    const message = { type: 'open-url', url: target, tapId };
+    // 前面に出す処理が終わらない環境でも指示は届くよう、先に一度伝える
+    client.postMessage(message);
+    diag('sw-posted', tapId);
     try {
-      await client.focus();
+      await withTimeout(client.focus(), 3000);
+      diag('sw-focused', tapId);
     } catch (e) {
-      // 前面に出せない環境でも、書き置きは次にアプリが前面に出たときに読まれる
+      diag('sw-focus-fail', tapId, { e: String(e && e.message || e).slice(0, 40) });
     }
-    // 既に前面にいて visibilitychange が起きない場合に備えて、読みに来るよう知らせる
-    client.postMessage({ type: 'deeplink' });
+    // 前面に出た後にもう一度伝える（バックグラウンド中に送った分を取りこぼしていても開けるように）
+    client.postMessage(message);
+    diag('sw-posted2', tapId);
   })());
 });

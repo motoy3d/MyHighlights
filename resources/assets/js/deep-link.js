@@ -8,10 +8,10 @@
  *
  * Vue Router は使わず、起動時に URL のパラメータを読んで画面を開く。
  *
- * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合は、
- * sw.js が開きたい画面を Cache Storage に書き置きするので、アプリが前面に戻ったときに
- * それを読んで、読み込み直さずにその画面を開く（installDeepLinkListeners）。
- * iPhone ではアプリへの遷移の指示（navigate / postMessage）が効かなかったため、この方式にした。
+ * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合（installDeepLinkListeners）：
+ *   主な経路：sw.js から「この画面を開いて」とアドレスごと届くので、読み込み直さずにその画面を開く
+ *   控え：sw.js が同じ内容を Cache Storage に書き置きするので、知らせを取りこぼしても前面に戻ったときに読む
+ * 同じタップ（tapId）はどちらで受けても一度しか開かない。
  */
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
@@ -22,6 +22,16 @@ const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
+// 確認用アドレスでだけ、どの段階まで進んだかをサーバのアクセス記録に残す（sw.js と同じ）
+const DIAG = window.location.hostname.startsWith('tsubasa-stg.');
+// 開いたタップ。知らせと書き置きの両方で届いても一度だけ開く
+const handledTaps = new Set();
+
+function diag(step, tapId, extra) {
+  if (!DIAG) return;
+  const q = new URLSearchParams(Object.assign({ diag: step, tap: tapId || '', t: Date.now() }, extra || {}));
+  fetch('/favicon.ico?' + q.toString(), { method: 'HEAD', cache: 'no-store', credentials: 'omit' }).catch(() => {});
+}
 const TAB_CALENDAR = 1; // ブログのタブは 3 番目なので、カレンダーは常に 1
 
 function params() {
@@ -146,11 +156,11 @@ async function takeDeepLink() {
       return null;
     }
     await cache.delete(DEEPLINK_KEY);
-    const { url, at } = await response.json();
+    const { url, at, tapId } = await response.json();
     if (!url || !at || Date.now() - at > DEEPLINK_MAX_AGE_MS) {
       return null;
     }
-    return url;
+    return { url, tapId };
   } catch (e) {
     return null;
   }
@@ -162,12 +172,19 @@ function clearDeepLink() {
   }
 }
 
-/** 書き置きの画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
-function openDeepLinkInApp(store, urlString) {
+/** 通知の画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
+function openDeepLinkInApp(store, urlString, tapId, via) {
+  if (tapId) {
+    if (handledTaps.has(tapId)) {
+      return;
+    }
+    handledTaps.add(tapId);
+  }
   const url = new URL(urlString, window.location.origin);
   if (url.origin !== window.location.origin) {
     return;
   }
+  diag('page-open', tapId, { via });
   const team = url.searchParams.get('team');
   if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
     // 表示中のデータは今のチームのものなので、読み込み直す（起動時の処理が開く）
@@ -197,9 +214,10 @@ async function checkDeepLink(store) {
       if (wait) {
         await new Promise((resolve) => setTimeout(resolve, wait));
       }
-      const url = await takeDeepLink();
-      if (url) {
-        openDeepLinkInApp(store, url);
+      const found = await takeDeepLink();
+      if (found) {
+        diag('page-mailbox', found.tapId);
+        openDeepLinkInApp(store, found.url, found.tapId, 'mailbox');
         return;
       }
     }
@@ -216,15 +234,20 @@ export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+      diag('page-visible');
       check();
     }
   });
   window.addEventListener('focus', check);
   window.addEventListener('pageshow', check);
   if ('serviceWorker' in navigator) {
+    // 主な経路：sw.js からの「この画面を開いて」
     navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'deeplink') {
-        check();
+      const data = event.data || {};
+      if (data.type === 'open-url' && typeof data.url === 'string') {
+        diag('page-message', data.tapId);
+        clearDeepLink(); // 控えの書き置きは要らなくなった
+        openDeepLinkInApp(store, data.url, data.tapId, 'message');
       }
     });
   }
