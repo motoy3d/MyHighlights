@@ -133,6 +133,7 @@
 </template>
 
 <script>
+  import {emptyFileMessage, validationErrorMessage} from '../attachment.js';
   export default {
     beforeCreate() {
       this.$http.get('/api/posts/create')
@@ -179,6 +180,10 @@
         }
         if (!this.title) {this.$ons.notification.alert('タイトルを入れてください', {title: ''});return;}
         if (!this.contents) {this.$ons.notification.alert('本文を入れてください', {title: ''});return;}
+        // 0バイトのファイルは送らない(#45)。iPhoneで写真を選んだ後にアプリが
+        // バックグラウンドへ回ると中身が読めなくなり、壊れた添付になるため。
+        const emptyMsg = emptyFileMessage(this.files);
+        if (emptyMsg) {this.$ons.notification.alert(emptyMsg, {title: ''});return;}
         this.posting = true;
         this.category_id = this.selected_category? this.selected_category : this.categories[0].id;
         let self = this;
@@ -210,6 +215,11 @@
             if (error.response.status === 401) {window.location.href = "/login";}
             if (error.response.status === 413) {
               this.$ons.notification.alert('アップロード容量が大きすぎます。容量を減らして投稿してください。', {title: ''});
+            }
+            // バリデーションエラー(0バイトの添付など)はサーバのメッセージを表示する
+            const validationMsg = validationErrorMessage(error);
+            if (validationMsg) {
+              this.$ons.notification.alert(validationMsg, {title: ''});
             }
             this.loading = false; this.posting = false;
           })

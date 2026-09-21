@@ -6,6 +6,7 @@ use App\Post;
 use App\PostAttachment;
 use App\PostComment;
 use App\PostCommentAttachment;
+use App\Rules\NotEmptyFile;
 use App\Team;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,6 +126,99 @@ class AttachmentUploadTest extends TestCase
             ])->assertStatus(422);
 
         $this->assertDatabaseCount('post_comment_attachments', 0);
+    }
+
+    public function test_0バイトの添付は422になり投稿もアンケートも登録されない(): void
+    {
+        // #45: iPhoneで写真を選んだ後にアプリがバックグラウンドへ回ると
+        // 0バイトのファイルが送られてくることがある。
+        // 投稿だけ登録されて添付が壊れる、ということが無いよう
+        // DBへの書き込みより前に弾かれることを確認する。
+        $empty = $this->realUpload('IMG_0001.jpg', '');
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->post('/api/posts', [
+                'title' => '空の添付', 'contents' => 'x', 'notification_flg' => 0,
+                'questionnaire_title' => '出欠',
+                'questionnaire_selections' => json_encode([['text' => '参加'], ['text' => '不参加']]),
+                'files' => [$empty],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['files.0' => NotEmptyFile::MESSAGE]);
+
+        $this->assertDatabaseCount('posts', 0);
+        $this->assertDatabaseCount('questionnaires', 0);
+        $this->assertDatabaseCount('post_attachments', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('public/post_attachment'));
+        Queue::assertNothingPushed();
+    }
+
+    public function test_0バイトの添付が混ざっていると他の添付も保存されない(): void
+    {
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->post('/api/posts', [
+                'title' => '一部空の添付', 'contents' => 'x', 'notification_flg' => 0,
+                'files' => [
+                    UploadedFile::fake()->createWithContent('ok.txt', 'ちゃんと中身がある'),
+                    UploadedFile::fake()->createWithContent('empty.jpg', ''),
+                ],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['files.1' => NotEmptyFile::MESSAGE]);
+
+        $this->assertDatabaseCount('posts', 0);
+        $this->assertDatabaseCount('post_attachments', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('public/post_attachment'));
+    }
+
+    public function test_投稿の更新でも0バイトの添付は422になり内容は変わらない(): void
+    {
+        $post = Post::factory()->create(['team_id' => $this->team->id, 'title' => '元のタイトル']);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->put('/api/posts/' . $post->id, [
+                'title' => '更新後', 'contents' => '更新本文', 'notification_flg' => 0,
+                'files' => [UploadedFile::fake()->createWithContent('empty.jpg', '')],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['files.0' => NotEmptyFile::MESSAGE]);
+
+        $this->assertDatabaseHas('posts', ['id' => $post->id, 'title' => '元のタイトル']);
+        $this->assertDatabaseCount('post_attachments', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('public/post_attachment'));
+    }
+
+    public function test_数バイトの小さなファイルは添付できる(): void
+    {
+        // 空ファイルの判定に min:1 (1KB以上) を使うと、こうした
+        // 正常な小さいファイルまで弾いてしまうため、その回帰防止。
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->post('/api/posts', [
+                'title' => '小さい添付', 'contents' => 'x', 'notification_flg' => 0,
+                'files' => [$this->realUpload('memo.txt', '0123456789')], // 10バイト
+            ])->assertStatus(200);
+
+        $this->assertDatabaseCount('post_attachments', 1);
+    }
+
+    public function test_コメントの0バイトの添付は422になりコメントは登録されない(): void
+    {
+        $post = Post::factory()->create(['team_id' => $this->team->id, 'comment_count' => 0]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->post('/api/post_comments/' . $post->id, [
+                'post_id' => $post->id, 'comment_text' => '写真です',
+                'comment_notification_flg' => 'true',
+                'comment_files' => [UploadedFile::fake()->createWithContent('IMG_0002.jpg', '')],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['comment_files.0' => NotEmptyFile::MESSAGE]);
+
+        $this->assertDatabaseCount('post_comments', 0);
+        $this->assertDatabaseCount('post_comment_attachments', 0);
+        $this->assertEquals(0, $post->fresh()->comment_count);
+        $this->assertSame([], Storage::disk('local')->allFiles('public/comment_attachment'));
+        Queue::assertNothingPushed();
     }
 
     /**

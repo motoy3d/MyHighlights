@@ -9,6 +9,7 @@ use App\Post;
 use App\PostComment;
 use App\PostCommentAttachment;
 use App\PostResponse;
+use App\Rules\NotEmptyFile;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +37,12 @@ class PostCommentController extends Controller
         'message' => 'not found',
       ], 404);
     }
+    // 添付ファイルのチェックはコメントの登録より前に行う。
+    // 後で弾くと、添付の無いコメントだけが登録されてしまうため。
+    $request->validate([
+      // 0バイトのファイルは壊れた添付になるため弾く(#45)
+      'comment_files.*' => ['file', new NotEmptyFile(), 'max:' . config('tsubasa.attachment_max_kb')],
+    ]);
     $postCommentResult = PostComment::create([
       "post_id" => $request->post_id,
       "user_id" => Auth::id(),
@@ -46,9 +53,6 @@ class PostCommentController extends Controller
     Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
     $hasAttachment = false;
     if ($request->allFiles()) { //添付がある場合
-      $request->validate([
-        'comment_files.*' => ['file', 'max:' . config('tsubasa.attachment_max_kb')],
-      ]);
       $files = $request->file('comment_files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
