@@ -290,7 +290,8 @@ class PushControllerTest extends TestCase
                     && $payload['title'] === 'Tsubasa⬆︎UP'
                     && $payload['body'] === 'テスト通知です。この端末で通知を受け取れます。'
                     && $payload['tag'] === 'test'
-                    && $payload['data'] === ['url' => '/home?launcher=true'];
+                    && $payload['data']['url'] === '/home?launcher=true'
+                    && $payload['data']['nid'] === $notice->nid;
             });
     }
 
