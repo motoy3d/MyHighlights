@@ -137,7 +137,8 @@ class MemberControllerTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email'])
-            ->assertJsonPath('errors.email.0', 'このメールアドレスの方はすでにこのチームのメンバーです。');
+            ->assertJsonPath('errors.email.0', 'このメールアドレスの方はすでにこのチームのメンバーです。'
+                . '重複しているメンバーを削除してから、もう一度お試しください。');
 
         // members は増えていない
         $this->assertSame(1, Member::where('team_id', $this->team->id)

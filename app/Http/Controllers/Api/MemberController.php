@@ -203,9 +203,11 @@ class MemberController extends Controller
     $member->updated_id = Auth::id();
     $member->save();
     //usersテーブルで保持するデータもある
-    // 招待で別の利用者に紐づけ直す場合(下の invitationFlg の処理)は、今紐づいている利用者の
-    // メールアドレスは変えない。変えると一意制約に引っかかるうえ、別人のアドレスで上書きしてしまう
-    if ($userId && ! $otherUser) {
+    // 招待・紐づけ直し(下の invitationFlg の処理)では、今紐づいている利用者のメールアドレスは変えない。
+    // 「入力したアドレスのアカウントにこのメンバーを付け替える」操作なので、今の利用者は関係ない。
+    // 変えると、既存の利用者のアドレスなら一意制約に引っかかり、登録の無いアドレスなら
+    // 新しいアカウントを作らずに今の利用者のアドレスを書き換えてしまう(#124)
+    if ($userId && $request->invitationFlg != "1") {
       Log::info("★" . $userId);
       $user = User::find($userId);
       if ($user) {
