@@ -59,6 +59,27 @@ class UserControllerTest extends TestCase
         $this->assertSame('changed@example.com', $this->user->fresh()->email);
     }
 
+    public function test_他の人が使っているメールアドレスには変更できない(): void
+    {
+        // users.email は一意。確認せずに保存すると DB のエラーで500になっていた(#124)
+        User::factory()->create(['email' => 'taken@example.com']);
+        $before = $this->user->email;
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/users/updateEmail', ['email' => 'taken@example.com'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+
+        $this->assertSame($before, $this->user->fresh()->email);
+    }
+
+    public function test_同じメールアドレスのまま保存できる(): void
+    {
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/users/updateEmail', ['email' => $this->user->email])
+            ->assertStatus(200);
+    }
+
     public function test_パスワードを更新できる(): void
     {
         $this->actingAsTeamMember($this->user, $this->team)

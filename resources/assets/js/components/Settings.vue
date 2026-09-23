@@ -145,6 +145,7 @@
   import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
   import * as webPush from '../push.js';
+  import {validationErrorMessage} from '../attachment.js';
 
   // 通知の種類(docs/design/110-web-push.md §7.3)。並びは画面の表示順
   const PUSH_PREFERENCE_ITEMS = [
@@ -268,19 +269,25 @@
                     self.$http.post('/api/users/updateEmail', formData).then(response => {
                       self.$ons.notification.alert('変更されました', {title: ''});
                       self.loading = false; self.posting = false;
+                      // 変更できたときだけ、画面のユーザー情報を取り直す
+                      self.$http.get('/api/me')
+                        .then((response)=>{
+                          // globalにユーザー情報セット
+                          self.$store.commit('navigator/setUser', response.data);
+                        })
+                        .catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
                     })
                     .catch(error => {
                       console.log(error);
-                      if (error.response.status === 401) {window.location.href = "/login";}
                       self.loading = false; self.posting = false;
+                      if (!error.response) {return;}
+                      if (error.response.status === 401) {window.location.href = "/login"; return;}
+                      // 他の方が使っているアドレス(422)は、この画面で理由を知らせる
+                      const validationMsg = validationErrorMessage(error);
+                      if (validationMsg) {
+                        self.$ons.notification.alert(validationMsg, {title: ''});
+                      }
                     });
-                    self.$http.get('/api/me')
-                      .then((response)=>{
-                        // globalにユーザー情報セット
-                        // console.log('⭐me=' + response.data);
-                        self.$store.commit('navigator/setUser', response.data);
-                      })
-                      .catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
                   }
               });
           });

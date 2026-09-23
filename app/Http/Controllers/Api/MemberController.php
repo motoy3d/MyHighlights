@@ -171,13 +171,23 @@ class MemberController extends Controller
       return response()->json(null, 404);
     }
 
-    // 招待で別ユーザーを紐づける場合、そのユーザーがすでにこのチームの有効メンバーなら弾く(#79)。
-    // members/users の更新や招待メール送信より前に確認する(途中まで保存されて 422 になるのを防ぐ)。
-    // 自分自身の members 行(同じ user のまま再招待する場合)は重複ではないので除外する。
-    if ($request->invitationFlg == "1") {
-      $existingUser = User::where('email', $request->email)->first();
-      if ($existingUser && $existingUser->id != $member->user_id) {
-        $this->assertNotActiveMemberOfTeam($existingUser->id, $member->team_id, $member->id);
+    // そのメールアドレスを既に使っている別の利用者(#124)。
+    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる。
+    $email = trim((string) $request->email);
+    $otherUser = $email === '' ? null
+      : User::where('email', $email)->where('id', '!=', $member->user_id)->first();
+
+    // members/users の更新や招待メール送信より前に確認する(途中まで保存されて 422 になるのを防ぐ)
+    if ($otherUser) {
+      if ($request->invitationFlg == "1") {
+        // 招待で別の利用者を紐づける場合。すでにこのチームの有効メンバーなら弾く(#79)。
+        // 自分自身の members 行(同じ user のまま再招待する場合)は上の where で除いてある
+        $this->assertNotActiveMemberOfTeam($otherUser->id, $member->team_id, $member->id);
+      } else {
+        // 招待でないのに他の人のアドレスを入れた場合。今の利用者のアドレスは変えられない
+        throw ValidationException::withMessages([
+          'email' => 'このメールアドレスは他の方が使っています。',
+        ]);
       }
     }
 
@@ -193,11 +203,13 @@ class MemberController extends Controller
     $member->updated_id = Auth::id();
     $member->save();
     //usersテーブルで保持するデータもある
-    if ($userId) {
+    // 招待で別の利用者に紐づけ直す場合(下の invitationFlg の処理)は、今紐づいている利用者の
+    // メールアドレスは変えない。変えると一意制約に引っかかるうえ、別人のアドレスで上書きしてしまう
+    if ($userId && ! $otherUser) {
       Log::info("★" . $userId);
       $user = User::find($userId);
       if ($user) {
-        $user->email = $request->email;
+        $user->email = $email;
         $user->save();
       }
     }

@@ -273,6 +273,63 @@ class MemberControllerTest extends TestCase
         $this->assertSame('after@example.com', $memberUser->fresh()->email);
     }
 
+    public function test_他の人が使っているメールアドレスには変更できない(): void
+    {
+        // users.email は一意。確認せずに保存すると DB のエラーで500になっていた(#124)
+        Mail::fake();
+        User::factory()->create(['email' => 'taken@example.com']);
+        $memberUser = User::factory()->create(['email' => 'before@example.com']);
+        $member = Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $memberUser->id,
+            'name' => '変更前の名前',
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->putJson('/api/members/' . $member->id, [
+                'name' => '変更後の名前',
+                'email' => 'taken@example.com',
+                'memberTypeSegment' => 0,
+                'adminFlg' => 0,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '0',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+
+        // 名前もメールアドレスも、途中まで保存されていない
+        $this->assertSame('変更前の名前', $member->fresh()->name);
+        $this->assertSame('before@example.com', $memberUser->fresh()->email);
+    }
+
+    public function test_招待で他チームの既存ユーザーに紐づけ直すと元のユーザーのアドレスは変わらない(): void
+    {
+        // 招待は「そのアドレスの人をこのメンバーに紐づける」操作。
+        // 今紐づいている利用者のアドレスを書き換えてはいけない(#124)
+        Mail::fake();
+        $existing = User::factory()->create(['email' => 'existing@example.com']);
+        $memberUser = User::factory()->create(['email' => 'before@example.com']);
+        $member = Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $memberUser->id,
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->putJson('/api/members/' . $member->id, [
+                'name' => '紐づけ直し',
+                'email' => 'existing@example.com',
+                'memberTypeSegment' => 0,
+                'adminFlg' => 0,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])->assertStatus(200);
+
+        $this->assertSame($existing->id, $member->fresh()->user_id);
+        $this->assertSame('before@example.com', $memberUser->fresh()->email);
+        $this->assertSame('existing@example.com', $existing->fresh()->email);
+        Mail::assertSent(UserInvitation::class);
+    }
+
     public function test_他チームのメンバーは更新できない(): void
     {
         $member = Member::factory()->create(['team_id' => Team::factory()->create()->id]);

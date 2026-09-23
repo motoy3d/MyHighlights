@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
@@ -109,13 +110,20 @@ class UserController extends Controller
    */
   public function updateEmail(Request $request)
   {
-    //TODO validate
     $user = User::findOrFail(Auth::user()->id);
     if (!$user) {// ヒットしない場合は404
       return response()->json(null, 404);
     }
 
-    $user->email = $request->email;
+    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる(#124)
+    $email = trim((string) $request->email);
+    if (User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
+      throw ValidationException::withMessages([
+        'email' => 'このメールアドレスは他の方が使っています。',
+      ]);
+    }
+
+    $user->email = $email;
     $user->updated_id = Auth::id();
     $user = $user->save();
     return Response::json($user);
