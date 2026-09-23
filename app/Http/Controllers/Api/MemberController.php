@@ -321,7 +321,8 @@ class MemberController extends Controller
     }
     if ($query->exists()) {
       throw ValidationException::withMessages([
-        'email' => 'このメールアドレスの方はすでにこのチームのメンバーです。',
+        'email' => 'このメールアドレスの方はすでにこのチームのメンバーです。'
+          . '重複しているメンバーを削除してから、もう一度お試しください。',
       ]);
     }
   }

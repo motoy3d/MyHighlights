@@ -64,6 +64,17 @@
             <div class="space" v-if="!user_id">
               このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
             </div>
+            <!-- 既にアカウントがあるメンバーを、別のアカウントに付け替える(#124)。
+                 同じ人がアカウントを二重に持っている場合に、今使っているアカウントへ寄せるために使う -->
+            <div class="space" v-else>
+              別のアカウントに紐づけ直す <v-ons-switch v-model="invitationFlg"></v-ons-switch>
+            </div>
+            <div class="mlr-15 mt-5" v-if="user_id && invitationFlg">
+              <small class="gray">
+                入力したメールアドレスのアカウントに付け替えます。そのアドレスの登録が無ければ、新しく招待します。
+                今のアカウント自体は消えません（このチームのメンバーではなくなります）。
+              </small>
+            </div>
             <div class="ml-15 mt-10">
               <small class="gray">メールアドレス</small>
               <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
@@ -224,6 +235,22 @@
           this.$ons.notification.alert('メールアドレスを入れてください', {title: ''});
           return;
         }
+        // 付け替えは元のアカウントとの紐づきが切れるので、一度確認する(#124)
+        if (this.user_id && this.invitationFlg) {
+          this.$ons.notification.confirm(
+            this.email + ' のアカウントに紐づけ直します。よろしいですか？\n'
+              + '（' + (this.member.email || '今のアドレス') + ' のアカウントは、このチームのメンバーではなくなります）',
+            {title: '', buttonLabels: ['キャンセル', 'OK']})
+            .then((answer) => {
+              if (answer === 1) {
+                this.send();
+              }
+            });
+          return;
+        }
+        this.send();
+      },
+      send() {
         this.$http.put('/api/members/' + this.member.id, this.$data)
           .then(response => {
             // console.log(response.data);

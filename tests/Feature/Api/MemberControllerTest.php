@@ -302,6 +302,34 @@ class MemberControllerTest extends TestCase
         $this->assertSame('before@example.com', $memberUser->fresh()->email);
     }
 
+    public function test_紐づけ直しで登録の無いアドレスを入れると新しいアカウントを作って招待する(): void
+    {
+        // 画面の「別のアカウントに紐づけ直す」で、まだ登録の無いアドレスを入れた場合(#124)
+        Mail::fake();
+        $memberUser = User::factory()->create(['email' => 'before@example.com']);
+        $member = Member::factory()->create([
+            'team_id' => $this->team->id,
+            'user_id' => $memberUser->id,
+        ]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->putJson('/api/members/' . $member->id, [
+                'name' => '新しいアカウントへ',
+                'email' => 'brandnew@example.com',
+                'memberTypeSegment' => 0,
+                'adminFlg' => 0,
+                'selectedAvatarFilename' => 'noimage.png',
+                'invitationFlg' => '1',
+            ])->assertStatus(200);
+
+        $newUser = User::where('email', 'brandnew@example.com')->first();
+        $this->assertNotNull($newUser);
+        $this->assertSame($newUser->id, $member->fresh()->user_id);
+        // 元のアカウントはそのまま残る(このチームのメンバーではなくなるだけ)
+        $this->assertSame('before@example.com', $memberUser->fresh()->email);
+        Mail::assertSent(UserInvitation::class);
+    }
+
     public function test_招待で他チームの既存ユーザーに紐づけ直すと元のユーザーのアドレスは変わらない(): void
     {
         // 招待は「そのアドレスの人をこのメンバーに紐づける」操作。
