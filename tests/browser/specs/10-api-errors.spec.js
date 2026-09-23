@@ -25,6 +25,12 @@ const isPostsApi = (url) => url.pathname === '/api/posts' && !url.search;
 const toast = (page, message) => page.locator('ons-toast').getByText(message);
 
 test.describe('API通信エラーの通知', () => {
+  // Service Worker に制御されたページからの通信は、WebKit では page.route で差し替えられない。
+  // ここで確かめたいのは通信エラーの扱いなので、sw.js の登録を止めて差し替えが効くようにする
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
   test('500 のとき「サーバーでエラー」のトーストが出る', async ({ page }) => {
     const jsErrors = watchPageErrors(page);
     await page.route(isPostsApi, (route) => route.fulfill({ status: 500, body: '' }));

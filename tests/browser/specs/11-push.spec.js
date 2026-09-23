@@ -284,6 +284,13 @@ test.describe('通知センターから消えた通知', () => {
   // iOS の不具合への対策なので、iPhone のときだけ動く
   test.use({ userAgent: IPHONE_UA });
 
+  // Service Worker に制御されたページからの通信は、WebKit では page.route で差し替えられない。
+  // sw.js の登録を止めて、サーバの応答を差し替えられるようにする（通知は元々表示されないので、
+  // 「消えた通知」の判定にも影響しない）
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
   // バックグラウンドに回る → sentDuring 件がその間に送られた → 前面に戻る
   async function backgroundAndReturn(page, notices) {
     await page.evaluate(() => {
@@ -361,6 +368,10 @@ test.describe('通知センターから消えた通知', () => {
 
 test.describe('通知センターから消えた通知(Android)', () => {
   test.use({ userAgent: ANDROID_UA });
+
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
 
   test('Android ではタップが sw.js に届くので、消えた通知からは開かない', async ({ page }) => {
     await gotoApp(page);
