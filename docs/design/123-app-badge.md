@@ -35,8 +35,30 @@ Badging API（`navigator.setAppBadge(n)` / `navigator.clearAppBadge()`）。
 決めたこと：
 
 - **予定・コメントは数えない。** 既読という状態を持っていないため。バッジは投稿の未読だけを表す
-- **自分の投稿は数えない。** 投稿の詳細を開くと既読が付く作りなので、自分の投稿は投稿した時点では未読のまま残る。
-  数えると自分の投稿でバッジが増えて紛らわしいので、作成者が自分の投稿は除く（今の `unreadCount` との差分）
+- **数え方は画面の未読件数と完全に同じにする。** バッジ＝各チームの `unreadCount` の合計になり、画面とバッジがずれない
+
+### 3.1 自分の投稿を未読にしない（既存の不具合の修正。#123 に含める）
+
+既読が付くのは投稿の詳細を開いたとき（`GET /api/posts/{id}`）で、投稿した直後はタイムラインに戻るだけなので
+詳細を開かない（`Post.vue` の `afterPost`）。そのため**自分で投稿すると自分の未読が1つ増える**。
+今の画面の未読件数にも出ている既存の不具合で、バッジにもそのまま出てしまう。
+
+数え方を変えるのではなく、**投稿を作るときに、投稿した人の既読も作る**（`PostController::store`）。
+
+```php
+PostResponse::create([
+    'user_id' => Auth::id(), 'post_id' => $post->id,
+    'read_flg' => true, 'like_flg' => false, 'star_flg' => false,
+    'created_id' => Auth::id(), 'updated_id' => Auth::id(),
+]);
+```
+
+過去の投稿の分は、**一度だけ既読を作るマイグレーション**で直す。
+
+- 対象：`posts.created_id` が自分で、その人の `post_responses` がまだ無い投稿
+- 既にある `post_responses`（いいね・スターだけ付けた行など）は触らない
+- 1 本の `INSERT ... SELECT` で入れる（旧サーバのデータ量でも一度で終わる）
+- 巻き戻し（`down`）では、このマイグレーションで作った行だけを消せないので何もしない（コメントに明記する）
 
 ## 4. サーバ側
 
@@ -94,7 +116,10 @@ if ('setAppBadge' in navigator) { navigator.setAppBadge(data.badge); }
 ## 6. テスト
 
 - PHPUnit
-  - `UnreadCount`：複数チームの合計、退会したチームを含めない、参加前の投稿を含めない、自分の投稿を含めない、既読を含めない
+  - 投稿の登録：投稿した人の既読が作られる／その人の `unreadCount` が増えない（§3.1）
+  - マイグレーション：過去の自分の投稿に既読が入る／既にある `post_responses` を書き換えない
+  - `UnreadCount`：複数チームの合計、退会したチームを含めない、参加前の投稿を含めない、既読を含めない
+  - `UnreadCount` が各チームの `unreadCount` の合計と一致する
   - `GET /api/unread/total`：認証が要る、合計が正しい
   - 通知の中身：`data.badge` が受け取る人ごとの合計になっている
 - Playwright（`tests/browser/specs/11-push.spec.js` に追加）
@@ -105,6 +130,7 @@ if ('setAppBadge' in navigator) { navigator.setAppBadge(data.badge); }
 
 ## 7. 作業の順番
 
+0. 自分の投稿を未読にしない（§3.1。投稿時の既読と、過去の分のマイグレーション）
 1. `UnreadCount` と `GET /api/unread/total`（テスト込み）
 2. 通知の `data.badge`
 3. Service Worker と画面の更新
