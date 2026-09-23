@@ -32,7 +32,7 @@ PHP と Laravel を同時に上げる必要があった。
 | メール送信 | SES（EC2 の IAM ロール経由） | 同じ（新ロール `TsubasaAppServer`） |
 | バックアップ | EBS 日次スナップショット | 同じポリシーに新サーバを追加 |
 | 同居サイト | tsubasa / tsubasademo / smartj.mobi / redsmylife | **tsubasa のみ**（demo は廃止、他は旧サーバに残す） |
-| 自動テスト | PHPUnit 8 ファイル | PHPUnit 199 件 + Playwright 65 件 |
+| 自動テスト | PHPUnit 8 ファイル | PHPUnit 280 件 + Playwright 99 件（PHPUnit は GitHub Actions で自動実行） |
 
 運用値（タイムゾーン JST、php.ini、sql_mode、文字セット、バッファプールなど）は
 旧サーバの実測値に合わせてあり、`deploy/configure-runtime.sh` が構築時に一致を確認する
@@ -243,11 +243,32 @@ MySQL/MariaDBが必要。接続先は `phpunit.xml` の `DB_DATABASE` で
 DB名が `tsubasa_test` でないのは、旧サーバのデモ環境（廃止予定）が
 その名前を使い続けるため。
 
-アプリのエンドポイント50件を全てテストで叩いている（199テスト）。
-本番サーバは `composer install --no-dev` で入れるため `vendor/bin/phpunit` は無い。
-本番機で流す場合は dev 依存を一時的に入れること。
+アプリのエンドポイント50件を全てテストで叩いている（280テスト）。
 
-画面を実際に動かすブラウザテストは `tests/browser/`（Playwright、33件）。
+#### GitHub Actions（自動実行）
+
+`.github/workflows/tests.yml`。プルリクエストと master への push で PHPUnit を流す。
+MariaDB 10.11 を立て、`.env.example` から設定を作るので、**見本ファイルの誤りもここで見つかる**
+（2026-09-22 に `SANCTUM_STATEFUL_DOMAINS=` を空で書くと `/api/*` が全て401になる誤りが判明した）。
+画面を返すテストが Vite のビルド結果を読むため、`npm ci && npm run build` も行う。
+このリポジトリは公開なので、標準のランナーは無料・無制限。
+
+ブラウザテスト（Playwright）は動いているサーバが要るので、GitHub Actions には入れていない。
+手元から確認用サーバに向けて流す（`tests/browser/README.md`）。
+
+#### サーバの中で流す
+
+本番サーバは `composer install --no-dev` で入れるため `vendor/bin/phpunit` は無い。
+サーバの中で流すときは `deploy/run-tests-on-server.sh` を使う。
+動いているアプリには触らず、コミット済みのコードを `/root/tsubasa-phpunit` に取り出し、
+専用のデータベース（`tsubasa_phpunit`）と、そこにしか触れない利用者で実行する。
+本番の `.env` は使わない（設定は `.env.example` から作り、鍵も新しく作る）。
+
+```bash
+deploy/ssm-run.sh i-0626d85c720708c64 -f deploy/run-tests-on-server.sh
+```
+
+画面を実際に動かすブラウザテストは `tests/browser/`（Playwright、99件）。
 PHPUnit ではカバーできない、フロントエンドの描画・OnsenUIの操作・
 Apacheの配信設定を確認する。
 
