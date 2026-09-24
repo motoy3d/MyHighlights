@@ -443,3 +443,34 @@ test.describe('通知センターから消えた通知(Android)', () => {
     expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
   });
 });
+
+/**
+ * アイコンのバッジ(まだ見ていないお知らせの数。#123)：アプリを開いたら「見た」をサーバに伝えて消す。
+ * テスト用のブラウザにはバッジの機能が無いことがあるので、navigator.clearAppBadge を差し替えて数える。
+ */
+test.describe('アイコンのバッジ', () => {
+  test('起動時と前面に戻ったときに、見たことを伝えてバッジを消す', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__badgeCleared = 0;
+      navigator.clearAppBadge = () => { window.__badgeCleared += 1; return Promise.resolve(); };
+    });
+    const seen = [];
+    page.on('request', (r) => { if (r.url().includes('/api/push/seen') && r.method() === 'POST') seen.push(r.url()); });
+
+    await gotoApp(page);
+    await expect.poll(() => seen.length, { timeout: 10000 }).toBeGreaterThanOrEqual(1);
+    const afterStart = await page.evaluate(() => window.__badgeCleared);
+    expect(afterStart).toBeGreaterThanOrEqual(1);
+
+    // バックグラウンドから前面に戻る
+    await page.evaluate(() => {
+      window.__vis = 'hidden';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.__vis = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await expect.poll(() => seen.length, { timeout: 10000 }).toBeGreaterThanOrEqual(2);
+    expect(await page.evaluate(() => window.__badgeCleared)).toBeGreaterThan(afterStart);
+  });
+});

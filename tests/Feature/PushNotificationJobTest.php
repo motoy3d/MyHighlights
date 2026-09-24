@@ -9,6 +9,7 @@ use App\Post;
 use App\PostComment;
 use App\Schedule;
 use App\ScheduleComment;
+use App\Support\PushNoticeLog;
 use App\Support\PushRecipients;
 use App\Team;
 use App\User;
@@ -270,7 +271,40 @@ class PushNotificationJobTest extends TestCase
         // 通知は sw.js が表示する（前面に戻ったときにタップされた通知を割り出すため）
         $this->assertTrue($payload['mutable']);
         // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
-        $this->assertSame(['url' => '/home?launcher=true&team=1&post=2', 'nid' => $notice->nid], $payload['notification']['data']);
+        // badge はアイコンに出す、まだ見ていないお知らせの数(この通知を含む。#123)
+        $this->assertSame(
+            ['url' => '/home?launcher=true&team=1&post=2', 'nid' => $notice->nid, 'badge' => 1],
+            $payload['notification']['data']
+        );
+    }
+
+    public function test_badgeは最後にアプリを開いた後に送った通知の数にこの通知を足した数(): void
+    {
+        $old = new PushNotice('チーム', '前のもの', 'post-1', '/home');
+        PushNoticeLog::record($this->coach, $old);
+        PushNoticeLog::markSeen($this->coach);
+        // 見た後に2件送った
+        $this->travel(1)->seconds();
+        PushNoticeLog::record($this->coach, new PushNotice('チーム', '1', 'post-2', '/home'));
+        PushNoticeLog::record($this->coach, new PushNotice('チーム', '2', 'post-3', '/home'));
+
+        $notice = new PushNotice('チーム', '3件目', 'post-4', '/home');
+        $this->assertSame(3, $notice->toWebPush($this->coach)->toArray()['notification']['data']['badge']);
+        // 他の人の数には影響しない
+        $this->assertSame(1, $notice->toWebPush($this->parent)->toArray()['notification']['data']['badge']);
+    }
+
+    public function test_送った通知が記録される(): void
+    {
+        $post = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->actor->id]);
+        $this->runJob(PushNotificationJob::newPost($post, $this->actor->id));
+
+        $recent = PushNoticeLog::recent($this->coach);
+        $this->assertCount(1, $recent);
+        $this->assertSame('post-' . $post->id, $recent[0]['tag']);
+        // 送っていない人(操作した本人・購読なし)には記録しない
+        $this->assertSame([], PushNoticeLog::recent($this->actor));
+        $this->assertSame([], PushNoticeLog::recent($this->noDevice));
     }
 
     public function test_TTLとurgencyを指定している(): void

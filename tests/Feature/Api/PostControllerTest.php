@@ -151,6 +151,45 @@ class PostControllerTest extends TestCase
         ]);
     }
 
+    public function test_自分の投稿は投稿した時点で既読になり未読件数が増えない(): void
+    {
+        // 投稿した直後はタイムラインに戻るだけで詳細を開かないので、既読を付けないと自分の未読になっていた(#123)
+        Queue::fake();
+        $before = $this->actingAsTeamMember($this->user, $this->team)->getJson('/api/posts')->json('unreadCount');
+
+        $id = $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/posts', ['title' => '自分の投稿', 'contents' => '本文', 'notification_flg' => 0])
+            ->assertStatus(200)->json('id');
+
+        $this->assertDatabaseHas('post_responses', ['user_id' => $this->user->id, 'post_id' => $id, 'read_flg' => 1]);
+        $this->assertSame($before, $this->actingAsTeamMember($this->user, $this->team)->getJson('/api/posts')->json('unreadCount'));
+    }
+
+    public function test_過去の自分の投稿を既読にするマイグレーションは既存の行を書き換えない(): void
+    {
+        $mine = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->user->id]);
+        $liked = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->user->id]);
+        $others = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => User::factory()->create()->id]);
+        // いいねだけ付けた行(既読ではない形)は、そのまま残す
+        PostResponse::create([
+            'user_id' => $this->user->id, 'post_id' => $liked->id,
+            'read_flg' => false, 'like_flg' => true, 'star_flg' => false,
+            'created_id' => $this->user->id, 'updated_id' => $this->user->id,
+        ]);
+
+        $migration = require database_path('migrations/2026_09_24_000000_mark_own_posts_read.php');
+        $migration->up();
+        $migration->up(); // 二度流しても同じ
+
+        $this->assertSame(1, PostResponse::where('user_id', $this->user->id)->where('post_id', $mine->id)->where('read_flg', 1)->count());
+        $liked = PostResponse::where('user_id', $this->user->id)->where('post_id', $liked->id)->get();
+        $this->assertCount(1, $liked);
+        $this->assertFalse((bool) $liked[0]->read_flg);
+        $this->assertTrue((bool) $liked[0]->like_flg);
+        // 他の人の投稿には入れない
+        $this->assertFalse(PostResponse::where('user_id', $this->user->id)->where('post_id', $others->id)->exists());
+    }
+
     public function test_投稿時に通知ジョブが積まれる(): void
     {
         Queue::fake();

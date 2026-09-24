@@ -61,9 +61,21 @@ self.addEventListener('push', (event) => {
     data,
   };
 
-  // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する
-  event.waitUntil(self.registration.showNotification(title, options));
+  // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する。
+  // アイコンのバッジ(まだ見ていないお知らせの数。#123)も、アプリを開いていなくてもここで更新する
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, options),
+    setBadge(data.badge),
+  ]));
 });
+
+// アイコンのバッジを更新する。対応していない端末や失敗しても、通知の表示は止めない
+function setBadge(count) {
+  if (typeof count !== 'number' || !('setAppBadge' in self.navigator)) {
+    return Promise.resolve();
+  }
+  return self.navigator.setAppBadge(count).catch(() => {});
+}
 
 // 通知をタップしたら該当画面を開く。
 //

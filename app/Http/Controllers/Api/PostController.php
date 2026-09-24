@@ -162,6 +162,17 @@ class PostController extends Controller
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
+    // 投稿した人は既読にする(#123)。既読は詳細を開いたときに付くが、投稿した直後は
+    // タイムラインに戻るだけなので、付けないと自分の投稿で自分の未読が1つ増えてしまう
+    PostResponse::create([
+      "user_id" => Auth::id(),
+      "post_id" => $post->id,
+      "read_flg" => true,
+      "like_flg" => false,
+      "star_flg" => false,
+      "created_id" => Auth::id(),
+      "updated_id" => Auth::id()
+    ]);
     // 添付ファイルの登録
     $this->saveAttachment($request, $post);
     // メール配信・LINE通知

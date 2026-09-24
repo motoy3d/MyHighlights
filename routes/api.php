@@ -65,4 +65,5 @@ Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::delete('push/subscriptions', [PushController::class, 'unsubscribe']);
     Route::post('push/test', [PushController::class, 'test']);
     Route::post('push/recent', [PushController::class, 'recent']);
+    Route::post('push/seen', [PushController::class, 'seen']);
 });

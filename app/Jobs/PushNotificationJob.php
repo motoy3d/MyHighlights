@@ -10,7 +10,7 @@ use App\Schedule;
 use App\ScheduleComment;
 use App\Support\PushRecipients;
 use App\Support\PushRollout;
-use App\Support\PushSentLog;
+use App\Support\PushNoticeLog;
 use App\Team;
 use App\User;
 use Illuminate\Bus\Queueable;
@@ -119,7 +119,7 @@ class PushNotificationJob implements ShouldQueue
         foreach ($users as $user) {
             try {
                 Notification::sendNow($user, $notice);
-                PushSentLog::record($user, $notice);
+                PushNoticeLog::record($user, $notice);
             } catch (\Throwable $e) {
                 // 1人の失敗で他の人に届かなくならないようにする
                 Log::error('プッシュ通知の送信エラー user_id=' . $user->id . ': ' . $e->getMessage());

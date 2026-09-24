@@ -201,8 +201,39 @@ export async function subscribe(vapidPublicKey) {
   return subscription;
 }
 
+/* ---------- アイコンのバッジ(#123) ---------- */
+
+/** アイコンのバッジを消す。対応していない端末では何もしない */
+export function clearAppBadge() {
+  if ('clearAppBadge' in navigator) {
+    navigator.clearAppBadge().catch(() => {});
+  }
+}
+
+/**
+ * アプリを開いた(お知らせを見た)ことをサーバに伝え、アイコンのバッジを消す。
+ * バッジの数は「最後にアプリを開いた後に送った通知の数」なので、開くたびに 0 に戻る。
+ * 裏の問い合わせなので、失敗しても利用者には知らせない
+ */
+export function markNotificationsSeen() {
+  clearAppBadge();
+  return axios.post('/api/push/seen', {}, { silentErrors: true }).catch(() => {});
+}
+
+/** 起動時と、前面に戻ったたびに markNotificationsSeen を呼ぶ。AppNavigator.vue の mounted から一度だけ呼ぶ */
+export function installBadgeClearing() {
+  markNotificationsSeen();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      markNotificationsSeen();
+    }
+  });
+}
+
 /** 購読をやめる。サーバへの通知に失敗しても、端末側の購読は必ず取り消す */
 export async function unsubscribe() {
+  // ログアウト・通知をオフにしたときは、残っているバッジも消す
+  clearAppBadge();
   const subscription = await currentSubscription();
   if (!subscription) {
     return;

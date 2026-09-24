@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Notifications\PushNotice;
 use App\Support\PushRollout;
-use App\Support\PushSentLog;
+use App\Support\PushNoticeLog;
 use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -113,7 +113,7 @@ class PushController extends Controller
     /**
      * POST /api/push/recent  { endpoint: この端末の購読の endpoint }
      * 最近この利用者に送った通知 → { now: サーバの今(ミリ秒), notices: [{ nid, tag, url, at }] }
-     * アプリが前面に戻ったとき、通知センターから消えた通知（＝タップされた通知）を探すのに使う（PushSentLog）。
+     * アプリが前面に戻ったとき、通知センターから消えた通知（＝タップされた通知）を探すのに使う（PushNoticeLog）。
      * now は、端末とサーバの時計のずれを直すために返す。
      *
      * endpoint がこの利用者の購読として登録されていない端末には、何も返さない。
@@ -129,8 +129,21 @@ class PushController extends Controller
 
         return response()->json([
             'now' => (int) floor(microtime(true) * 1000),
-            'notices' => $subscribed ? PushSentLog::recent($user) : [],
+            'notices' => $subscribed ? PushNoticeLog::recent($user) : [],
         ]);
+    }
+
+    /**
+     * POST /api/push/seen
+     * アプリを開いた(お知らせを見た)ことを記録する → { badge: 0 }
+     * 画面は、起動時と前面に戻ったときに呼び、アイコンのバッジを消す(#123)。
+     * これより後に送った通知の数が、次の通知でアイコンに出る数になる。
+     */
+    public function seen(Request $request): JsonResponse
+    {
+        PushNoticeLog::markSeen($request->user());
+
+        return response()->json(['badge' => 0]);
     }
 
     /**
@@ -155,7 +168,7 @@ class PushController extends Controller
                     '/home?launcher=true'
                 );
                 Notification::sendNow($user, $notice);
-                PushSentLog::record($user, $notice);
+                PushNoticeLog::record($user, $notice);
             } catch (\Throwable $e) {
                 Log::error('テスト通知の送信エラー user_id=' . $user->id . ': ' . $e->getMessage());
                 return response()->json(['message' => 'テスト通知を送れませんでした。'], 500);
