@@ -16,6 +16,9 @@
       </div>
     </v-ons-toolbar>
 
+    <!-- ons-page は中身を page__content に移すので、表示を切り替える部分は常にある 1 つの枠に入れる
+         (枠が無いと、読み込み後に切り替えた部分が描画されない) -->
+    <div class="notices-content">
     <div class="center mt-20" v-if="loading">
       <v-ons-progress-circular indeterminate></v-ons-progress-circular>
     </div>
@@ -41,6 +44,7 @@
         </div>
       </v-ons-list-item>
     </v-ons-list>
+    </div>
   </v-ons-page>
 </template>
 
