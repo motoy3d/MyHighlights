@@ -40,11 +40,12 @@
           <span class="notice-dot" :class="{ 'notice-dot-hidden': item.opened }"></span>
         </div>
         <div class="center notice-center">
-          <span class="list-item__subtitle notice-meta">
+          <!-- 文字の大きさはタイムラインの一覧(Timeline.vue)と同じ基準：本文は一覧の標準、日時は 13px の灰色 -->
+          <div class="notice-body">{{ item.body }}</div>
+          <div class="notice-meta">
             <!-- チーム名は、複数のチームに所属している人にだけ出す(1 チームなら分かりきっているので) -->
             <template v-if="multiTeam">{{ item.title }}・</template>{{ item.created_at | moment('from') }}
-          </span>
-          <span class="list-item__title notice-body">{{ item.body }}</span>
+          </div>
         </div>
       </v-ons-list-item>
     </v-ons-list>
@@ -121,12 +122,13 @@
   .notice-dot-hidden {
     visibility: hidden;
   }
-  .notice-meta {
-    font-size: 12px;
-  }
   .notice-body {
-    font-size: 14px;
     white-space: normal;
-    line-height: 1.4;
+    line-height: 1.5;
+  }
+  .notice-meta {
+    color: grey;
+    font-size: 13px;
+    margin-top: 4px;
   }
 </style>
