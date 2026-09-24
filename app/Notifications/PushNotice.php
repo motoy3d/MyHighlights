@@ -87,7 +87,7 @@ class PushNotice extends Notification
      * 通知の data。
      * - url：開く画面(相対)。nid を付け、閉じた状態から開いたときもどの通知かが分かるようにする(#125)
      * - nid：通知ごとの目印(#110。どの通知がタップされたかを見分ける)
-     * - badge：アイコンに出す、まだ確認していない通知の数(🔔と同じ。#123/#125)。
+     * - badge：アイコンに出す、まだ開いていない通知の数(🔔と同じ。#123/#125)。
      *   お知らせの記録(NoticeLog::record)は送る前に付けるので、この通知も含まれている
      *
      * @return array<string, mixed>
@@ -96,7 +96,7 @@ class PushNotice extends Notification
     {
         $data = ['url' => $this->urlWithNid(), 'nid' => $this->nid];
         if ($notifiable instanceof User) {
-            $data['badge'] = NoticeLog::unseenCount($notifiable);
+            $data['badge'] = NoticeLog::unopenedCount($notifiable);
         }
 
         return $data;

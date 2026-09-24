@@ -285,12 +285,12 @@ class PushNotificationJobTest extends TestCase
         );
     }
 
-    public function test_badgeはお知らせ一覧を最後に開いた後に届いた通知の数(): void
+    public function test_badgeはまだ開いていない通知の数(): void
     {
-        NoticeLog::record($this->coach, new PushNotice('チーム', '前のもの', 'post-1', '/home'), 'new_post', $this->team->id);
-        NoticeLog::markSeen($this->coach);
-        // 一覧を開いた後に2件届いた(送るときは記録してから送るので、2件目の通知の badge は 2)
-        $this->travel(1)->seconds();
+        $opened = new PushNotice('チーム', '開いたもの', 'post-1', '/home');
+        NoticeLog::record($this->coach, $opened, 'new_post', $this->team->id);
+        NoticeLog::openByNid($this->coach, $opened->nid);
+        // まだ開いていない通知が2件(送るときは記録してから送るので、2件目の通知の badge は 2)
         NoticeLog::record($this->coach, new PushNotice('チーム', '1', 'post-2', '/home'), 'new_post', $this->team->id);
         $notice = new PushNotice('チーム', '2', 'post-3', '/home');
         NoticeLog::record($this->coach, $notice, 'new_post', $this->team->id);

@@ -1,9 +1,9 @@
 <template>
   <!-- アプリ内のお知らせ(🔔。#125)。各タブのツールバーの右に置く。
-       数は「お知らせ一覧を最後に開いた後に届いた通知の数」で、ホーム画面のアイコンの数と同じ -->
+       数は「まだ開いていない通知の数」で、ホーム画面のアイコンの数と同じ -->
   <v-ons-toolbar-button v-if="enabled" class="notice-bell" @click="openList()" aria-label="お知らせ">
     <v-ons-icon icon="fa-bell" size="20px" class="white"></v-ons-icon>
-    <span v-if="unseen > 0" class="notice-bell-count">{{ unseen > 99 ? '99+' : unseen }}</span>
+    <span v-if="unopened > 0" class="notice-bell-count">{{ unopened > 99 ? '99+' : unopened }}</span>
   </v-ons-toolbar-button>
 </template>
 
@@ -15,7 +15,7 @@
     computed: {
       // 段階的な公開の対象外の人には出さない(設計書 §4)
       enabled() { return installState.pushEnabled; },
-      unseen() { return noticeState.unseen; }
+      unopened() { return noticeState.unopened; }
     },
     methods: {
       openList() {

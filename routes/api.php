@@ -68,7 +68,6 @@ Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::post('push/recent', [PushController::class, 'recent']);
     // アプリ内のお知らせ一覧(🔔。#125)
     Route::get('notices', [NoticeController::class, 'index']);
-    Route::get('notices/unseen', [NoticeController::class, 'unseen']);
-    Route::post('notices/seen', [NoticeController::class, 'seen']);
+    Route::get('notices/unopened', [NoticeController::class, 'unopened']);
     Route::post('notices/open', [NoticeController::class, 'open']);
 });

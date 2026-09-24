@@ -203,8 +203,9 @@ export async function subscribe(vapidPublicKey) {
 
 /* ---------- お知らせ(🔔)とアイコンのバッジ(#123 / #125) ---------- */
 
-// 🔔の数(お知らせ一覧を最後に開いた後に届いた通知の数)。ホーム画面のアイコンの数も同じにする
-export const noticeState = Vue.observable({ unseen: 0 });
+// 🔔の数(まだ開いていない通知の数)。ホーム画面のアイコンの数も同じにする。
+// 一覧を開いただけでは減らず、1 件ずつ開く(タップ・その投稿を開く)と減る
+export const noticeState = Vue.observable({ unopened: 0 });
 
 /** アイコンのバッジを消す。対応していない端末では何もしない */
 export function clearAppBadge() {
@@ -214,19 +215,19 @@ export function clearAppBadge() {
 }
 
 /** 🔔の数を入れ、アイコンの数もそろえる */
-export function setUnseen(count) {
-  noticeState.unseen = Math.max(0, Number(count) || 0);
-  if (noticeState.unseen > 0 && 'setAppBadge' in navigator) {
-    navigator.setAppBadge(noticeState.unseen).catch(() => {});
+export function setUnopened(count) {
+  noticeState.unopened = Math.max(0, Number(count) || 0);
+  if (noticeState.unopened > 0 && 'setAppBadge' in navigator) {
+    navigator.setAppBadge(noticeState.unopened).catch(() => {});
   } else {
     clearAppBadge();
   }
 }
 
 /** 🔔の数をサーバから取り直す。裏の問い合わせなので、失敗しても利用者には知らせない */
-export function refreshUnseen() {
-  return axios.get('/api/notices/unseen', { silentErrors: true })
-    .then((response) => setUnseen(response.data && response.data.unseen))
+export function refreshUnopened() {
+  return axios.get('/api/notices/unopened', { silentErrors: true })
+    .then((response) => setUnopened(response.data && response.data.unopened))
     .catch(() => {});
 }
 
@@ -240,17 +241,17 @@ export function installNoticeCount() {
     if (!installState.pushEnabled) {
       return;
     }
-    refreshUnseen();
+    refreshUnopened();
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        refreshUnseen();
+        refreshUnopened();
       }
     });
     if ('serviceWorker' in navigator) {
       // sw.js が、通知を表示したときに「届いた」と知らせてくる
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'notice-arrived') {
-          refreshUnseen();
+          refreshUnopened();
         }
       });
     }
@@ -280,7 +281,10 @@ export function markNoticeOpened(nid) {
     return Promise.resolve();
   }
   closeShownNotifications((n) => n.data && n.data.nid === nid);
-  return axios.post('/api/notices/open', { nid }, { silentErrors: true }).catch(() => {});
+  // 開いた分だけ🔔とアイコンの数が減る
+  return axios.post('/api/notices/open', { nid }, { silentErrors: true })
+    .then((response) => setUnopened(response.data && response.data.unopened))
+    .catch(() => {});
 }
 
 /** 購読をやめる。サーバへの通知に失敗しても、端末側の購読は必ず取り消す */

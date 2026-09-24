@@ -8,11 +8,11 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 利用者ごとのお知らせの記録(表 notices)と、お知らせ一覧を最後に開いた時刻(users.push_seen_at)。
+ * 利用者ごとのお知らせの記録(表 notices)。
  *
  * 使うところ
  * - アプリ内のお知らせ一覧(🔔。#125)：届いた通知を後から確認し、目的の画面へ移る
- * - 🔔とホーム画面のアイコンの数(#123/#125)：一覧を最後に開いた後に届いた通知の数
+ * - 🔔とホーム画面のアイコンの数(#123/#125)：まだ開いていない通知の数
  * - #110 の「消えた通知から開く」：iPhone でアプリがバックグラウンドのときにタップが届かないので、
  *   前面に戻ったときにバックグラウンドの間に届いた通知を返す(resources/assets/js/deep-link.js)
  *
@@ -100,22 +100,17 @@ class NoticeLog
             ->all();
     }
 
-    /** まだ確認していない通知の数(お知らせ一覧を最後に開いた後に届いた通知の数)。🔔とアイコンの数 */
-    public static function unseenCount(User $user): int
+    /**
+     * まだ開いていない通知の数。🔔とホーム画面のアイコンの数(#125)。
+     * 一覧を開いただけでは減らず、1 件ずつ開く(タップ・その投稿を開く)と減る
+     */
+    public static function unopenedCount(User $user): int
     {
-        $seenAt = DB::table('users')->where('id', $user->id)->value('push_seen_at');
-
         return DB::table('notices')
             ->where('user_id', $user->id)
-            ->when($seenAt, fn ($q) => $q->where('created_at', '>', $seenAt))
+            ->whereNull('opened_at')
+            ->where('created_at', '>=', Carbon::now()->subDays(self::KEEP_DAYS)->format('Y-m-d H:i:s.v'))
             ->count();
-    }
-
-    /** お知らせ一覧を開いた(🔔の数を 0 にする) */
-    public static function markSeen(User $user): void
-    {
-        DB::table('users')->where('id', $user->id)
-            ->update(['push_seen_at' => Carbon::now()->format('Y-m-d H:i:s.v')]);
     }
 
     /** その通知を開いたにする(本人の分だけ) */

@@ -17,7 +17,7 @@ class NoticeController extends Controller
 {
     /**
      * GET /api/notices
-     * → { unseen, items: [{ id, nid, type, team_id, title, body, url, opened, created_at }] }
+     * → { unopened, items: [{ id, nid, type, team_id, title, body, url, opened, created_at }] }
      * 最近 30 日の通知を新しい順に最大 100 件
      */
     public function index(Request $request): JsonResponse
@@ -26,33 +26,22 @@ class NoticeController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'unseen' => NoticeLog::unseenCount($user),
+            'unopened' => NoticeLog::unopenedCount($user),
             'items' => NoticeLog::list($user),
         ]);
     }
 
     /**
-     * GET /api/notices/unseen → { unseen }
-     * 🔔とホーム画面のアイコンの数(お知らせ一覧を最後に開いた後に届いた通知の数)
+     * GET /api/notices/unopened → { unopened }
+     * 🔔とホーム画面のアイコンの数(まだ開いていない通知の数)
      */
-    public function unseen(Request $request): JsonResponse
+    public function unopened(Request $request): JsonResponse
     {
-        return response()->json(['unseen' => NoticeLog::unseenCount($request->user())]);
+        return response()->json(['unopened' => NoticeLog::unopenedCount($request->user())]);
     }
 
     /**
-     * POST /api/notices/seen → { unseen: 0 }
-     * お知らせ一覧を開いた。🔔とアイコンの数を 0 にする(1 件ずつの「開いた」は変えない)
-     */
-    public function seen(Request $request): JsonResponse
-    {
-        NoticeLog::markSeen($request->user());
-
-        return response()->json(['unseen' => 0]);
-    }
-
-    /**
-     * POST /api/notices/open  { nid } または { all: true } → { unseen }
+     * POST /api/notices/open  { nid } または { all: true } → { unopened }
      * その通知(またはすべて)を開いたにする
      */
     public function open(Request $request): JsonResponse
@@ -66,6 +55,6 @@ class NoticeController extends Controller
             NoticeLog::openByNid($user, (string) $request->input('nid'));
         }
 
-        return response()->json(['unseen' => NoticeLog::unseenCount($user)]);
+        return response()->json(['unopened' => NoticeLog::unopenedCount($user)]);
     }
 }

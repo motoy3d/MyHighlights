@@ -453,18 +453,19 @@ test.describe('お知らせ(🔔)', () => {
     await page.route('**/sw.js', (route) => route.abort());
   });
 
-  // 通知を開放している人として、🔔の数と一覧を差し替える
-  async function stubNotices(page, { enabled = true, unseen = 0, items = [] } = {}) {
-    const calls = { seen: 0, opened: [] };
+  // 通知を開放している人として、🔔の数と一覧を差し替える。数は「まだ開いていない通知の数」
+  async function stubNotices(page, { enabled = true, unopened = 0, items = [] } = {}) {
+    const calls = { unopened, opened: [] };
     await page.route('**/api/push/config', (route) => route.fulfill({
       json: { enabled, vapid_public_key: null, preferences: {} } }));
-    await page.route('**/api/notices/unseen', (route) => route.fulfill({ json: { unseen: calls.seen ? 0 : unseen } }));
-    await page.route('**/api/notices/seen', (route) => { calls.seen += 1; route.fulfill({ json: { unseen: 0 } }); });
+    await page.route('**/api/notices/unopened', (route) => route.fulfill({ json: { unopened: calls.unopened } }));
     await page.route('**/api/notices/open', (route) => {
-      calls.opened.push(JSON.parse(route.request().postData() || '{}'));
-      route.fulfill({ json: { unseen: 0 } });
+      const body = JSON.parse(route.request().postData() || '{}');
+      calls.opened.push(body);
+      calls.unopened = body.all ? 0 : Math.max(0, calls.unopened - 1);
+      route.fulfill({ json: { unopened: calls.unopened } });
     });
-    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unseen, items } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: calls.unopened, items } }));
     return calls;
   }
   const bell = (page) => page.locator('#timeline_page .notice-bell');
@@ -473,7 +474,7 @@ test.describe('お知らせ(🔔)', () => {
     url: '/home?launcher=true', opened: false, created_at: new Date().toISOString(),
   }, over);
 
-  test('🔔に数が出て、一覧を開くと0になり、タップで投稿が開く', async ({ page }) => {
+  test('🔔にまだ開いていない数が出て、一覧を開いても減らず、タップした分だけ減る', async ({ page }) => {
     await page.addInitScript(() => {
       window.__badges = [];
       navigator.setAppBadge = (n) => { window.__badges.push(n); return Promise.resolve(); };
@@ -485,7 +486,7 @@ test.describe('お知らせ(🔔)', () => {
     expect(post, '投稿が 1 件も無い').toBeTruthy();
 
     const calls = await stubNotices(page, {
-      unseen: 3,
+      unopened: 3,
       items: [
         notice({ id: 2, nid: 'nid-new', body: 'まだ開いていない通知', url: '/home?launcher=true&post=' + post.id }),
         notice({ id: 1, nid: 'nid-old', body: '開いた通知', opened: true }),
@@ -503,19 +504,20 @@ test.describe('お知らせ(🔔)', () => {
     await expect(list.locator('.notice-item')).toHaveCount(2, { timeout: 15000 });
     await expect(list.locator('.notice-unopened')).toHaveCount(1);
     await expect(list.locator('.notice-unopened')).toContainText('まだ開いていない通知');
-    // 一覧を開いたので数は 0
-    expect(calls.seen).toBe(1);
-    await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
-    await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(0);
+    // 一覧を開いただけでは減らない(2026-09-24 実機：開いただけで 0 になり、まだ見ていない通知が分からなかった)
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('3');
 
     await list.locator('.notice-unopened').click();
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
     expect(calls.opened).toContainEqual({ nid: 'nid-new' });
+    // 1 件開いたので 1 減る。アイコンの数も同じ
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('2');
+    await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(2);
   });
 
   test('お知らせが無いときは「お知らせはありません」', async ({ page }) => {
-    await stubNotices(page, { unseen: 0, items: [] });
+    await stubNotices(page, { unopened: 0, items: [] });
     await gotoApp(page);
     await expect(bell(page)).toBeVisible({ timeout: 15000 });
     await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
@@ -524,7 +526,7 @@ test.describe('お知らせ(🔔)', () => {
   });
 
   test('すべて既読にすると、まだ開いていない通知が無くなる', async ({ page }) => {
-    const calls = await stubNotices(page, { unseen: 2, items: [notice({ id: 2, nid: 'a' }), notice({ id: 1, nid: 'b' })] });
+    const calls = await stubNotices(page, { unopened: 2, items: [notice({ id: 2, nid: 'a' }), notice({ id: 1, nid: 'b' })] });
     await gotoApp(page);
     await bell(page).click();
     const list = page.locator('#notices_page');
@@ -532,10 +534,11 @@ test.describe('お知らせ(🔔)', () => {
     await list.locator('.notices-open-all').click();
     await expect(list.locator('.notice-unopened')).toHaveCount(0);
     expect(calls.opened).toContainEqual({ all: true });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
   });
 
   test('チーム名は複数のチームに所属している人にだけ出す', async ({ page }) => {
-    await stubNotices(page, { unseen: 1, items: [notice({ title: '横浜SCつばさ' })] });
+    await stubNotices(page, { unopened: 1, items: [notice({ title: '横浜SCつばさ' })] });
     // 1 チームだけに所属している人として見せる(/api/me の所属チームを 1 つに絞る)
     let singleTeam = true;
     await page.route('**/api/me', async (route) => {
@@ -560,7 +563,7 @@ test.describe('お知らせ(🔔)', () => {
   });
 
   test('通知を開放していない人には🔔を出さない', async ({ page }) => {
-    await stubNotices(page, { enabled: false, unseen: 5 });
+    await stubNotices(page, { enabled: false, unopened: 5 });
     await gotoApp(page);
     await page.waitForTimeout(3000);
     await expect(bell(page)).toHaveCount(0);

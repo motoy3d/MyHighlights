@@ -54,7 +54,7 @@
 </template>
 
 <script>
-  import { markNoticeOpened, closeShownNotifications, setUnseen } from '../push.js';
+  import { markNoticeOpened, closeShownNotifications, setUnopened, noticeState } from '../push.js';
   import { openNoticeTarget } from '../deep-link.js';
 
   export default {
@@ -78,9 +78,8 @@
           .then((response) => {
             this.items = response.data.items || [];
             this.loading = false;
-            // 一覧を開いたので、🔔とアイコンの数を 0 にする(1 件ずつの「開いた」は変えない)
-            setUnseen(0);
-            this.$http.post('/api/notices/seen', {}, { silentErrors: true }).catch(() => {});
+            // 一覧を開いただけでは🔔の数は減らない(まだ開いていない通知の数)。念のため最新の数に合わせる
+            setUnopened(response.data.unopened);
           })
           .catch(() => {
             this.loading = false;
@@ -88,7 +87,11 @@
           });
       },
       open(item) {
-        item.opened = true;
+        // 🔔の数はすぐ 1 減らす(サーバの応答で正しい数に合わせ直す)
+        if (!item.opened) {
+          item.opened = true;
+          setUnopened(noticeState.unopened - 1);
+        }
         markNoticeOpened(item.nid);
         // この一覧を閉じてから、通知をタップしたときと同じ処理で目的の画面を開く
         this.$store.commit('navigator/pop');
@@ -96,6 +99,7 @@
       },
       openAll() {
         this.items.forEach((item) => { item.opened = true; });
+        setUnopened(0);
         this.$http.post('/api/notices/open', { all: true }, { silentErrors: true }).catch(() => {});
         closeShownNotifications(() => true);
       }

@@ -45,7 +45,7 @@ class NoticeControllerTest extends TestCase
             ->getJson('/api/notices')
             ->assertStatus(200);
 
-        $this->assertSame(2, $res->json('unseen'));
+        $this->assertSame(2, $res->json('unopened'));
         $this->assertSame([$second->nid, $first->nid], array_column($res->json('items'), 'nid'));
         $this->assertSame('新しい方', $res->json('items.0.body'));
         $this->assertSame('post_comment', $res->json('items.0.type'));
@@ -67,25 +67,37 @@ class NoticeControllerTest extends TestCase
         $this->assertSame(['最近'], array_column($res->json('items'), 'body'));
     }
 
-    public function test_一覧を開くと数が0になり以後に届いた分だけ数える(): void
+    public function test_数はまだ開いていない通知の数で一覧を開いただけでは減らない(): void
     {
-        $this->notify($this->user, 'post-1');
+        $a = $this->notify($this->user, 'post-1');
         $this->notify($this->user, 'post-2');
         $this->actingAsTeamMember($this->user, $this->team)
-            ->getJson('/api/notices/unseen')->assertJson(['unseen' => 2]);
+            ->getJson('/api/notices/unopened')->assertJson(['unopened' => 2]);
 
+        // 一覧を開いても減らない(2026-09-24 実機：開いただけで 0 になり、まだ見ていない通知が分からなくなった)
+        $this->actingAsTeamMember($this->user, $this->team)->getJson('/api/notices')->assertJson(['unopened' => 2]);
         $this->actingAsTeamMember($this->user, $this->team)
-            ->postJson('/api/notices/seen')->assertStatus(200)->assertJson(['unseen' => 0]);
-        $this->actingAsTeamMember($this->user, $this->team)
-            ->getJson('/api/notices/unseen')->assertJson(['unseen' => 0]);
+            ->getJson('/api/notices/unopened')->assertJson(['unopened' => 2]);
 
-        $this->travel(1)->seconds();
+        // 1 件開くと 1 減る
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/notices/open', ['nid' => $a->nid])->assertJson(['unopened' => 1]);
+
+        // 新しく届くと増える
         $this->notify($this->user, 'post-3');
         $this->actingAsTeamMember($this->user, $this->team)
-            ->getJson('/api/notices/unseen')->assertJson(['unseen' => 1]);
-        // 一覧を開いても、1 件ずつの「開いた」は変わらない
-        $opened = array_column(NoticeLog::list($this->user), 'opened');
-        $this->assertSame([false, false, false], $opened);
+            ->getJson('/api/notices/unopened')->assertJson(['unopened' => 2]);
+    }
+
+    public function test_30日より前のまだ開いていない通知は数えない(): void
+    {
+        $this->travel(-31)->days();
+        $this->notify($this->user, 'post-1');
+        $this->travelBack();
+        $this->notify($this->user, 'post-2');
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->getJson('/api/notices/unopened')->assertJson(['unopened' => 1]);
     }
 
     public function test_nidで1件を開いたにする(): void
@@ -134,8 +146,7 @@ class NoticeControllerTest extends TestCase
     public function test_ログインしていないと使えない(): void
     {
         $this->getJson('/api/notices')->assertStatus(401);
-        $this->getJson('/api/notices/unseen')->assertStatus(401);
-        $this->postJson('/api/notices/seen')->assertStatus(401);
+        $this->getJson('/api/notices/unopened')->assertStatus(401);
         $this->postJson('/api/notices/open', ['all' => true])->assertStatus(401);
     }
 

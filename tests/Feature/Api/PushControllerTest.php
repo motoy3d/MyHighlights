@@ -390,7 +390,7 @@ class PushControllerTest extends TestCase
         NoticeLog::record($this->user, $this->notice('post-2'), 'new_post', $this->team->id);
 
         $this->assertSame(['post-2'], array_column(NoticeLog::recent($this->user), 'tag'));
-        $this->assertSame(1, NoticeLog::unseenCount($this->user));
+        $this->assertSame(1, NoticeLog::unopenedCount($this->user));
     }
 
     public function test_同じtagの通知も別々に控える(): void
