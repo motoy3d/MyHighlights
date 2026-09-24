@@ -41,7 +41,8 @@
         </div>
         <div class="center notice-center">
           <span class="list-item__subtitle notice-meta">
-            {{ item.title }}・{{ item.created_at | moment('from') }}
+            <!-- チーム名は、複数のチームに所属している人にだけ出す(1 チームなら分かりきっているので) -->
+            <template v-if="multiTeam">{{ item.title }}・</template>{{ item.created_at | moment('from') }}
           </span>
           <span class="list-item__title notice-body">{{ item.body }}</span>
         </div>
@@ -60,7 +61,11 @@
       return { items: [], loading: true, errored: false };
     },
     computed: {
-      hasUnopened() { return this.items.some((item) => !item.opened); }
+      hasUnopened() { return this.items.some((item) => !item.opened); },
+      multiTeam() {
+        const teams = this.$store.state.navigator.user.myTeams;
+        return !!teams && teams.length > 1;
+      }
     },
     created() {
       this.load();
