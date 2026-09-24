@@ -61,6 +61,10 @@
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, .18);
+    /* 帯は画面(ons-page)の外、body の直下に置くので、アプリと同じ書体をここで指定する
+       (指定しないと iPhone では明朝体になる。Onsen UI のページと同じ指定) */
+    font-family: -apple-system, 'Helvetica Neue', 'Helvetica', 'Arial', 'Lucida Grande', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
   .nb-icon {
     flex: none;
