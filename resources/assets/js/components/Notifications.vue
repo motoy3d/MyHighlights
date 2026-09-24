@@ -1,78 +1,126 @@
 <template>
-  <v-ons-page id="notification">
+  <!-- アプリ内のお知らせ一覧(🔔。#125)。最近 30 日の通知を新しい順に出し、タップで目的の画面に移る -->
+  <v-ons-page id="notices_page">
     <v-ons-toolbar class="navbar">
       <div class="left">
-        <v-ons-toolbar-button @click="$store.commit('splitter/toggle');">
-          <v-ons-icon icon="fa-bars" size="28px"></v-ons-icon>
-        </v-ons-toolbar-button>
+        <v-ons-back-button>戻る</v-ons-back-button>
       </div>
       <div class="center navbartitle">
         <v-ons-icon icon="fa-bell" size="20px"></v-ons-icon>
-        <span>通知</span>
+        <span>お知らせ</span>
+      </div>
+      <div class="right mr-5">
+        <v-ons-toolbar-button v-if="hasUnopened" @click="openAll()" class="notices-open-all">
+          <small class="white">すべて既読</small>
+        </v-ons-toolbar-button>
       </div>
     </v-ons-toolbar>
-    <v-ons-row>
-      <v-ons-col>
-        <v-ons-list>
-          <v-ons-list-item modifier="chevron" tappable="true"
-                         onclick="notificationNavi.pushPage('article.html', {data: {fromPage: 'notification', article_id: 'xxx'}});">
-            <v-ons-row>
-              <v-ons-col width="70px" align="left" class="notif-time">23時間前</v-ons-col>
-            </v-ons-row>
-            <v-ons-row>
-              <v-ons-col align="left">
-                <div><strong>片岡基</strong>さんが投稿しました。</div>
-                <div class="mt-10">明日の練習の用意</div>
-              </v-ons-col>
-            </v-ons-row>
-          </v-ons-list-item>
-          <v-ons-list-item modifier="chevron" tappable="true"
-                         onclick="notificationNavi.pushPage('article.html', {data: {fromPage: 'notification', article_id: 'xxx'}});">
-            <v-ons-row>
-              <v-ons-col width="70px" align="left" class="notif-time">昨日 16:33</v-ons-col>
-            </v-ons-row>
-            <v-ons-row>
-              <v-ons-col align="left">
-                <div><strong>山ノ内孝之さん</strong>が動画をアップしました。</div>
-                <div class="mt-10">区大会 vs駒林SC</div>
-              </v-ons-col>
-            </v-ons-row>
-          </v-ons-list-item>
-          <v-ons-list-item modifier="chevron" tappable="true"
-                         onclick="notificationNavi.pushPage('article.html', {data: {fromPage: 'notification', article_id: 'xxx'}});">
-            <v-ons-row>
-              <v-ons-col width="70px" align="left" class="notif-time">12/21 9:11</v-ons-col>
-            </v-ons-row>
-            <v-ons-row>
-              <v-ons-col align="left">
-                <div><strong>田中杏子さん</strong>、他5人が動画にいいね
-                  <v-ons-icon icon="fa-thumbs-o-up" class="black"></v-ons-icon>
-                  しました。</div>
-                <div class="mt-10">TRM vsみなとFC</div>
-              </v-ons-col>
-            </v-ons-row>
-          </v-ons-list-item>
-          <v-ons-list-item modifier="chevron" tappable="true"
-                         onclick="notificationNavi.pushPage('article.html', {data: {fromPage: 'notification', article_id: 'xxx'}});">
-            <v-ons-row>
-              <v-ons-col width="70px" align="left" class="notif-time">12/20 20:01</v-ons-col>
-            </v-ons-row>
-            <v-ons-row>
-              <v-ons-col align="left">
-                <div><strong>高橋望さん</strong>が動画にコメントしました。</div>
-                <div class="mt-10">ナイスゴール！</div>
-              </v-ons-col>
-            </v-ons-row>
-          </v-ons-list-item>
-        </v-ons-list>
-      </v-ons-col>
-    </v-ons-row>
+
+    <div class="center mt-20" v-if="loading">
+      <v-ons-progress-circular indeterminate></v-ons-progress-circular>
+    </div>
+    <div class="center mt-20 gray" v-else-if="errored">
+      お知らせを読み込めませんでした。
+    </div>
+    <div class="center mt-20 gray notices-empty" v-else-if="!items.length">
+      お知らせはありません
+    </div>
+    <v-ons-list v-else>
+      <v-ons-list-item v-for="item in items" :key="item.id" tappable modifier="chevron"
+                       :class="['notice-item', { 'notice-unopened': !item.opened }]"
+                       @click="open(item)">
+        <div class="left">
+          <span class="notice-dot" v-if="!item.opened"></span>
+          <v-ons-icon :icon="iconOf(item.type)" size="20px" class="notice-type-icon"></v-ons-icon>
+        </div>
+        <div class="center">
+          <span class="list-item__subtitle notice-meta">
+            {{ item.title }}・{{ item.created_at | moment('from') }}
+          </span>
+          <span class="list-item__title notice-body">{{ item.body }}</span>
+        </div>
+      </v-ons-list-item>
+    </v-ons-list>
   </v-ons-page>
 </template>
 
 <script>
+  import { markNoticeOpened, closeShownNotifications, setUnseen } from '../push.js';
+  import { openNoticeTarget } from '../deep-link.js';
+
+  const ICONS = {
+    new_post: 'fa-file-text-o',
+    post_comment: 'fa-comment-o',
+    schedule_change: 'fa-calendar',
+    schedule_deleted: 'fa-calendar-times-o',
+    schedule_comment: 'fa-comments-o',
+    test: 'fa-bell-o'
+  };
+
   export default {
+    data() {
+      return { items: [], loading: true, errored: false };
+    },
+    computed: {
+      hasUnopened() { return this.items.some((item) => !item.opened); }
+    },
+    created() {
+      this.load();
+    },
+    methods: {
+      iconOf(type) { return ICONS[type] || 'fa-bell-o'; },
+      load() {
+        this.loading = true;
+        this.$http.get('/api/notices')
+          .then((response) => {
+            this.items = response.data.items || [];
+            this.loading = false;
+            // 一覧を開いたので、🔔とアイコンの数を 0 にする(1 件ずつの「開いた」は変えない)
+            setUnseen(0);
+            this.$http.post('/api/notices/seen', {}, { silentErrors: true }).catch(() => {});
+          })
+          .catch(() => {
+            this.loading = false;
+            this.errored = true;
+          });
+      },
+      open(item) {
+        item.opened = true;
+        markNoticeOpened(item.nid);
+        // この一覧を閉じてから、通知をタップしたときと同じ処理で目的の画面を開く
+        this.$store.commit('navigator/pop');
+        openNoticeTarget(this.$store, item.url);
+      },
+      openAll() {
+        this.items.forEach((item) => { item.opened = true; });
+        this.$http.post('/api/notices/open', { all: true }, { silentErrors: true }).catch(() => {});
+        closeShownNotifications(() => true);
+      }
+    }
   };
 </script>
 
-<style></style>
+<style scoped>
+  .notice-unopened {
+    background-color: #eef4fd;
+  }
+  .notice-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 4px;
+    background: #2c74e8;
+  }
+  .notice-type-icon {
+    color: #607d8b;
+  }
+  .notice-meta {
+    font-size: 12px;
+  }
+  .notice-body {
+    font-size: 14px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+</style>

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PostCommentController;
 use App\Http\Controllers\Api\PostCommentResponseController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PostResponseController;
+use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\QuestionnaireController;
 use App\Http\Controllers\Api\ScheduleCommentController;
@@ -65,5 +66,9 @@ Route::middleware(['auth:api', 'team', 'log'])->group(function () {
     Route::delete('push/subscriptions', [PushController::class, 'unsubscribe']);
     Route::post('push/test', [PushController::class, 'test']);
     Route::post('push/recent', [PushController::class, 'recent']);
-    Route::post('push/seen', [PushController::class, 'seen']);
+    // アプリ内のお知らせ一覧(🔔。#125)
+    Route::get('notices', [NoticeController::class, 'index']);
+    Route::get('notices/unseen', [NoticeController::class, 'unseen']);
+    Route::post('notices/seen', [NoticeController::class, 'seen']);
+    Route::post('notices/open', [NoticeController::class, 'open']);
 });

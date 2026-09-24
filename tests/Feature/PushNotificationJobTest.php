@@ -9,7 +9,7 @@ use App\Post;
 use App\PostComment;
 use App\Schedule;
 use App\ScheduleComment;
-use App\Support\PushNoticeLog;
+use App\Support\NoticeLog;
 use App\Support\PushRecipients;
 use App\Team;
 use App\User;
@@ -64,6 +64,12 @@ class PushNotificationJobTest extends TestCase
         $job->handle(new PushRecipients);
     }
 
+    /** 通知の data.url から nid(どの通知かの目印。#125)を除く */
+    private static function withoutNid(string $url): string
+    {
+        return preg_replace('/[?&]nid=[A-Za-z0-9]+$/', '', $url);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -98,7 +104,7 @@ class PushNotificationJobTest extends TestCase
         // 名前はそのチームでのメンバー名
         $this->assertSame('山田さんが投稿しました：9/27 練習試合のお知らせ', $payload['body']);
         $this->assertSame('post-' . $post->id, $payload['tag']);
-        $this->assertSame("/home?launcher=true&team={$this->team->id}&post={$post->id}", $payload['data']['url']);
+        $this->assertSame("/home?launcher=true&team={$this->team->id}&post={$post->id}", self::withoutNid($payload['data']['url']));
         // 通知ごとの目印(同じ tag の通知が並んでも、どれがタップされたか見分ける)
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{12}$/', $payload['data']['nid']);
         $this->assertSame(rtrim(config('app.url'), '/') . '/appicon.png', $payload['icon']);
@@ -168,7 +174,7 @@ class PushNotificationJobTest extends TestCase
         $payload = $this->payloadFor($this->coach);
         $this->assertSame('山田さんが「遠征のお知らせ」にコメントしました：承知しました。 よろしくお願いします', $payload['body']);
         $this->assertSame('post-' . $post->id, $payload['tag']);
-        $this->assertSame("/home?launcher=true&team={$this->team->id}&post={$post->id}", $payload['data']['url']);
+        $this->assertSame("/home?launcher=true&team={$this->team->id}&post={$post->id}", self::withoutNid($payload['data']['url']));
     }
 
     // 予定の変更・削除 --------------------------------------------------------
@@ -188,7 +194,7 @@ class PushNotificationJobTest extends TestCase
         $this->assertSame('schedule-' . $schedule->id, $payload['tag']);
         $this->assertSame(
             "/home?launcher=true&team={$this->team->id}&schedule={$schedule->id}&date=2026-09-27",
-            $payload['data']['url']
+            self::withoutNid($payload['data']['url'])
         );
     }
 
@@ -204,7 +210,7 @@ class PushNotificationJobTest extends TestCase
         $this->assertSame('予定が削除されました：10/4 練習', $payload['body']);
         $this->assertSame('schedule-999', $payload['tag']);
         // 予定はもう無いので、その日のカレンダーを開く
-        $this->assertSame("/home?launcher=true&team={$this->team->id}&date=2026-10-04", $payload['data']['url']);
+        $this->assertSame("/home?launcher=true&team={$this->team->id}&date=2026-10-04", self::withoutNid($payload['data']['url']));
     }
 
     // 予定へのコメント --------------------------------------------------------
@@ -232,7 +238,7 @@ class PushNotificationJobTest extends TestCase
         $this->assertSame('schedule-' . $schedule->id, $payload['tag']);
         $this->assertSame(
             "/home?launcher=true&team={$this->team->id}&schedule={$schedule->id}&date=2026-09-27",
-            $payload['data']['url']
+            self::withoutNid($payload['data']['url'])
         );
     }
 
@@ -265,46 +271,65 @@ class PushNotificationJobTest extends TestCase
 
         $this->assertSame(8030, $payload['web_push']);
         $this->assertSame('チーム', $payload['notification']['title']);
-        $this->assertSame('https://tsubasa.example.test/home?launcher=true&team=1&post=2', $payload['notification']['navigate']);
+        // nid を付けて、閉じた状態から開いたときもどの通知かが分かるようにする(#125)
+        $this->assertSame('https://tsubasa.example.test/home?launcher=true&team=1&post=2&nid=' . $notice->nid, $payload['notification']['navigate']);
         // iOS は icon を基準なしで読むので、相対だとこの形式として認識されない
         $this->assertSame('https://tsubasa.example.test/appicon.png', $payload['notification']['icon']);
         // 通知は sw.js が表示する（前面に戻ったときにタップされた通知を割り出すため）
         $this->assertTrue($payload['mutable']);
         // Declarative Web Push に対応していないブラウザ(sw.js が表示する)向けに相対のアドレスも残す
-        // badge はアイコンに出す、まだ見ていないお知らせの数(この通知を含む。#123)
+        // badge はアイコンに出す、まだ確認していない通知の数(🔔と同じ。記録してから送るのでこの通知を含む)
         $this->assertSame(
-            ['url' => '/home?launcher=true&team=1&post=2', 'nid' => $notice->nid, 'badge' => 1],
+            ['url' => '/home?launcher=true&team=1&post=2&nid=' . $notice->nid, 'nid' => $notice->nid, 'badge' => 0],
             $payload['notification']['data']
         );
     }
 
-    public function test_badgeは最後にアプリを開いた後に送った通知の数にこの通知を足した数(): void
+    public function test_badgeはお知らせ一覧を最後に開いた後に届いた通知の数(): void
     {
-        $old = new PushNotice('チーム', '前のもの', 'post-1', '/home');
-        PushNoticeLog::record($this->coach, $old);
-        PushNoticeLog::markSeen($this->coach);
-        // 見た後に2件送った
+        NoticeLog::record($this->coach, new PushNotice('チーム', '前のもの', 'post-1', '/home'), 'new_post', $this->team->id);
+        NoticeLog::markSeen($this->coach);
+        // 一覧を開いた後に2件届いた(送るときは記録してから送るので、2件目の通知の badge は 2)
         $this->travel(1)->seconds();
-        PushNoticeLog::record($this->coach, new PushNotice('チーム', '1', 'post-2', '/home'));
-        PushNoticeLog::record($this->coach, new PushNotice('チーム', '2', 'post-3', '/home'));
+        NoticeLog::record($this->coach, new PushNotice('チーム', '1', 'post-2', '/home'), 'new_post', $this->team->id);
+        $notice = new PushNotice('チーム', '2', 'post-3', '/home');
+        NoticeLog::record($this->coach, $notice, 'new_post', $this->team->id);
 
-        $notice = new PushNotice('チーム', '3件目', 'post-4', '/home');
-        $this->assertSame(3, $notice->toWebPush($this->coach)->toArray()['notification']['data']['badge']);
+        $this->assertSame(2, $notice->toWebPush($this->coach)->toArray()['notification']['data']['badge']);
         // 他の人の数には影響しない
-        $this->assertSame(1, $notice->toWebPush($this->parent)->toArray()['notification']['data']['badge']);
+        $this->assertSame(0, $notice->toWebPush($this->parent)->toArray()['notification']['data']['badge']);
     }
 
-    public function test_送った通知が記録される(): void
+    public function test_宛先の全員のお知らせに記録しプッシュ通知は購読のある人にだけ送る(): void
     {
+        // スマホの通知を使っていない人も、アプリ内のお知らせ一覧で見られるようにする(#125)
+        $post = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->actor->id, 'title' => '練習']);
+        $this->runJob(PushNotificationJob::newPost($post, $this->actor->id));
+
+        foreach ([$this->coach, $this->parent, $this->noDevice] as $user) {
+            $items = NoticeLog::list($user);
+            $this->assertCount(1, $items, $user->name);
+            $this->assertSame('new_post', $items[0]['type']);
+            $this->assertSame($this->team->id, $items[0]['team_id']);
+            $this->assertSame('横浜SCつばさ', $items[0]['title']);
+            $this->assertSame('山田さんが投稿しました：練習', $items[0]['body']);
+            $this->assertFalse($items[0]['opened']);
+        }
+        Notification::assertNotSentTo($this->noDevice, PushNotice::class); // 記録はするが送らない
+        // 操作した本人には記録しない
+        $this->assertSame([], NoticeLog::list($this->actor));
+        // 送った通知の badge は、その人のまだ確認していない数(この通知を含む)
+        $this->assertSame(1, $this->payloadFor($this->coach)['data']['badge']);
+    }
+
+    public function test_種類ごとの設定でオフの人には記録もしない(): void
+    {
+        $this->parent->push_prefs = ['new_post' => false];
+        $this->parent->save();
         $post = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->actor->id]);
         $this->runJob(PushNotificationJob::newPost($post, $this->actor->id));
 
-        $recent = PushNoticeLog::recent($this->coach);
-        $this->assertCount(1, $recent);
-        $this->assertSame('post-' . $post->id, $recent[0]['tag']);
-        // 送っていない人(操作した本人・購読なし)には記録しない
-        $this->assertSame([], PushNoticeLog::recent($this->actor));
-        $this->assertSame([], PushNoticeLog::recent($this->noDevice));
+        $this->assertSame([], NoticeLog::list($this->parent));
     }
 
     public function test_TTLとurgencyを指定している(): void

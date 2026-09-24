@@ -244,6 +244,7 @@
   import {emptyFileMessage, validationErrorMessage} from '../attachment.js';
   import EditPost from './EditPost.vue';
   import IFrameWindow from './IFrameWindow.vue';
+  import {closeShownNotifications} from '../push.js';
   export default {
     mounted() {
       this.load();
@@ -314,6 +315,8 @@
             this.user = response.data.user;
             this.loading = false;
             this.app_url = response.data.app_url;
+            // この投稿についてのお知らせはサーバで「開いた」になった。通知センターに残っていれば消す(#125)
+            closeShownNotifications((n) => n.tag === 'post-' + post_id);
           })
           .catch(error => {
             console.log(error);

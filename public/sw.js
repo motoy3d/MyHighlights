@@ -66,8 +66,15 @@ self.addEventListener('push', (event) => {
   event.waitUntil(Promise.all([
     self.registration.showNotification(title, options),
     setBadge(data.badge),
+    tellNoticeArrived(),
   ]));
 });
+
+// 開いている画面に「通知が届いた」と知らせる(🔔の数を取り直させる。#125)
+async function tellNoticeArrived() {
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  windows.forEach((client) => client.postMessage({ type: 'notice-arrived' }));
+}
 
 // アイコンのバッジを更新する。対応していない端末や失敗しても、通知の表示は止めない
 function setBadge(count) {

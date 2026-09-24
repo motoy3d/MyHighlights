@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Support\PushNoticeLog;
+use App\Support\NoticeLog;
 use App\User;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
@@ -29,7 +29,7 @@ class PushNotice extends Notification
 
     /**
      * 通知ごとの目印。tag は同じ投稿で共通だが、iOS は同じ tag の通知を置き換えずに並べるため、
-     * どの通知がタップされた（通知センターから消えた）かを見分けるのに使う（PushNoticeLog）
+     * どの通知がタップされた（通知センターから消えた）かを見分けるのに使う（NoticeLog）
      */
     public readonly string $nid;
 
@@ -76,7 +76,7 @@ class PushNotice extends Notification
             ->renotify(true)
             ->data($this->data($notifiable))
             // タップしたときに iOS が移る先。完全なアドレスでなければならない
-            ->navigate($origin . $this->url)
+            ->navigate($origin . $this->urlWithNid())
             ->lang('ja')
             ->mutable(true)
             // 端末がオフラインでも1日は再送を試みる。iOSは urgency が低いと届くのが遅れる
@@ -85,21 +85,27 @@ class PushNotice extends Notification
 
     /**
      * 通知の data。
-     * - url：開く画面(相対)。Declarative Web Push に対応していないブラウザ向け
+     * - url：開く画面(相対)。nid を付け、閉じた状態から開いたときもどの通知かが分かるようにする(#125)
      * - nid：通知ごとの目印(#110。どの通知がタップされたかを見分ける)
-     * - badge：アイコンに出す、まだ見ていないお知らせの数(#123)。この通知を含める。
-     *   送った記録(PushNoticeLog::record)は送った後に付くので、ここで 1 を足す
+     * - badge：アイコンに出す、まだ確認していない通知の数(🔔と同じ。#123/#125)。
+     *   お知らせの記録(NoticeLog::record)は送る前に付けるので、この通知も含まれている
      *
      * @return array<string, mixed>
      */
     private function data(mixed $notifiable): array
     {
-        $data = ['url' => $this->url, 'nid' => $this->nid];
+        $data = ['url' => $this->urlWithNid(), 'nid' => $this->nid];
         if ($notifiable instanceof User) {
-            $data['badge'] = PushNoticeLog::unseenCount($notifiable) + 1;
+            $data['badge'] = NoticeLog::unseenCount($notifiable);
         }
 
         return $data;
+    }
+
+    /** 開く画面に nid を付けたもの(起動時の処理が読み、その通知を「開いた」にする。#125) */
+    public function urlWithNid(): string
+    {
+        return $this->url . (str_contains($this->url, '?') ? '&' : '?') . 'nid=' . $this->nid;
     }
 
     /**

@@ -22,6 +22,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
+import { markNoticeOpened } from './push.js';
 
 const TAB_TIMELINE = 0;
 // sw.js と合わせる
@@ -100,6 +101,9 @@ export function openFromUrl(store) {
     return;
   }
 
+  // 通知から起動した場合(リンクに nid がある)は、お知らせ一覧でも「開いた」にする(#125)
+  markNoticeOpened(p.get('nid'));
+
   // 再読み込みで同じ画面が開き直さないように、パラメータはすぐに消す。
   // launcher=true はホーム画面からの起動の目印として既存の処理が見ているので残す
   const rest = p.get('launcher') === 'true' ? '?launcher=true' : '';
@@ -173,6 +177,12 @@ function clearDeepLink() {
   }
 }
 
+/** お知らせ一覧(🔔。#125)からタップしたとき。通知をタップしたときと同じ処理で開く */
+export function openNoticeTarget(store, urlString) {
+  // 一覧からは同じお知らせを何度でも開けるよう、タップの重複の確認(目印)は使わない
+  openDeepLinkInApp(store, urlString, null);
+}
+
 /** 通知の画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
 function openDeepLinkInApp(store, urlString, tapId) {
   if (tapId) {
@@ -185,6 +195,8 @@ function openDeepLinkInApp(store, urlString, tapId) {
   if (url.origin !== window.location.origin) {
     return;
   }
+  // 通知から開いたので、お知らせ一覧でも「開いた」にする(#125)。目印はどの経路でも nid
+  markNoticeOpened(tapId || url.searchParams.get('nid'));
   const team = url.searchParams.get('team');
   if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
     // 表示中のデータは今のチームのものなので、読み込み直す（起動時の処理が開く）

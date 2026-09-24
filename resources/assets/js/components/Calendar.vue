@@ -15,6 +15,9 @@
           <v-ons-icon icon="fa-caret-right" size="24px"></v-ons-icon>
         </span>
       </div>
+      <div class="right mr-5">
+        <notice-bell></notice-bell>
+      </div>
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
       <v-ons-icon icon="fa-plus" @click="openAddSchedule();"></v-ons-icon>
@@ -203,9 +206,11 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import AddSchedule from './AddSchedule.vue';
   import EditSchedule from './EditSchedule.vue';
   export default {
+    components: { NoticeBell },
     data() {
       // console.log(">>>>> Calendar#data()");
       var today = new Date();

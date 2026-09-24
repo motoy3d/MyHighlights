@@ -11,6 +11,7 @@ use App\PostAttachment;
 use App\PostResponse;
 use App\Questionnaire;
 use App\Rules\NotEmptyFile;
+use App\Support\NoticeLog;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -215,6 +216,9 @@ class PostController extends Controller
     if (!$post) {// ヒットしない場合は404
       return response()->json(null, 404);
     }
+
+    // この投稿についてのお知らせ(新しい投稿・コメント)は、どこから開いても「開いた」にする(#125)
+    NoticeLog::openByTag(Auth::user(), 'post-' . $post->id);
 
     // 投稿の既読、いいね、スター　(ログインユーザーの行動)
     // 一度INSERTしてからSELECT

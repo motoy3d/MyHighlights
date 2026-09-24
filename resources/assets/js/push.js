@@ -201,7 +201,10 @@ export async function subscribe(vapidPublicKey) {
   return subscription;
 }
 
-/* ---------- アイコンのバッジ(#123) ---------- */
+/* ---------- お知らせ(🔔)とアイコンのバッジ(#123 / #125) ---------- */
+
+// 🔔の数(お知らせ一覧を最後に開いた後に届いた通知の数)。ホーム画面のアイコンの数も同じにする
+export const noticeState = Vue.observable({ unseen: 0 });
 
 /** アイコンのバッジを消す。対応していない端末では何もしない */
 export function clearAppBadge() {
@@ -210,24 +213,74 @@ export function clearAppBadge() {
   }
 }
 
-/**
- * アプリを開いた(お知らせを見た)ことをサーバに伝え、アイコンのバッジを消す。
- * バッジの数は「最後にアプリを開いた後に送った通知の数」なので、開くたびに 0 に戻る。
- * 裏の問い合わせなので、失敗しても利用者には知らせない
- */
-export function markNotificationsSeen() {
-  clearAppBadge();
-  return axios.post('/api/push/seen', {}, { silentErrors: true }).catch(() => {});
+/** 🔔の数を入れ、アイコンの数もそろえる */
+export function setUnseen(count) {
+  noticeState.unseen = Math.max(0, Number(count) || 0);
+  if (noticeState.unseen > 0 && 'setAppBadge' in navigator) {
+    navigator.setAppBadge(noticeState.unseen).catch(() => {});
+  } else {
+    clearAppBadge();
+  }
 }
 
-/** 起動時と、前面に戻ったたびに markNotificationsSeen を呼ぶ。AppNavigator.vue の mounted から一度だけ呼ぶ */
-export function installBadgeClearing() {
-  markNotificationsSeen();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      markNotificationsSeen();
+/** 🔔の数をサーバから取り直す。裏の問い合わせなので、失敗しても利用者には知らせない */
+export function refreshUnseen() {
+  return axios.get('/api/notices/unseen', { silentErrors: true })
+    .then((response) => setUnseen(response.data && response.data.unseen))
+    .catch(() => {});
+}
+
+/**
+ * 🔔の数を、起動時・前面に戻ったとき・アプリを開いている間に通知が届いたときに取り直す。
+ * 通知を開放していない人(段階的な公開の対象外)には🔔を出さないので、何もしない。
+ * AppNavigator.vue の mounted から一度だけ呼ぶ
+ */
+export function installNoticeCount() {
+  loadPushEnabled().then(() => {
+    if (!installState.pushEnabled) {
+      return;
+    }
+    refreshUnseen();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        refreshUnseen();
+      }
+    });
+    if ('serviceWorker' in navigator) {
+      // sw.js が、通知を表示したときに「届いた」と知らせてくる
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'notice-arrived') {
+          refreshUnseen();
+        }
+      });
     }
   });
+}
+
+/** スマホの通知センターに残っている、このアプリの通知のうち match に合うものを消す */
+export async function closeShownNotifications(match) {
+  try {
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    const list = registration ? await registration.getNotifications() : [];
+    list.filter(match).forEach((notification) => notification.close());
+  } catch (e) {
+    // 消せなくても困らない
+  }
+}
+
+/**
+ * その通知を「開いた」にする(サーバに伝え、通知センターに残っていれば消す)。
+ * 一覧からタップしたとき・スマホの通知から開いたときに呼ぶ
+ */
+export function markNoticeOpened(nid) {
+  if (!nid) {
+    return Promise.resolve();
+  }
+  closeShownNotifications((n) => n.data && n.data.nid === nid);
+  return axios.post('/api/notices/open', { nid }, { silentErrors: true }).catch(() => {});
 }
 
 /** 購読をやめる。サーバへの通知に失敗しても、端末側の購読は必ず取り消す */

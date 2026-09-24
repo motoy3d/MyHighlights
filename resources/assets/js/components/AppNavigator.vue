@@ -12,7 +12,7 @@
   import AppTabbar from './AppTabbar.vue';
   import Cookies from 'js-cookie';
   import { applyUrlToStore, openFromUrl, installDeepLinkListeners } from '../deep-link.js';
-  import { installBadgeClearing } from '../push.js';
+  import { installNoticeCount } from '../push.js';
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -49,8 +49,8 @@
       openFromUrl(this.$store);
       // アプリが開いたまま通知をタップしたときは、前面に戻ったときに sw.js の書き置きを読んで開く
       installDeepLinkListeners(this.$store);
-      // アイコンのバッジ(まだ見ていないお知らせの数)は、アプリを開いたら消す(#123)
-      installBadgeClearing();
+      // 🔔とアイコンの数(お知らせ一覧を最後に開いた後に届いた通知の数。#125)を取り直し続ける
+      installNoticeCount();
     },
     data() {
       return {

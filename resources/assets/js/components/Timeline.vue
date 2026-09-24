@@ -21,6 +21,7 @@
         </template>
       </div>
       <div class="right mr-5">
+        <notice-bell></notice-bell>
         <v-ons-toolbar-button @click="showSearch($event);">
           <v-ons-icon icon="fa-search" size="20px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
@@ -127,12 +128,13 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import Article from './Article.vue';
   import Post from './Post.vue';
   import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
   export default {
-    components: { InstallGuide },
+    components: { NoticeBell, InstallGuide },
     mounted() {
       try {
         this.load();

@@ -3,7 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Notifications\PushNotice;
-use App\Support\PushNoticeLog;
+use App\Support\NoticeLog;
 use App\Team;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -291,7 +291,7 @@ class PushControllerTest extends TestCase
                     && $payload['title'] === 'Tsubasa⬆︎UP'
                     && $payload['body'] === 'テスト通知です。この端末で通知を受け取れます。'
                     && $payload['tag'] === 'test'
-                    && $payload['data']['url'] === '/home?launcher=true'
+                    && $payload['data']['url'] === '/home?launcher=true&nid=' . $notice->nid
                     && $payload['data']['nid'] === $notice->nid;
             });
     }
@@ -334,8 +334,8 @@ class PushControllerTest extends TestCase
         $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
         $first = $this->notice('post-1');
         $second = $this->notice('post-2');
-        PushNoticeLog::record($this->user, $first);
-        PushNoticeLog::record($this->user, $second);
+        NoticeLog::record($this->user, $first, 'new_post', $this->team->id);
+        NoticeLog::record($this->user, $second, 'new_post', $this->team->id);
 
         $res = $this->actingAsTeamMember($this->user, $this->team)
             ->postJson('/api/push/recent', ['endpoint' => self::ENDPOINT])
@@ -349,7 +349,7 @@ class PushControllerTest extends TestCase
     public function test_この端末の購読が無ければ何も返さない(): void
     {
         // 通知が届かない端末(期限切れで消えた購読など)で、送った通知が全部「消えた」ように見えないように
-        PushNoticeLog::record($this->user, $this->notice('post-1'));
+        NoticeLog::record($this->user, $this->notice('post-1'), 'new_post', $this->team->id);
         $other = User::factory()->create();
         $other->updatePushSubscription(self::ENDPOINT . '-other', 'key', 'token', 'aes128gcm');
 
@@ -370,51 +370,27 @@ class PushControllerTest extends TestCase
     {
         $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
         $other = User::factory()->create();
-        for ($i = 1; $i <= PushNoticeLog::RECENT_MAX + 3; $i++) {
-            PushNoticeLog::record($this->user, $this->notice('post-' . $i));
+        for ($i = 1; $i <= NoticeLog::RECENT_MAX + 3; $i++) {
+            NoticeLog::record($this->user, $this->notice('post-' . $i), 'new_post', $this->team->id);
         }
-        PushNoticeLog::record($other, $this->notice('post-999'));
+        NoticeLog::record($other, $this->notice('post-999'), 'new_post', $this->team->id);
 
-        $tags = array_column(PushNoticeLog::recent($this->user), 'tag');
-        $this->assertCount(PushNoticeLog::RECENT_MAX, $tags);
+        $tags = array_column(NoticeLog::recent($this->user), 'tag');
+        $this->assertCount(NoticeLog::RECENT_MAX, $tags);
         $this->assertSame('post-4', $tags[0]);
-        $this->assertSame('post-' . (PushNoticeLog::RECENT_MAX + 3), end($tags));
+        $this->assertSame('post-' . (NoticeLog::RECENT_MAX + 3), end($tags));
         $this->assertNotContains('post-999', $tags);
     }
 
     public function test_30日より前の記録は送るときに消える(): void
     {
         $this->travel(-31)->days();
-        PushNoticeLog::record($this->user, $this->notice('post-1'));
+        NoticeLog::record($this->user, $this->notice('post-1'), 'new_post', $this->team->id);
         $this->travelBack();
-        PushNoticeLog::record($this->user, $this->notice('post-2'));
+        NoticeLog::record($this->user, $this->notice('post-2'), 'new_post', $this->team->id);
 
-        $this->assertSame(['post-2'], array_column(PushNoticeLog::recent($this->user), 'tag'));
-        $this->assertSame(1, PushNoticeLog::unseenCount($this->user));
-    }
-
-    // POST /api/push/seen(アイコンのバッジ。#123) ------------------------------
-
-    public function test_アプリを開くとまだ見ていないお知らせが0になり以後の分だけ数える(): void
-    {
-        PushNoticeLog::record($this->user, $this->notice('post-1'));
-        PushNoticeLog::record($this->user, $this->notice('post-2'));
-        $this->assertSame(2, PushNoticeLog::unseenCount($this->user));
-
-        $this->actingAsTeamMember($this->user, $this->team)
-            ->postJson('/api/push/seen')
-            ->assertStatus(200)
-            ->assertJson(['badge' => 0]);
-        $this->assertSame(0, PushNoticeLog::unseenCount($this->user));
-
-        $this->travel(1)->seconds();
-        PushNoticeLog::record($this->user, $this->notice('post-3'));
-        $this->assertSame(1, PushNoticeLog::unseenCount($this->user));
-    }
-
-    public function test_見たの記録はログインしていないとできない(): void
-    {
-        $this->postJson('/api/push/seen')->assertStatus(401);
+        $this->assertSame(['post-2'], array_column(NoticeLog::recent($this->user), 'tag'));
+        $this->assertSame(1, NoticeLog::unseenCount($this->user));
     }
 
     public function test_同じtagの通知も別々に控える(): void
@@ -422,10 +398,10 @@ class PushControllerTest extends TestCase
         // iPhone は同じ tag の通知を並べるので、どれがタップされたかは nid で見分ける
         $a = $this->notice('post-1');
         $b = $this->notice('post-1');
-        PushNoticeLog::record($this->user, $a);
-        PushNoticeLog::record($this->user, $b);
+        NoticeLog::record($this->user, $a, 'new_post', $this->team->id);
+        NoticeLog::record($this->user, $b, 'new_post', $this->team->id);
 
         $this->assertNotSame($a->nid, $b->nid);
-        $this->assertSame([$a->nid, $b->nid], array_column(PushNoticeLog::recent($this->user), 'nid'));
+        $this->assertSame([$a->nid, $b->nid], array_column(NoticeLog::recent($this->user), 'nid'));
     }
 }

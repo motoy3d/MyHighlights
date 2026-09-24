@@ -7,6 +7,9 @@
       <div class="center navbartitle">
         <v-ons-icon icon="fa-cog" size="20px"></v-ons-icon> 設定
       </div>
+      <div class="right mr-5">
+        <notice-bell></notice-bell>
+      </div>
     </v-ons-toolbar>
     <!-- ホーム画面への追加の案内(#55)。iPhone の Safari / Android の Chrome のときだけ出る -->
     <install-guide></install-guide>
@@ -141,6 +144,7 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import ICal from './ICal.vue';
   import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
@@ -157,7 +161,7 @@
   ];
 
   export default {
-    components: { InstallGuide },
+    components: { NoticeBell, InstallGuide },
     data() {
       return {
         loading: false,

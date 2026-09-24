@@ -10,7 +10,7 @@ use App\Schedule;
 use App\ScheduleComment;
 use App\Support\PushRecipients;
 use App\Support\PushRollout;
-use App\Support\PushNoticeLog;
+use App\Support\NoticeLog;
 use App\Team;
 use App\User;
 use Illuminate\Bus\Queueable;
@@ -111,15 +111,25 @@ class PushNotificationJob implements ShouldQueue
             return;
         }
 
+        // 宛先の全員のお知らせ一覧(🔔)に記録する(スマホの通知を使っていない人も一覧で見られる。#125)。
+        // 記録してから送るので、通知に載せるアイコンの数(data.badge)にこの通知も含まれる
         $users = $this->recipients($recipients);
-        $users->load('pushSubscriptions');
-        $users = $users->filter(fn (User $user) => $user->pushSubscriptions->isNotEmpty())->values();
-
-        Log::info("プッシュ通知: type={$this->type} 宛先{$users->count()}人 tag={$notice->tag}");
         foreach ($users as $user) {
             try {
+                NoticeLog::record($user, $notice, $this->type, $this->teamId);
+            } catch (\Throwable $e) {
+                Log::error('お知らせの記録エラー user_id=' . $user->id . ': ' . $e->getMessage());
+            }
+        }
+
+        // プッシュ通知は、購読している端末がある人にだけ送る
+        $users->load('pushSubscriptions');
+        $subscribers = $users->filter(fn (User $user) => $user->pushSubscriptions->isNotEmpty())->values();
+
+        Log::info("プッシュ通知: type={$this->type} 宛先{$users->count()}人 送信{$subscribers->count()}人 tag={$notice->tag}");
+        foreach ($subscribers as $user) {
+            try {
                 Notification::sendNow($user, $notice);
-                PushNoticeLog::record($user, $notice);
             } catch (\Throwable $e) {
                 // 1人の失敗で他の人に届かなくならないようにする
                 Log::error('プッシュ通知の送信エラー user_id=' . $user->id . ': ' . $e->getMessage());
