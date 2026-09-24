@@ -534,6 +534,31 @@ test.describe('お知らせ(🔔)', () => {
     expect(calls.opened).toContainEqual({ all: true });
   });
 
+  test('チーム名は複数のチームに所属している人にだけ出す', async ({ page }) => {
+    await stubNotices(page, { unseen: 1, items: [notice({ title: '横浜SCつばさ' })] });
+    // 1 チームだけに所属している人として見せる(/api/me の所属チームを 1 つに絞る)
+    let singleTeam = true;
+    await page.route('**/api/me', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      if (singleTeam && Array.isArray(json.myTeams)) {
+        json.myTeams = json.myTeams.slice(0, 1);
+      }
+      route.fulfill({ response, json });
+    });
+    await gotoApp(page);
+    await bell(page).click();
+    const meta = page.locator('#notices_page .notice-meta').first();
+    await expect(meta).toBeVisible({ timeout: 15000 });
+    await expect(meta).not.toContainText('横浜SCつばさ');
+
+    // 複数のチームに所属している人には出す(テスト用のアカウントは複数のチームに所属している)
+    singleTeam = false;
+    await gotoApp(page);
+    await bell(page).click();
+    await expect(page.locator('#notices_page .notice-meta').first()).toContainText('横浜SCつばさ', { timeout: 15000 });
+  });
+
   test('通知を開放していない人には🔔を出さない', async ({ page }) => {
     await stubNotices(page, { enabled: false, unseen: 5 });
     await gotoApp(page);
