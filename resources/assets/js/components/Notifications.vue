@@ -2,8 +2,11 @@
   <!-- アプリ内のお知らせ一覧(🔔。#125)。最近 30 日の通知を新しい順に出し、タップで目的の画面に移る -->
   <v-ons-page id="notices_page">
     <v-ons-toolbar class="navbar">
-      <div class="left">
-        <v-ons-back-button>戻る</v-ons-back-button>
+      <!-- 戻るは投稿の詳細(Article.vue)と同じ形にそろえる -->
+      <div class="left ml-5">
+        <v-ons-toolbar-button @click="$store.commit('navigator/pop');" aria-label="戻る">
+          <v-ons-icon icon="fa-angle-left" class="white" size="32px"></v-ons-icon>
+        </v-ons-toolbar-button>
       </div>
       <div class="center navbartitle">
         <v-ons-icon icon="fa-bell" size="20px"></v-ons-icon>
@@ -36,7 +39,7 @@
           <span class="notice-dot" v-if="!item.opened"></span>
           <v-ons-icon :icon="iconOf(item.type)" size="20px" class="notice-type-icon"></v-ons-icon>
         </div>
-        <div class="center">
+        <div class="center notice-center">
           <span class="list-item__subtitle notice-meta">
             {{ item.title }}・{{ item.created_at | moment('from') }}
           </span>
@@ -105,6 +108,10 @@
 </script>
 
 <style scoped>
+  /* アプリ全体の .center(中央寄せ)が効いてしまうので、一覧の文は左寄せに戻す */
+  .notice-center {
+    text-align: left;
+  }
   .notice-unopened {
     background-color: #eef4fd;
   }
