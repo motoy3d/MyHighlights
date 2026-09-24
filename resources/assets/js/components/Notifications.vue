@@ -44,7 +44,7 @@
           <div class="notice-body">{{ item.body }}</div>
           <div class="notice-meta">
             <!-- チーム名は、複数のチームに所属している人にだけ出す(1 チームなら分かりきっているので) -->
-            <template v-if="multiTeam">{{ item.title }}・</template>{{ item.created_at | moment('from') }}
+            <template v-if="multiTeam && item.title">{{ item.title }}・</template>{{ item.created_at | moment('from') }}
           </div>
         </div>
       </v-ons-list-item>

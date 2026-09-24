@@ -182,4 +182,27 @@ class NoticeControllerTest extends TestCase
         $this->assertSame([], NoticeLog::list($other));
         $this->assertSame(1, NoticeLog::unopenedCount($this->user));
     }
+
+    public function test_予定を削除するとその予定のこれまでのお知らせが消え削除の通知だけが残る(): void
+    {
+        // 残すと、タップしてもカレンダーに予定が無い(2026-09-25 実機)
+        config(['tsubasa.push_enabled_emails' => '*']);
+        $schedule = \App\Schedule::factory()->create([
+            'team_id' => $this->team->id, 'schedule_date' => now()->addDays(3)->toDateString(),
+        ]);
+        $this->notify($this->user, 'schedule-' . $schedule->id, '予定が変更されました', 'schedule_change');
+        $this->notify($this->user, 'post-1', '関係ない投稿');
+        $other = User::factory()->create();
+        \App\Member::factory()->create(['team_id' => $this->team->id, 'user_id' => $other->id]);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->deleteJson('/api/schedules/' . $schedule->id)->assertStatus(200);
+
+        // 自分の分：変更の通知は消え、関係ない投稿の通知は残る
+        $this->assertSame(['関係ない投稿'], array_column(NoticeLog::list($this->user), 'body'));
+        // 他のメンバーには「予定が削除されました」が届いている(削除の後に記録されるので消えない)
+        $items = NoticeLog::list($other);
+        $this->assertCount(1, $items);
+        $this->assertSame('schedule_deleted', $items[0]['type']);
+    }
 }

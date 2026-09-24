@@ -19,6 +19,9 @@
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
+    <!-- ons-page は中身を page__content に移すので、表示を切り替える部分は常にある 1 つの枠に入れる
+         (枠が無いと、読み込み後に切り替えた部分(エラーや「削除された」の表示)が描画されない) -->
+    <div class="article-content">
     <!-- 投稿が無い(削除された・所属していないチームの投稿)ときは、エラーではなくそう知らせる(#125。
          お知らせ一覧や通知から、もう無い投稿を開くことがある) -->
     <section v-if="notFound" class="post-not-found">
@@ -222,6 +225,7 @@
         </v-ons-row>
       </template>
     </section>
+    </div>
 
     <!-- アンケート回答者一覧Modal -->
     <v-ons-modal>

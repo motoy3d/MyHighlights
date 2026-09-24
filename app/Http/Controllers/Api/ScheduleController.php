@@ -7,6 +7,7 @@ use App\Holiday;
 use App\Http\Controllers\Controller;
 use App\Jobs\PushNotificationJob;
 use App\Schedule;
+use App\Support\NoticeLog;
 use App\Support\ScheduleChange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -161,6 +162,13 @@ class ScheduleController extends Controller
       'schedule_date' => ScheduleChange::normalizeDate($schedule->schedule_date),
     ];
     $count = Schedule::destroy($id);
+
+    // この予定についてのこれまでのお知らせ(変更・コメント)は全員の一覧から消す。
+    // 残すと、タップしても予定が無い(#125)。このあと送る「予定が削除されました」の通知は、
+    // この後に記録されるので残る(カレンダーのその日を開く)
+    if ($count > 0) {
+      NoticeLog::forgetTag('schedule-' . $snapshot['id']);
+    }
 
     // 今日以降の予定の削除は「中止」としてプッシュで知らせる(#110)。
     // 過去の予定の整理では送らない。
