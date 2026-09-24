@@ -73,6 +73,19 @@ class UserControllerTest extends TestCase
         $this->assertSame($before, $this->user->fresh()->email);
     }
 
+    public function test_空や形の崩れたメールアドレスには変更できない(): void
+    {
+        // 空で保存するとログインできなくなる
+        $before = $this->user->email;
+        foreach (['', '   ', 'no-at-mark'] as $bad) {
+            $this->actingAsTeamMember($this->user, $this->team)
+                ->postJson('/api/users/updateEmail', ['email' => $bad])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['email']);
+        }
+        $this->assertSame($before, $this->user->fresh()->email);
+    }
+
     public function test_同じメールアドレスのまま保存できる(): void
     {
         $this->actingAsTeamMember($this->user, $this->team)

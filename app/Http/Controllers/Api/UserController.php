@@ -115,8 +115,15 @@ class UserController extends Controller
       return response()->json(null, 404);
     }
 
-    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる(#124)
+    // 空・@ の無いアドレスで保存するとログインできなくなる。厳密な検証はしない
+    // (携帯キャリアの古いアドレスは RFC の検証で弾かれるため。MemberController と同じ)
     $email = trim((string) $request->email);
+    if ($email === '' || mb_strlen($email) > 255 || !preg_match('/^[^@\s]+@[^@\s]+$/u', $email)) {
+      throw ValidationException::withMessages([
+        'email' => 'メールアドレスを正しく入れてください。',
+      ]);
+    }
+    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる(#124)
     if (User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
       throw ValidationException::withMessages([
         'email' => 'このメールアドレスは他の方が使っています。',

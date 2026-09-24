@@ -72,7 +72,8 @@
             <div class="mlr-15 mt-5" v-if="user_id && invitationFlg">
               <small class="gray">
                 入力したメールアドレスのアカウントに付け替えます。そのアドレスの登録が無ければ、新しく招待します。
-                今のアカウント自体は消えません（このチームのメンバーではなくなります）。
+                このチームでの過去の投稿・コメント・回答なども、付け替え先のアカウントに移ります。
+                今のアカウントは、他のチームに所属していなければ退会扱いになります。
               </small>
             </div>
             <div class="ml-15 mt-10">
@@ -231,7 +232,8 @@
           this.$ons.notification.alert('氏名を入れてください', {title: ''});
           return;
         }
-        if (this.memberTypeSegment !== 0 && this.invitationFlg && !this.email) {
+        if (this.memberTypeSegment !== 0 && (this.invitationFlg || this.user_id) && !this.email
+            && this.$store.state.navigator.user.currentTeamAdminFlg) {
           this.$ons.notification.alert('メールアドレスを入れてください', {title: ''});
           return;
         }
@@ -239,7 +241,8 @@
         if (this.user_id && this.invitationFlg) {
           this.$ons.notification.confirm(
             this.email + ' のアカウントに紐づけ直します。よろしいですか？\n'
-              + '（' + (this.member.email || '今のアドレス') + ' のアカウントは、このチームのメンバーではなくなります）',
+              + 'このチームでの過去の投稿・コメント・回答も移ります。'
+              + '（' + (this.member.email || '今のアドレス') + ' のアカウントは、他のチームに所属していなければ退会扱いになります）',
             {title: '', buttonLabels: ['キャンセル', 'OK']})
             .then((answer) => {
               if (answer === 1) {

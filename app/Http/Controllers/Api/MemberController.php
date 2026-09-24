@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\UserInvitation;
 use App\Member;
+use App\Support\AccountRelinker;
 use App\Team;
 use App\User;
 use Illuminate\Http\Request;
@@ -116,7 +117,8 @@ class MemberController extends Controller
       "name" => $request->name,
       "name_kana" => $request->nameKana,
       "type" => $request->memberTypeSegment + 1,
-      "admin_flg" => $request->adminFlg? 1 : 0,
+      // 管理者の設定は管理者だけができる(#124)
+      "admin_flg" => ($request->adminFlg && $this->isCurrentTeamAdmin())? 1 : 0,
       "birthday" => $request->birthday,
       "backno" => $request->backno,
       "prof_img_filename" => $request->selectedAvatarFilename,
@@ -164,95 +166,152 @@ class MemberController extends Controller
    */
   public function update(Request $request, $id)
   {
-    //TODO validate
     $member = Member::findOrFail($id);
-    //TODO 管理者権限チェック
     if (!$member || $member->team_id != Cookie::get('current_team_id')) { //チームIDが別の場合は404
       return response()->json(null, 404);
     }
 
-    // そのメールアドレスを既に使っている別の利用者(#124)。
-    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる。
+    // 名前・誕生日・背番号・アイコンなどは、管理者でなくても編集できる(チームの利便性のため)。
+    // ただしアカウントの乗っ取りや権限の奪取につながる次の操作は管理者だけに限る(#124)。
+    //   - 紐づくアカウントのメールアドレスの変更(変えた先のアドレスでパスワードを再設定すれば乗っ取れる)
+    //   - 招待・別のアカウントへの紐づけ直し
+    //   - 管理者の設定
+    // 画面(Member.vue)も管理者にしか出していないが、サーバでも必ず確かめる。
+    $isAdmin = $this->isCurrentTeamAdmin();
+    $relink = $request->invitationFlg == "1";
+    if ($relink && !$isAdmin) {
+      return response()->json(['message' => 'この操作は管理者だけができます。'], 403);
+    }
+
     $email = trim((string) $request->email);
-    $otherUser = $email === '' ? null
-      : User::where('email', $email)->where('id', '!=', $member->user_id)->first();
-
-    // members/users の更新や招待メール送信より前に確認する(途中まで保存されて 422 になるのを防ぐ)
-    if ($otherUser) {
-      if ($request->invitationFlg == "1") {
-        // 招待で別の利用者を紐づける場合。すでにこのチームの有効メンバーなら弾く(#79)。
-        // 自分自身の members 行(同じ user のまま再招待する場合)は上の where で除いてある
-        $this->assertNotActiveMemberOfTeam($otherUser->id, $member->team_id, $member->id);
-      } else {
-        // 招待でないのに他の人のアドレスを入れた場合。今の利用者のアドレスは変えられない
-        throw ValidationException::withMessages([
-          'email' => 'このメールアドレスは他の方が使っています。',
-        ]);
+    // 管理者がメールアドレスを扱うのは、アカウントが紐づいているとき(アドレスの変更)と招待・紐づけ直しのとき
+    $handlesEmail = $isAdmin && ($relink || $member->user_id);
+    if ($handlesEmail) {
+      $this->assertEmailShape($email);
+      // そのメールアドレスを既に使っている別の利用者。users.email は一意なので、確認せずに保存すると500になる。
+      // members/users の更新や招待メール送信より前に確認する(途中まで保存されて 422 になるのを防ぐ)
+      $otherUser = User::where('email', $email)->where('id', '!=', $member->user_id)->first();
+      if ($otherUser) {
+        if ($relink) {
+          // 別の利用者に紐づける場合、すでにこのチームの有効メンバーなら弾く(#79)
+          $this->assertNotActiveMemberOfTeam($otherUser->id, $member->team_id, $member->id);
+        } else {
+          throw ValidationException::withMessages([
+            'email' => 'このメールアドレスは他の方が使っています。',
+          ]);
+        }
       }
     }
 
-    $userId = $member->user_id;
-    Log::info('＞＞＞＞' . $userId);
-    $member->name = $request->name;
-    $member->name_kana = $request->nameKana;
-    $member->type = $request->memberTypeSegment + 1;  //DB反映されない。updateに入らない。要調査。
-    $member->birthday = $request->birthday;
-    $member->backno = $request->backno;
-    $member->prof_img_filename = $request->selectedAvatarFilename;
-    $member->admin_flg = $request->adminFlg;
-    $member->updated_id = Auth::id();
-    $member->save();
-    //usersテーブルで保持するデータもある
-    // 招待・紐づけ直し(下の invitationFlg の処理)では、今紐づいている利用者のメールアドレスは変えない。
-    // 「入力したアドレスのアカウントにこのメンバーを付け替える」操作なので、今の利用者は関係ない。
-    // 変えると、既存の利用者のアドレスなら一意制約に引っかかり、登録の無いアドレスなら
-    // 新しいアカウントを作らずに今の利用者のアドレスを書き換えてしまう(#124)
-    if ($userId && $request->invitationFlg != "1") {
-      Log::info("★" . $userId);
-      $user = User::find($userId);
-      if ($user) {
-        $user->email = $email;
-        $user->save();
+    $invitation = null;
+    DB::transaction(function () use ($request, $member, $isAdmin, $relink, $handlesEmail, $email, &$invitation) {
+      $member->name = $request->name;
+      $member->name_kana = $request->nameKana;
+      $member->type = $request->memberTypeSegment + 1;
+      $member->birthday = $request->birthday;
+      $member->backno = $request->backno;
+      $member->prof_img_filename = $request->selectedAvatarFilename;
+      if ($isAdmin) {
+        $member->admin_flg = $request->adminFlg ? 1 : 0;
       }
-    }
-    // 招待
-    if ($request->invitationFlg == "1") {
-      $existingUser = User::where('email', $request->email)->first();
-      if ($existingUser) {
-        // 追加登録招待メール送信
-        $fromUser = User::findOrFail(Auth::id());
-        Log::info('-----------------------');
-        Log::info($member);
-        Log::info($member->team_id);
-        $team = Team::findOrFail($member->team_id);
-        Log::info($team);
-        Mail::to($request->email)->send(
-          new UserInvitation($fromUser, $existingUser, $team->name, null));
-        $user = $existingUser;
-      } else {
-        $password = Str::random(10);
-        $user = User::create([
-          "name" => $request->name,
-          "name_kana" => $request->nameKana,
-          "email" => $request->email,
-          "password" => Hash::make($password),
-          //        "status" => 'invited',
-          "created_id" => Auth::id(),
-          "updated_id" => Auth::id()
-        ]);
-
-        // 招待メール送信
-        $fromUser = User::findOrFail(Auth::id());
-        $team = Team::find(Cookie::get('current_team_id'));
-        Mail::to($request->email)->send(
-          new UserInvitation($fromUser, $user, $team->name, $password));
-      }
-      // members更新
-      $member = Member::find($id);
-      $member->user_id = $user->id;
+      $member->updated_id = Auth::id();
       $member->save();
+
+      // 紐づくアカウントのメールアドレスの変更。
+      // 招待・紐づけ直しでは今のアカウントには触らない(入力したアドレスのアカウントに付け替える操作なので)
+      if ($handlesEmail && !$relink) {
+        $user = User::find($member->user_id);
+        if ($user && $user->email !== $email) {
+          $user->email = $email;
+          $user->updated_id = Auth::id();
+          $user->save();
+        }
+      }
+
+      if ($relink) {
+        $invitation = $this->relinkMember($member, $email, $request);
+      }
+    });
+
+    // 招待メールは保存が確定してから送る(途中で失敗したのに招待だけ届くのを防ぐ)
+    if ($invitation) {
+      $fromUser = User::findOrFail(Auth::id());
+      $team = Team::findOrFail($member->team_id);
+      Mail::to($email)->send(new UserInvitation($fromUser, $invitation['user'], $team->name, $invitation['password']));
     }
-    return Response::json($member);
+    return Response::json($member->fresh());
+  }
+
+  /**
+   * 招待・紐づけ直し。入力したアドレスのアカウント(無ければ作る)にメンバーを紐づける。
+   * すでに別のアカウントに紐づいていた場合は、そのチームでの過去の書き込みも移し(AccountRelinker)、
+   * 元のアカウントが他のどのチームにも在籍していなければ、削除と同じく退会扱いにする(#124)。
+   *
+   * @return array{user: User, password: ?string} 招待メールに使う
+   */
+  private function relinkMember(Member $member, string $email, Request $request): array
+  {
+    $password = null;
+    $user = User::where('email', $email)->first();
+    if (!$user) {
+      $password = Str::random(10);
+      $user = User::create([
+        "name" => $request->name,
+        "name_kana" => $request->nameKana,
+        "email" => $email,
+        "password" => Hash::make($password),
+        "created_id" => Auth::id(),
+        "updated_id" => Auth::id()
+      ]);
+    } elseif ($user->withdrawal_date) {
+      // 退会済みのアカウントに紐づける場合は、在籍するメンバーになるので退会を取り消す
+      $user->withdrawal_date = null;
+      $user->updated_id = Auth::id();
+      $user->save();
+    }
+
+    $oldUserId = $member->user_id;
+    if ($oldUserId && $oldUserId != $user->id) {
+      AccountRelinker::moveTeamHistory($member->team_id, (int) $oldUserId, (int) $user->id);
+    }
+    $member->user_id = $user->id;
+    $member->save();
+
+    if ($oldUserId && $oldUserId != $user->id) {
+      $stillMember = Member::where('user_id', $oldUserId)->whereNull('withdrawal_date')->exists();
+      if (!$stillMember) {
+        $oldUser = User::find($oldUserId);
+        if ($oldUser && !$oldUser->withdrawal_date) {
+          $oldUser->withdrawal_date = Carbon::now();
+          $oldUser->save();
+        }
+      }
+    }
+    return ['user' => $user, 'password' => $password];
+  }
+
+  /** ログインしている人が、今のチームの在籍中の管理者か */
+  private function isCurrentTeamAdmin(): bool
+  {
+    // Member は SoftDeletes なので deleted_at IS NULL は Eloquent が自動で付ける
+    return Member::where('user_id', Auth::id())
+      ->where('team_id', Cookie::get('current_team_id'))
+      ->whereNull('withdrawal_date')
+      ->where('admin_flg', 1)
+      ->exists();
+  }
+
+  /**
+   * メールアドレスの形だけを確かめる(空・空白入り・@ が無いものを弾く)。
+   * 携帯キャリアの古いアドレス(. が続くものなど)は RFC の検証では弾かれるので、厳密な検証はしない
+   */
+  private function assertEmailShape(string $email): void
+  {
+    if ($email === '' || mb_strlen($email) > 255 || !preg_match('/^[^@\s]+@[^@\s]+$/u', $email)) {
+      throw ValidationException::withMessages([
+        'email' => 'メールアドレスを正しく入れてください。',
+      ]);
+    }
   }
 
   /**
