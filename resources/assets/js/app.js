@@ -74,8 +74,11 @@ Vue.use(Vuex);
 Vue.use(VueOnsen);
 
 import moment from 'moment';
-import 'moment/locale/ja';
+// Vite は moment 本体を dist/moment.js(ESM)から読むので、日本語の設定も同じ dist から読む。
+// 'moment/locale/ja' は別の実体(CommonJS 版)に登録されるため効かず、「3 days ago」と英語で出ていた
+import 'moment/dist/locale/ja';
 import VueMoment from 'vue-moment';
+moment.locale('ja');
 Vue.use(VueMoment, {
   moment
 });

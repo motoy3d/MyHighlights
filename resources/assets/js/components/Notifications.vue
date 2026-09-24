@@ -36,9 +36,8 @@
                        :class="['notice-item', { 'notice-unopened': !item.opened }]"
                        @click="open(item)">
         <div class="left">
-          <!-- 開いた通知も場所だけ取っておき、アイコンの位置をそろえる -->
+          <!-- まだ開いていない印の丸。開いた通知も場所だけ取っておき、文の始まりをそろえる -->
           <span class="notice-dot" :class="{ 'notice-dot-hidden': item.opened }"></span>
-          <v-ons-icon :icon="iconOf(item.type)" size="20px" class="notice-type-icon"></v-ons-icon>
         </div>
         <div class="center notice-center">
           <span class="list-item__subtitle notice-meta">
@@ -56,15 +55,6 @@
   import { markNoticeOpened, closeShownNotifications, setUnseen } from '../push.js';
   import { openNoticeTarget } from '../deep-link.js';
 
-  const ICONS = {
-    new_post: 'fa-file-text-o',
-    post_comment: 'fa-comment-o',
-    schedule_change: 'fa-calendar',
-    schedule_deleted: 'fa-calendar-times-o',
-    schedule_comment: 'fa-comments-o',
-    test: 'fa-bell-o'
-  };
-
   export default {
     data() {
       return { items: [], loading: true, errored: false };
@@ -76,7 +66,6 @@
       this.load();
     },
     methods: {
-      iconOf(type) { return ICONS[type] || 'fa-bell-o'; },
       load() {
         this.loading = true;
         this.$http.get('/api/notices')
@@ -126,9 +115,6 @@
   }
   .notice-dot-hidden {
     visibility: hidden;
-  }
-  .notice-type-icon {
-    color: #607d8b;
   }
   .notice-meta {
     font-size: 12px;
