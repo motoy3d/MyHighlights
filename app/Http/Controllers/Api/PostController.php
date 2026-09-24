@@ -415,6 +415,8 @@ class PostController extends Controller
       DB::table('post_comments')->where('post_id', $post->id)->delete();
 //TODO      DB::table('post_comment_attachments')->where('post_id', $post->id)->delete();
       DB::table('post_responses')->where('post_id', $post->id)->delete();
+      // この投稿についてのお知らせ(🔔)も全員の一覧から消す。残すと、タップしても投稿が無く開けない(#125)
+      NoticeLog::forgetTag('post-' . $post->id);
       if ($post->questionnaire_id != 0) {
         $questionnaire = Questionnaire::findOrFail($post->questionnaire_id);
         DB::table('questionnaire_answers')->where('questionnaire_id', $questionnaire->id)->delete();

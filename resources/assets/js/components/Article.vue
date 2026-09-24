@@ -19,7 +19,12 @@
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
-    <section v-if="errored">
+    <!-- 投稿が無い(削除された・所属していないチームの投稿)ときは、エラーではなくそう知らせる(#125。
+         お知らせ一覧や通知から、もう無い投稿を開くことがある) -->
+    <section v-if="notFound" class="post-not-found">
+      <p>この投稿は削除されたか、見られなくなっています。</p>
+    </section>
+    <section v-else-if="errored">
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
@@ -277,6 +282,7 @@
         loading: false,
         deleting: false,
         errored: false,
+        notFound: false,
         app_url: null
       }
     },
@@ -321,6 +327,13 @@
           .catch(error => {
             console.log(error);
             this.errored = true;
+            if (error.response && error.response.status === 404) {
+              this.notFound = true;
+              this.loading = false;
+              // もう無い投稿の通知が通知センターに残っていれば消す
+              closeShownNotifications((n) => n.tag === 'post-' + post_id);
+              return;
+            }
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
             }
@@ -588,6 +601,11 @@
 </script>
 
 <style>
+  .post-not-found {
+    padding: 40px 20px;
+    text-align: center;
+    color: grey;
+  }
   .article_container {
     padding: 15px;
     background-color: white;

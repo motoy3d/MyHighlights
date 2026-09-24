@@ -165,4 +165,21 @@ class NoticeControllerTest extends TestCase
         $this->assertTrue($opened['コメント']);
         $this->assertFalse($opened['別の投稿']);
     }
+
+    public function test_投稿を削除するとその投稿についてのお知らせが全員の一覧から消える(): void
+    {
+        // 残すと、一覧からタップしても投稿が無く開けない(2026-09-25 実機)
+        $post = Post::factory()->create(['team_id' => $this->team->id, 'created_id' => $this->user->id]);
+        $other = User::factory()->create();
+        $this->notify($this->user, 'post-' . $post->id, '消える');
+        $this->notify($other, 'post-' . $post->id, '他の人のも消える');
+        $this->notify($this->user, 'post-999999', '残る');
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->deleteJson('/api/posts/' . $post->id)->assertStatus(200);
+
+        $this->assertSame(['残る'], array_column(NoticeLog::list($this->user), 'body'));
+        $this->assertSame([], NoticeLog::list($other));
+        $this->assertSame(1, NoticeLog::unopenedCount($this->user));
+    }
 }

@@ -553,6 +553,14 @@ test.describe('お知らせ(🔔)', () => {
     await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(2);
   });
 
+  test('もう無い投稿の通知をタップすると、エラーではなく「削除されたか、見られなくなっています」と出す', async ({ page }) => {
+    await stubNotices(page, { unopened: 1, items: [notice({ nid: 'gone', url: '/home?launcher=true&post=999999999' })] });
+    await gotoApp(page);
+    await bell(page).click();
+    await page.locator('#notices_page .notice-item').first().click();
+    await expect(page.locator('.post-not-found')).toContainText('削除されたか、見られなくなっています', { timeout: 15000 });
+  });
+
   test('お知らせが無いときは「お知らせはありません」', async ({ page }) => {
     await stubNotices(page, { unopened: 0, items: [] });
     await gotoApp(page);

@@ -129,6 +129,12 @@ class NoticeLog
         self::markOpened(DB::table('notices')->where('user_id', $user->id)->where('tag', $tag));
     }
 
+    /** その投稿についてのお知らせを全員の一覧から消す(投稿を削除したとき) */
+    public static function forgetTag(string $tag): void
+    {
+        DB::table('notices')->where('tag', $tag)->delete();
+    }
+
     /** すべて開いたにする */
     public static function openAll(User $user): void
     {
