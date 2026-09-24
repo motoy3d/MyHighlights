@@ -324,7 +324,7 @@ test.describe('通知センターから消えた通知', () => {
     await page.waitForTimeout(100);
     await page.route('**/api/push/recent', (route) => {
       const now = Date.now();
-      route.fulfill({ json: { now, notices: notices.map((x, i) => ({ nid: 'nid' + i, ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
+      route.fulfill({ json: { now, notices: notices.map((x, i) => ({ nid: 'nid' + i, title: 'テストチーム', body: '通知の本文 ' + i, ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
     });
     await page.evaluate(() => {
       window.__vis = 'visible';
@@ -337,18 +337,50 @@ test.describe('通知センターから消えた通知', () => {
     return JSON.parse(res.text).posts.data[0];
   }
   const pages = (page) => page.locator('ons-navigator > ons-page').count();
+  const banner = (page) => page.locator('.notice-banner');
 
-  test('バックグラウンドの間に届いた通知が1件だけ消えていれば、その投稿を読み込み直さずに開く', async ({ page }) => {
+  test('バックグラウンドの間に届いた通知が1件だけ消えていれば、画面は切り替えず帯を出し、帯のタップで開く', async ({ page }) => {
+    // タップしたのか削除しただけなのかは見分けられないので、勝手には切り替えない(#125)
     await gotoApp(page);
     const post = await firstPost(page);
     expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
+    const before = await pages(page);
     let reloaded = false;
     page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
-    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url: '/home?launcher=true&post=' + post.id }]);
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => {
+      opened.push(JSON.parse(route.request().postData() || '{}'));
+      route.fulfill({ json: { unopened: 0 } });
+    });
+    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url: '/home?launcher=true&post=' + post.id, body: 'この投稿の通知' }]);
+
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await expect(banner(page)).toContainText('この投稿の通知');
+    expect(await pages(page), '帯を出しただけで画面は切り替えない').toBe(before);
+    expect(opened, '帯を出しただけでは「開いた」にしない').toHaveLength(0);
+
+    await banner(page).click();
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await expect(banner(page)).toHaveCount(0);
     expect(reloaded, '読み込み直さずに開くはず').toBe(false);
+    expect(opened).toContainEqual({ nid: 'nid0' });
+  });
+
+  test('帯の✕で閉じると開かず、「開いた」にもしない', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => { opened.push(1); route.fulfill({ json: { unopened: 1 } }); });
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1' }]);
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await banner(page).locator('.nb-close').click();
+    await expect(banner(page)).toHaveCount(0);
+    await page.waitForTimeout(1000);
+    expect(await pages(page)).toBe(before);
+    expect(opened).toHaveLength(0);
   });
 
   test('同じ投稿の通知が2件あっても、タップして消えた方を開く', async ({ page }) => {
@@ -362,6 +394,8 @@ test.describe('通知センターから消えた通知', () => {
       { nid: 'older', tag: 'post-' + post.id, url },
       { nid: 'newer', tag: 'post-' + post.id, url },
     ], { displayed: ['newer'] });
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await banner(page).click();
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
   });
@@ -390,6 +424,7 @@ test.describe('通知センターから消えた通知', () => {
     ]);
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(before);
+    await expect(banner(page)).toHaveCount(0);
   });
 
   test('バックグラウンドに回る前に送られた通知は、消えていても開かない', async ({ page }) => {
@@ -399,9 +434,10 @@ test.describe('通知センターから消えた通知', () => {
     await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1', old: true }]);
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(before);
+    await expect(banner(page)).toHaveCount(0);
   });
 
-  test('sw.js からの知らせで開いた直後に、同じ通知が消えていても二度は開かない', async ({ page }) => {
+  test('sw.js からの知らせで開いた直後に、同じ通知が消えていても帯は出さない', async ({ page }) => {
     await gotoApp(page);
     const post = await firstPost(page);
     expect(post, '投稿が 1 件も無い').toBeTruthy();
@@ -415,6 +451,7 @@ test.describe('通知センターから消えた通知', () => {
     await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(2);
+    await expect(banner(page)).toHaveCount(0);
   });
 });
 

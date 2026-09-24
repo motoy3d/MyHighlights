@@ -13,6 +13,8 @@
   import Cookies from 'js-cookie';
   import { applyUrlToStore, openFromUrl, installDeepLinkListeners } from '../deep-link.js';
   import { installNoticeCount } from '../push.js';
+  import Vue from 'vue';
+  import NoticeBanner from './NoticeBanner.vue';
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -51,6 +53,9 @@
       installDeepLinkListeners(this.$store);
       // 🔔とアイコンの数(お知らせ一覧を最後に開いた後に届いた通知の数。#125)を取り直し続ける
       installNoticeCount();
+      // 前面に戻ったときの「この通知を開きますか」の帯(#125)。アプリ全体の最前面に 1 つだけ置く
+      const banner = new (Vue.extend(NoticeBanner))({ store: this.$store }).$mount();
+      document.body.appendChild(banner.$el);
     },
     data() {
       return {

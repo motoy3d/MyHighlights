@@ -51,9 +51,10 @@ class NoticeLog
     }
 
     /**
-     * 最近届いた通知(古い順)。「消えた通知から開く」用。at は届いた時刻のミリ秒
+     * 最近届いた通知(古い順)。「消えた通知から開く」用。at は届いた時刻のミリ秒。
+     * 見つけた通知は帯で「開きますか」と出すので、題名(チーム名)と本文も返す
      *
-     * @return array<int, array{nid: string, tag: string, url: string, at: int}>
+     * @return array<int, array{nid: string, tag: string, url: string, team_id: ?int, title: string, body: string, at: int}>
      */
     public static function recent(User $user): array
     {
@@ -61,12 +62,15 @@ class NoticeLog
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')->orderByDesc('id')
             ->limit(self::RECENT_MAX)
-            ->get(['nid', 'tag', 'url', 'created_at'])
+            ->get(['nid', 'tag', 'url', 'team_id', 'title', 'body', 'created_at'])
             ->reverse()
             ->map(fn ($row) => [
                 'nid' => $row->nid,
                 'tag' => $row->tag,
                 'url' => $row->url,
+                'team_id' => $row->team_id === null ? null : (int) $row->team_id,
+                'title' => $row->title,
+                'body' => $row->body,
                 'at' => Carbon::parse($row->created_at)->getTimestampMs(),
             ])
             ->values()

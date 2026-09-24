@@ -344,6 +344,10 @@ class PushControllerTest extends TestCase
         $this->assertIsInt($res->json('now'));
         $this->assertSame([$first->nid, $second->nid], array_column($res->json('notices'), 'nid'));
         $this->assertSame('/home?launcher=true&post=2', $res->json('notices.1.url'));
+        // 見つけた通知は帯で「開きますか」と出すので、題名と本文も返す(#125)
+        $this->assertSame('チーム', $res->json('notices.1.title'));
+        $this->assertSame('本文', $res->json('notices.1.body'));
+        $this->assertSame($this->team->id, $res->json('notices.1.team_id'));
     }
 
     public function test_この端末の購読が無ければ何も返さない(): void

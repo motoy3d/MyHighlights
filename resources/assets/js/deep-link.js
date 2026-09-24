@@ -23,6 +23,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
 import { markNoticeOpened } from './push.js';
+import { showNoticeBanner } from './notice-banner.js';
 
 const TAB_TIMELINE = 0;
 // sw.js と合わせる
@@ -339,8 +340,10 @@ async function checkVanishedNotification(store, since) {
       }
       await new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS));
       const vanished = findVanished(arrived, await displayedNotifications());
-      if (vanished.length === 1 && nidKey(vanished) === nidKey(first)) {
-        openDeepLinkInApp(store, vanished[0].url, vanished[0].nid);
+      // タップしたのか削除しただけなのかは見分けられないので、画面は切り替えず、帯で「開きますか」と知らせる
+      // (勝手に切り替えると、削除しただけの人には不自然。#125)。すでに別の経路で開いた通知には出さない
+      if (vanished.length === 1 && nidKey(vanished) === nidKey(first) && !handledTaps.has(vanished[0].nid)) {
+        showNoticeBanner(vanished[0]);
       }
       return;
     }
