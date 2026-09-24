@@ -36,7 +36,8 @@
                        :class="['notice-item', { 'notice-unopened': !item.opened }]"
                        @click="open(item)">
         <div class="left">
-          <span class="notice-dot" v-if="!item.opened"></span>
+          <!-- 開いた通知も場所だけ取っておき、アイコンの位置をそろえる -->
+          <span class="notice-dot" :class="{ 'notice-dot-hidden': item.opened }"></span>
           <v-ons-icon :icon="iconOf(item.type)" size="20px" class="notice-type-icon"></v-ons-icon>
         </div>
         <div class="center notice-center">
@@ -122,6 +123,9 @@
     margin-right: 6px;
     border-radius: 4px;
     background: #2c74e8;
+  }
+  .notice-dot-hidden {
+    visibility: hidden;
   }
   .notice-type-icon {
     color: #607d8b;
