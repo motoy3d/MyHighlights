@@ -291,8 +291,30 @@ test.describe('通知センターから消えた通知', () => {
     await page.route('**/sw.js', (route) => route.abort());
   });
 
-  // バックグラウンドに回る → sentDuring 件がその間に送られた → 前面に戻る
-  async function backgroundAndReturn(page, notices) {
+  // 消えた通知を調べるのは、ホーム画面のアプリで通知が許可され、この端末が購読しているときだけ。
+  // テスト用のブラウザはどれも満たさないので、そう見えるように差し替える。
+  // 通知センターに残っている通知は displayed(既定は無し)。
+  async function actAsSubscribedHomeScreenApp(page, displayed = []) {
+    await page.evaluate((displayed) => {
+      Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });
+      if (typeof window.Notification === 'undefined') {
+        window.Notification = {};
+      }
+      Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
+      const registration = {
+        pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
+        getNotifications: async () => displayed.map((nid) => ({ tag: 'x', data: { nid } })),
+      };
+      navigator.serviceWorker.getRegistration = async () => registration;
+    }, displayed);
+  }
+
+  // バックグラウンドに回る → notices がその間に送られた → 前面に戻る。
+  // notices の nid は 'nid0', 'nid1'...(指定が無ければ)
+  async function backgroundAndReturn(page, notices, { subscribed = true, displayed = [] } = {}) {
+    if (subscribed) {
+      await actAsSubscribedHomeScreenApp(page, displayed);
+    }
     await page.evaluate(() => {
       window.__vis = 'visible';
       Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
@@ -329,6 +351,35 @@ test.describe('通知センターから消えた通知', () => {
     expect(reloaded, '読み込み直さずに開くはず').toBe(false);
   });
 
+  test('同じ投稿の通知が2件あっても、タップして消えた方を開く', async ({ page }) => {
+    // iPhone は同じ tag の通知を置き換えずに並べる。古い方をタップしても開けること
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const url = '/home?launcher=true&post=' + post.id;
+    await backgroundAndReturn(page, [
+      { nid: 'older', tag: 'post-' + post.id, url },
+      { nid: 'newer', tag: 'post-' + post.id, url },
+    ], { displayed: ['newer'] });
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+  });
+
+  test('ホーム画面のアプリで購読していない端末では調べない', async ({ page }) => {
+    // Safari のタブで開いている・通知を切っている端末には通知が表示されないので、
+    // 送った通知がすべて「消えた」ように見えてしまう
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    let asked = false;
+    page.on('request', (r) => { if (r.url().includes('/api/push/recent')) asked = true; });
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1' }], { subscribed: false });
+    await page.waitForTimeout(3000);
+    expect(asked, '問い合わせないはず').toBe(false);
+    expect(await pages(page)).toBe(before);
+  });
+
   test('2件以上消えていたら(すべて消去など)開かない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
@@ -356,8 +407,9 @@ test.describe('通知センターから消えた通知', () => {
     expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
     const url = '/home?launcher=true&post=' + post.id;
+    // sw.js はタップの目印にサーバの nid を使う(消えた通知の判定と同じ目印)
     await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
-      { data: { type: 'open-url', url, tapId: 'tap-a' } })), url);
+      { data: { type: 'open-url', url, tapId: 'nid0' } })), url);
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
     await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);

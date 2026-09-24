@@ -89,7 +89,7 @@ class MemberAuthorizationTest extends TestCase
                 'invitationFlg' => '1',
             ]))->assertStatus(403);
 
-        $this->assertSame($coach->id, $coachMember->fresh()->user_id);
+        $this->assertSame($coach->id, (int) $coachMember->fresh()->user_id);
         Mail::assertNothingSent();
     }
 
@@ -212,13 +212,13 @@ class MemberAuthorizationTest extends TestCase
                 'email' => 'new@example.com', 'invitationFlg' => '1',
             ]))->assertStatus(200);
 
-        $this->assertSame($new->id, $member->fresh()->user_id);
+        $this->assertSame($new->id, (int) $member->fresh()->user_id);
         // このチームの書き込みは移る
-        $this->assertSame($new->id, $post->fresh()->created_id);
-        $this->assertSame($new->id, $post->fresh()->updated_id);
-        $this->assertSame($new->id, $comment->fresh()->user_id);
-        $this->assertSame($new->id, $schedule->fresh()->created_id);
-        $this->assertSame($new->id, $scheduleComment->fresh()->user_id);
+        $this->assertSame($new->id, (int) $post->fresh()->created_id);
+        $this->assertSame($new->id, (int) $post->fresh()->updated_id);
+        $this->assertSame($new->id, (int) $comment->fresh()->user_id);
+        $this->assertSame($new->id, (int) $schedule->fresh()->created_id);
+        $this->assertSame($new->id, (int) $scheduleComment->fresh()->user_id);
         $this->assertTrue(PostResponse::where('user_id', $new->id)->where('post_id', $post->id)->exists());
         $this->assertSame(1, QuestionnaireAnswer::where('user_id', $new->id)->where('questionnaire_id', $q1->id)->count());
         // 両方にあったものは移さない(二重にしない)。元の行は消さずに残す
@@ -227,8 +227,8 @@ class MemberAuthorizationTest extends TestCase
         $this->assertSame(1, QuestionnaireAnswer::where('user_id', $new->id)->where('questionnaire_id', $q2->id)->count());
         $this->assertSame(1, QuestionnaireAnswer::where('user_id', $old->id)->where('questionnaire_id', $q2->id)->count());
         // 他のチームの書き込みは元のアカウントのまま
-        $this->assertSame($old->id, $otherPost->fresh()->created_id);
-        $this->assertSame($old->id, $otherComment->fresh()->user_id);
+        $this->assertSame($old->id, (int) $otherPost->fresh()->created_id);
+        $this->assertSame($old->id, (int) $otherComment->fresh()->user_id);
         $this->assertTrue(PostResponse::where('user_id', $old->id)->where('post_id', $otherPost->id)->exists());
         // 他のチームに所属しているので退会扱いにはならない
         $this->assertNull($old->fresh()->withdrawal_date);
@@ -258,7 +258,7 @@ class MemberAuthorizationTest extends TestCase
                 'email' => 'back@example.com', 'invitationFlg' => '1',
             ]))->assertStatus(200);
 
-        $this->assertSame($withdrawn->id, $member->fresh()->user_id);
+        $this->assertSame($withdrawn->id, (int) $member->fresh()->user_id);
         $this->assertNull($withdrawn->fresh()->withdrawal_date);
     }
 
@@ -273,7 +273,7 @@ class MemberAuthorizationTest extends TestCase
                 'name' => '変えない', 'email' => 'already@example.com', 'invitationFlg' => '1',
             ]))->assertStatus(422);
 
-        $this->assertSame($old->id, $member->fresh()->user_id);
+        $this->assertSame($old->id, (int) $member->fresh()->user_id);
         $this->assertNotSame('変えない', $member->fresh()->name);
         Mail::assertNothingSent();
     }

@@ -55,6 +55,10 @@ export function installHttpErrorHandling(axios, getOns) {
       return Promise.reject(error);
     }
     const config = error.config || {};
+    // 利用者の操作によらない裏の問い合わせ(前面に戻ったときの通知の確認など)は知らせない
+    if (config.silentErrors) {
+      return Promise.reject(error);
+    }
 
     // 通信断・タイムアウト。response が無いと既存の catch が
     // error.response.status で TypeError になるので、ダミーを入れておく

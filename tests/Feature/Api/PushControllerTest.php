@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Notifications\PushNotice;
+use App\Support\PushSentLog;
 use App\Team;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -318,5 +319,78 @@ class PushControllerTest extends TestCase
             ->assertStatus(403);
 
         Notification::assertNothingSent();
+    }
+
+    // POST /api/push/recent ---------------------------------------------------
+    // 前面に戻ったとき、通知センターから消えた通知(タップされた通知)を探すのに使う(#110)
+
+    private function notice(string $tag): PushNotice
+    {
+        return new PushNotice('チーム', '本文', $tag, '/home?launcher=true&post=' . substr($tag, 5));
+    }
+
+    public function test_この端末の購読があれば最近送った通知を古い順に返す(): void
+    {
+        $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+        $first = $this->notice('post-1');
+        $second = $this->notice('post-2');
+        PushSentLog::record($this->user, $first);
+        PushSentLog::record($this->user, $second);
+
+        $res = $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/push/recent', ['endpoint' => self::ENDPOINT])
+            ->assertStatus(200);
+
+        $this->assertIsInt($res->json('now'));
+        $this->assertSame([$first->nid, $second->nid], array_column($res->json('notices'), 'nid'));
+        $this->assertSame('/home?launcher=true&post=2', $res->json('notices.1.url'));
+    }
+
+    public function test_この端末の購読が無ければ何も返さない(): void
+    {
+        // 通知が届かない端末(期限切れで消えた購読など)で、送った通知が全部「消えた」ように見えないように
+        PushSentLog::record($this->user, $this->notice('post-1'));
+        $other = User::factory()->create();
+        $other->updatePushSubscription(self::ENDPOINT . '-other', 'key', 'token', 'aes128gcm');
+
+        foreach ([[], ['endpoint' => ''], ['endpoint' => self::ENDPOINT . '-other']] as $body) {
+            $this->actingAsTeamMember($this->user, $this->team)
+                ->postJson('/api/push/recent', $body)
+                ->assertStatus(200)
+                ->assertJsonPath('notices', []);
+        }
+    }
+
+    public function test_最近送った通知はログインしていないと取れない(): void
+    {
+        $this->postJson('/api/push/recent', ['endpoint' => self::ENDPOINT])->assertStatus(401);
+    }
+
+    public function test_控えは利用者ごとに最大20件で古いものから消える(): void
+    {
+        $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+        $other = User::factory()->create();
+        for ($i = 1; $i <= PushSentLog::MAX + 3; $i++) {
+            PushSentLog::record($this->user, $this->notice('post-' . $i));
+        }
+        PushSentLog::record($other, $this->notice('post-999'));
+
+        $tags = array_column(PushSentLog::recent($this->user), 'tag');
+        $this->assertCount(PushSentLog::MAX, $tags);
+        $this->assertSame('post-4', $tags[0]);
+        $this->assertSame('post-' . (PushSentLog::MAX + 3), end($tags));
+        $this->assertNotContains('post-999', $tags);
+    }
+
+    public function test_同じtagの通知も別々に控える(): void
+    {
+        // iPhone は同じ tag の通知を並べるので、どれがタップされたかは nid で見分ける
+        $a = $this->notice('post-1');
+        $b = $this->notice('post-1');
+        PushSentLog::record($this->user, $a);
+        PushSentLog::record($this->user, $b);
+
+        $this->assertNotSame($a->nid, $b->nid);
+        $this->assertSame([$a->nid, $b->nid], array_column(PushSentLog::recent($this->user), 'nid'));
     }
 }

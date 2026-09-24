@@ -47,8 +47,9 @@ self.addEventListener('push', (event) => {
   if (!data.url && n.navigate) {
     data.url = n.navigate;
   }
-  // この通知の目印。タップの重複を防ぐ ID（tapId）としても使う
-  data.id = Math.random().toString(36).slice(2, 10);
+  // この通知の目印。タップの重複を防ぐ ID（tapId）としても使う。
+  // サーバが付けた nid があればそれを使い、画面側の「消えた通知」の判定と同じ目印にそろえる
+  data.id = data.nid || Math.random().toString(36).slice(2, 10);
   const options = {
     body: n.body || '新しいお知らせがあります',
     icon: n.icon || '/appicon.png',

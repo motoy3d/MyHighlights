@@ -29,11 +29,9 @@ const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
-// 開いたタップ。知らせと書き置きの両方で届いても一度だけ開く
+// 開いたタップ。知らせ・書き置き・消えた通知のどれで届いても一度だけ開く。
+// 目印はサーバが通知ごとに付ける nid で、どの経路でも同じ値になる（sw.js の data.id も nid）
 const handledTaps = new Set();
-// 最後に開いたアドレスと時刻。経路が違っても、同じアドレスをこの間に二度は開かない
-let lastOpened = null;
-const SAME_OPEN_MS = 10 * 1000;
 
 const TAB_CALENDAR = 1; // ブログのタブは 3 番目なので、カレンダーは常に 1
 
@@ -187,12 +185,6 @@ function openDeepLinkInApp(store, urlString, tapId) {
   if (url.origin !== window.location.origin) {
     return;
   }
-  // タップが sw.js から届いた環境（Chrome など）では、前面に戻ったときの「消えた通知」でも同じ画面が見つかる。
-  // 経路ごとに目印が違うので、同じアドレスを続けて開かないようにする
-  if (lastOpened && lastOpened.href === url.href && Date.now() - lastOpened.at < SAME_OPEN_MS) {
-    return;
-  }
-  lastOpened = { href: url.href, at: Date.now() };
   const team = url.searchParams.get('team');
   if (isId(team) && String(Cookies.get('current_team_id')) !== team) {
     // 表示中のデータは今のチームのものなので、読み込み直す（起動時の処理が開く）
@@ -243,21 +235,11 @@ async function displayedNotifications() {
 /**
  * 送った通知のうち、通知センターから消えたもの。
  * iOS は同じ tag の通知を置き換えずに並べるので、tag ではなく通知ごとの目印（nid）で比べる。
- * ただし同じ tag の新しい通知に置き換わって消えた場合（Chrome など）は、タップされたのではないので除く。
+ * （この判定は iOS でだけ使うので、Chrome のように同じ tag で置き換わる場合は考えない）
  */
-function findVanished(arrived, notices, displayed) {
-  const sentAt = new Map(notices.map((x) => [x.nid, x.at]));
+function findVanished(arrived, displayed) {
   const nids = new Set(displayed.map((d) => d.nid));
-  return arrived.filter((x) => {
-    if (!x.nid) {
-      return !displayed.some((d) => d.tag === x.tag);
-    }
-    if (nids.has(x.nid)) {
-      return false;
-    }
-    const replaced = displayed.some((d) => d.tag === x.tag && (sentAt.get(d.nid) || 0) > x.at);
-    return !replaced;
-  });
+  return arrived.filter((x) => x.nid && !nids.has(x.nid));
 }
 
 /**
@@ -274,42 +256,79 @@ export function isAppleMobile() {
 let hiddenAt = null;
 // サーバの送った時刻がこれだけ前でも「バックグラウンドの間に届いた」とみなす（送ってから表示までの遅れと時計の誤差）
 const SENT_MARGIN_MS = 5000;
+// 通知センターから消えるのを待つ間隔。消えたと見えたら、もう一度見て同じなら決める
+const SAMPLE_WAITS_MS = [0, 400, 1200];
+const CONFIRM_WAIT_MS = 400;
 let vanishChecking = false;
+// 調べている間にもう一度バックグラウンドから戻った場合の、次に調べる起点（いちばん古いもの）
+let pendingSince = null;
+
+/**
+ * この端末で消えた通知を調べる意味があるか。
+ * ホーム画面のアプリで、通知が許可され、この端末が購読しているときだけ。
+ * そうでない端末（Safari のタブで開いている、通知を切っている、PC でだけ受け取っている等）には
+ * そもそも通知が表示されないので、送った通知がすべて「消えた」ように見えてしまう。
+ */
+async function thisDeviceSubscription() {
+  const standalone = window.navigator.standalone === true
+    || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (!standalone || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return null;
+  }
+  const registration = await navigator.serviceWorker.getRegistration('/');
+  if (!registration || !registration.pushManager) {
+    return null;
+  }
+  return registration.pushManager.getSubscription();
+}
+
+/** 消えた通知の nid の組（比べるため） */
+const nidKey = (list) => list.map((x) => x.nid).sort().join(',');
+
 /**
  * バックグラウンドにいた間に届いた通知のうち、通知センターから消えたものを探し、1件だけならそれを開く。
  *
  * iOS は、タップされた通知を通知センターから消してからアプリを前面に出す。
- * 前面に戻った直後はまだ消えていないことがあるので、少し待って読み直す。
+ * 前面に戻った直後はまだ消えていないことがあるので、消えるまで少し待ち、消えたと見えたらもう一度見て、
+ * 同じだったときに決める（スワイプで消した通知と、今タップした通知が混ざって見えるのを避ける）。
  * 2件以上消えていたら「すべて消去」などで消されたとみなし、開かない。
- * スワイプで1件消した後、アプリ切り替えから前面に戻したときも「消えた」と見分けがつかず開いてしまう
- * （タップで移れないよりはよいとして受け入れている）。
+ *
+ * 見分けられない場合（受け入れている弱点。設計書 §6.4.1）
+ * - スワイプで1件消した後、通知を経由せずにアプリ切り替えから前面に戻すと、その通知が開く
+ * - 通知が端末に届く前に前面に戻すと、その通知が開く
  */
 async function checkVanishedNotification(store, since) {
-  if (vanishChecking || !('serviceWorker' in navigator)) {
+  if (vanishChecking) {
+    pendingSince = pendingSince === null ? since : Math.min(pendingSince, since);
     return;
   }
   vanishChecking = true;
   try {
-    const { data } = await axios.get('/api/push/recent');
+    const subscription = await thisDeviceSubscription();
+    if (!subscription) {
+      return;
+    }
+    // この端末の購読がサーバに登録されているときだけ、送った通知を返してもらう。
+    // 問い合わせの失敗は利用者に知らせない（前面に戻っただけで何もしていないので）
+    const { data } = await axios.post('/api/push/recent', { endpoint: subscription.endpoint }, { silentErrors: true });
     // サーバの時計に直す
     const from = since + (data.now - Date.now()) - SENT_MARGIN_MS;
-    const notices = data.notices || [];
-    const arrived = notices.filter((x) => x.at >= from);
+    const arrived = (data.notices || []).filter((x) => x.at >= from);
     if (!arrived.length) {
       return;
     }
-    for (const wait of [0, 400, 1200]) {
+    for (const wait of SAMPLE_WAITS_MS) {
       if (wait) {
         await new Promise((resolve) => setTimeout(resolve, wait));
       }
-      const displayed = await displayedNotifications();
-      const vanished = findVanished(arrived, notices, displayed);
-      if (!vanished.length) {
+      const first = findVanished(arrived, await displayedNotifications());
+      if (!first.length) {
         continue;
       }
-      if (vanished.length === 1) {
-        const x = vanished[0];
-        openDeepLinkInApp(store, x.url, x.nid || (x.tag + '@' + x.at));
+      await new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS));
+      const vanished = findVanished(arrived, await displayedNotifications());
+      if (vanished.length === 1 && nidKey(vanished) === nidKey(first)) {
+        openDeepLinkInApp(store, vanished[0].url, vanished[0].nid);
       }
       return;
     }
@@ -317,6 +336,11 @@ async function checkVanishedNotification(store, since) {
     // 調べられなければ開かない（ふだんどおり前面に戻るだけ）
   } finally {
     vanishChecking = false;
+    if (pendingSince !== null) {
+      const next = pendingSince;
+      pendingSince = null;
+      checkVanishedNotification(store, next);
+    }
   }
 }
 
