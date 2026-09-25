@@ -16,6 +16,8 @@ export const creds = {
   password: process.env.TSUBASA_PASSWORD || 'password',
   multiTeamEmail: process.env.TSUBASA_MULTI_TEAM_EMAIL || '',
   multiTeamPassword: process.env.TSUBASA_MULTI_TEAM_PASSWORD || '',
+  // テストで書き込むチーム。本物の利用者がいないチームを指定する(auth.setup.js)
+  teamId: process.env.TSUBASA_TEAM_ID || '',
 };
 
 /** ログインし、タイムラインが描画されるまで待つ */
