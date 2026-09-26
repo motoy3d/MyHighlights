@@ -11,7 +11,7 @@
 <script>
   import AppTabbar from './AppTabbar.vue';
   import Cookies from 'js-cookie';
-  import { applyUrlToStore, openFromUrl, installDeepLinkListeners } from '../deep-link.js';
+  import { applyUrlToStore, pushArticleOnStart, openFromUrl, installDeepLinkListeners } from '../deep-link.js';
   import { installNoticeCount } from '../push.js';
   import Vue from 'vue';
   import NoticeBanner from './NoticeBanner.vue';
@@ -45,6 +45,8 @@
       applyUrlToStore(this.$store);
       // navigatorにTabbarをpush
       this.$store.commit('navigator/push', AppTabbar);
+      // 通知のリンクで投稿を開くときは、最初から投稿の画面を上に積む(タイムラインを一瞬見せないため)
+      pushArticleOnStart(this.$store);
     },
     mounted() {
       // 通知のリンク(/home?post=… など)で起動したら、そのタブ・投稿を開く(deep-link.js)

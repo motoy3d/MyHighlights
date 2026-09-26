@@ -169,7 +169,10 @@ test.describe('通知のリンクで該当画面を開く', () => {
     expect(post, '投稿が 1 件も無い').toBeTruthy();
 
     await withRateLimitRetry(page, async () => {
-      await page.goto(`/home?launcher=true&post=${post.id}`);
+      // タイムラインを一瞬見せないよう、投稿の画面は最初から積んである(読み込みが終わった時点で 2 枚目がある。
+      // 以前は読み込み後に積んでいて、タイムラインが一瞬見えてから切り替わっていた。2026-09-26 実機)
+      await page.goto(`/home?launcher=true&post=${post.id}`, { waitUntil: 'load' });
+      expect(await page.locator('ons-navigator > ons-page').count()).toBe(2);
       // ナビゲーターに積まれた 2 枚目のページ(投稿の詳細)に、その投稿のタイトルが出る
       const article = page.locator('ons-navigator > ons-page').nth(1);
       await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 30_000 });

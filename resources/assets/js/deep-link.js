@@ -85,6 +85,25 @@ export function applyUrlToStore(store) {
 }
 
 /**
+ * 投稿を開くリンクで起動したときは、タブバーの上に投稿の画面を最初から積んでおく。
+ * AppNavigator.vue の beforeCreate で、タブバーを積んだ直後に呼ぶ。
+ *
+ * 描画後(openFromUrl)に積むと、タイムラインが一瞬見えてから投稿の画面に変わる(2026-09-26 実機)。
+ * 投稿はタイムラインのタブのまま開くのでタブの切り替えは要らず、タブバーの初期化を待つ必要が無い。
+ */
+let articleOpenedOnStart = false;
+export function pushArticleOnStart(store) {
+  if (!isId(params().get('post'))) {
+    return;
+  }
+  store.commit('navigator/push', {
+    extends: Article,
+    onsNavigatorOptions: { animation: 'none' }
+  });
+  articleOpenedOnStart = true;
+}
+
+/**
  * タブを切り替えて投稿を開き、パラメータを URL から消す。
  * AppNavigator.vue の mounted から呼ぶ。
  *
@@ -114,6 +133,9 @@ export function openFromUrl(store) {
   // 消し終わる前に読み込み完了の pageshow などで書き置きを読んでしまわないよう、少しの間は読まない
   ignoreDeepLinkUntil = Date.now() + 3000;
   clearDeepLink();
+  if (articleOpenedOnStart) {
+    return; // 投稿の画面は pushArticleOnStart で積んである
+  }
   const open = () => openTarget(store, p);
   afterLoad(open);
 }
