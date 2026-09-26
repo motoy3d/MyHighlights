@@ -322,7 +322,7 @@ class PushControllerTest extends TestCase
     }
 
     // POST /api/push/recent ---------------------------------------------------
-    // 前面に戻ったとき、通知センターから消えた通知(タップされた通知)を探すのに使う(#110)
+    // 前面に戻ったとき、バックグラウンドの間に届いてまだ開いていない通知を帯で知らせるのに使う(#125 §3.2)
 
     private function notice(string $tag): PushNotice
     {
@@ -348,6 +348,23 @@ class PushControllerTest extends TestCase
         $this->assertSame('チーム', $res->json('notices.1.title'));
         $this->assertSame('本文', $res->json('notices.1.body'));
         $this->assertSame($this->team->id, $res->json('notices.1.team_id'));
+    }
+
+    public function test_開いた通知は返さない(): void
+    {
+        // 別の端末や一覧で開いた通知を、戻ったときの帯に出さない
+        $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+        $opened = $this->notice('post-1');
+        $unopened = $this->notice('post-2');
+        NoticeLog::record($this->user, $opened, 'new_post', $this->team->id);
+        NoticeLog::record($this->user, $unopened, 'new_post', $this->team->id);
+        NoticeLog::openByNid($this->user, $opened->nid);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->postJson('/api/push/recent', ['endpoint' => self::ENDPOINT])
+            ->assertStatus(200)
+            ->assertJsonPath('notices.0.nid', $unopened->nid)
+            ->assertJsonCount(1, 'notices');
     }
 
     public function test_この端末の購読が無ければ何も返さない(): void

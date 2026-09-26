@@ -11,18 +11,17 @@
  * アプリが開いている（バックグラウンドにいる）状態で通知をタップした場合（installDeepLinkListeners）：
  *   主な経路：sw.js から「この画面を開いて」とアドレスごと届くので、読み込み直さずにその画面を開く
  *   控え：sw.js が同じ内容を Cache Storage に書き置きするので、知らせを取りこぼしても前面に戻ったときに読む
- *   最後の手段（iPhone / iPad だけ）：iPhone ではアプリがバックグラウンドだとタップが sw.js に届かないことがある
+ *   iPhone / iPad：アプリがバックグラウンドだとタップが sw.js に届かない
  *     （WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 。上の2つがどちらも起きない）。
- *     そこで前面に戻ったとき、バックグラウンドにいた間にサーバが送った通知（GET /api/push/recent）と
- *     通知センターに残っている通知を比べ、1件だけ消えていればそれがタップされた通知とみなして開く
- *     （checkVanishedNotification）。控えを端末でなくサーバに置くのは、iOS では sw.js が保存したものを
- *     画面から読めなかったため（2026-09-22 実機で確認）。
+ *     そこで前面に戻ったとき、バックグラウンドにいた間に届いてまだ開いていない通知（POST /api/push/recent）を
+ *     帯で知らせる（checkArrivedWhileAway）。iOS では sw.js が保存したものも通知センターの中身も
+ *     画面から見えない（2026-09-22 / 09-26 実機で確認）ので、控えはサーバに置く。
  * 同じタップ（tapId。通知ごとの目印）はどの経路で受けても一度しか開かない。
  */
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
-import { markNoticeOpened, refreshUnopened } from './push.js';
+import { markNoticeOpened } from './push.js';
 import { showNoticeBanner } from './notice-banner.js';
 
 const TAB_TIMELINE = 0;
@@ -260,26 +259,9 @@ async function checkDeepLink(store) {
   }
 }
 
-/** 通知センターに残っている、このアプリの通知（[{ nid, tag }]。nid はサーバが通知ごとに付ける目印） */
-async function displayedNotifications() {
-  const registration = await navigator.serviceWorker.getRegistration('/');
-  const list = registration ? await registration.getNotifications() : [];
-  return list.map((x) => ({ nid: (x.data && x.data.nid) || null, tag: x.tag }));
-}
-
 /**
- * 送った通知のうち、通知センターから消えたもの。
- * iOS は同じ tag の通知を置き換えずに並べるので、tag ではなく通知ごとの目印（nid）で比べる。
- * （この判定は iOS でだけ使うので、Chrome のように同じ tag で置き換わる場合は考えない）
- */
-function findVanished(arrived, displayed) {
-  const nids = new Set(displayed.map((d) => d.nid));
-  return arrived.filter((x) => x.nid && !nids.has(x.nid));
-}
-
-/**
- * iPhone / iPad か。消えた通知から判断する方法は iOS の不具合への対策なので、iOS でだけ使う。
- * Android などはタップが sw.js に届くので要らず、使うとスワイプで消した通知を開いてしまう弱点だけが残る。
+ * iPhone / iPad か。前面に戻ったときの帯は iOS の不具合への対策なので、iOS でだけ使う。
+ * Android などはタップが sw.js に届くので要らない。
  * iPadOS の Safari は Mac と同じ UA を名乗るので、タッチ対応かどうかで見分ける。
  */
 export function isAppleMobile() {
@@ -291,18 +273,15 @@ export function isAppleMobile() {
 let hiddenAt = null;
 // サーバの送った時刻がこれだけ前でも「バックグラウンドの間に届いた」とみなす（送ってから表示までの遅れと時計の誤差）
 const SENT_MARGIN_MS = 5000;
-// 通知センターから消えるのを待つ間隔。消えたと見えたら、もう一度見て同じなら決める
-const SAMPLE_WAITS_MS = [0, 400, 1200];
-const CONFIRM_WAIT_MS = 400;
-let vanishChecking = false;
+let awayChecking = false;
 // 調べている間にもう一度バックグラウンドから戻った場合の、次に調べる起点（いちばん古いもの）
 let pendingSince = null;
 
 /**
- * この端末で消えた通知を調べる意味があるか。
+ * この端末に通知が届いているはずか。
  * ホーム画面のアプリで、通知が許可され、この端末が購読しているときだけ。
  * そうでない端末（Safari のタブで開いている、通知を切っている、PC でだけ受け取っている等）には
- * そもそも通知が表示されないので、送った通知がすべて「消えた」ように見えてしまう。
+ * 通知が届いていないので、帯も出さない（🔔の数で分かる）。
  */
 async function thisDeviceSubscription() {
   const standalone = window.navigator.standalone === true
@@ -317,147 +296,48 @@ async function thisDeviceSubscription() {
   return registration.pushManager.getSubscription();
 }
 
-/** 消えた通知の nid の組（比べるため） */
-const nidKey = (list) => list.map((x) => x.nid).sort().join(',');
-
 /**
- * バックグラウンドにいた間に届いた通知のうち、通知センターから消えたものを探し、1件だけならそれを開く。
+ * バックグラウンドにいた間に届いて、まだ開いていない通知を、前面に戻ったときに帯で知らせる(#125 §3.2)。
+ * 1 件ならその通知(帯のタップで開く)、2 件以上なら件数(帯のタップで🔔の一覧を開く)。
  *
- * iOS は、タップされた通知を通知センターから消してからアプリを前面に出す。
- * 前面に戻った直後はまだ消えていないことがあるので、消えるまで少し待ち、消えたと見えたらもう一度見て、
- * 同じだったときに決める（スワイプで消した通知と、今タップした通知が混ざって見えるのを避ける）。
- * 2件以上消えていたら「すべて消去」などで消されたとみなし、開かない。
- *
- * 見分けられない場合（受け入れている弱点。設計書 §6.4.1）
- * - スワイプで1件消した後、通知を経由せずにアプリ切り替えから前面に戻すと、その通知が開く
- * - 通知が端末に届く前に前面に戻すと、その通知が開く
+ * iPhone でアプリがバックグラウンドのときに通知をタップしても、どの通知かがアプリに伝わらない
+ * (WebKit bug 268797)。画面からは通知センターの中身も見えない(2026-09-26 実機で確認)ので、
+ * タップしたのか、触らずに戻ったのか、削除したのかは見分けられない。そこで画面は切り替えず、
+ * どの場合も「届いている」ことを帯で知らせる。
  */
-async function checkVanishedNotification(store, since) {
-  if (vanishChecking) {
+async function checkArrivedWhileAway(since) {
+  if (awayChecking) {
     pendingSince = pendingSince === null ? since : Math.min(pendingSince, since);
     return;
   }
-  vanishChecking = true;
+  awayChecking = true;
   try {
     const subscription = await thisDeviceSubscription();
     if (!subscription) {
       return;
     }
-    // この端末の購読がサーバに登録されているときだけ、送った通知を返してもらう。
+    // この端末の購読がサーバに登録されているときだけ、まだ開いていない最近の通知を返してもらう。
     // 問い合わせの失敗は利用者に知らせない（前面に戻っただけで何もしていないので）
     const { data } = await axios.post('/api/push/recent', { endpoint: subscription.endpoint }, { silentErrors: true });
     // サーバの時計に直す
     const from = since + (data.now - Date.now()) - SENT_MARGIN_MS;
-    const arrived = (data.notices || []).filter((x) => x.at >= from);
-    if (!arrived.length) {
-      return;
-    }
-    for (const wait of SAMPLE_WAITS_MS) {
-      if (wait) {
-        await new Promise((resolve) => setTimeout(resolve, wait));
-      }
-      const first = findVanished(arrived, await displayedNotifications());
-      if (!first.length) {
-        continue;
-      }
-      await new Promise((resolve) => setTimeout(resolve, CONFIRM_WAIT_MS));
-      const vanished = findVanished(arrived, await displayedNotifications());
-      // タップしたのか削除しただけなのかは見分けられないので、画面は切り替えず、帯で「開きますか」と知らせる
-      // (勝手に切り替えると、削除しただけの人には不自然。#125)。すでに別の経路で開いた通知には出さない
-      if (vanished.length === 1 && nidKey(vanished) === nidKey(first) && !handledTaps.has(vanished[0].nid)) {
-        showNoticeBanner(vanished[0]);
-      }
-      return;
+    // すでに別の経路で開いた通知は除く
+    const arrived = (data.notices || []).filter((x) => x.at >= from && !handledTaps.has(x.nid));
+    if (arrived.length === 1) {
+      showNoticeBanner(arrived[0]);
+    } else if (arrived.length > 1) {
+      const latest = arrived[arrived.length - 1];
+      showNoticeBanner({ count: arrived.length, at: latest.at });
     }
   } catch (e) {
-    // 調べられなければ開かない（ふだんどおり前面に戻るだけ）
+    // 調べられなければ何も出さない（ふだんどおり前面に戻るだけ）
   } finally {
-    vanishChecking = false;
+    awayChecking = false;
     if (pendingSince !== null) {
       const next = pendingSince;
       pendingSince = null;
-      checkVanishedNotification(store, next);
+      checkArrivedWhileAway(next);
     }
-  }
-}
-
-/**
- * iPhone でアプリを表示している間に届いた通知を、アプリの中の帯で知らせる(#125)。
- *
- * iOS では、アプリを表示している間に通知が届いても・タップしても、アプリの画面には伝わらない
- * (2026-09-26 実機で確認：通知を受けた sw.js から開いている画面が見えず(clients.matchAll が 0 件)、
- *  postMessage も BroadcastChannel も届かず、タップの notificationclick も来ない。WebKit bug 268797 の一部)。
- * そこで表示している間は、通知センターに新しい通知が増えたかを画面から調べ、増えたら
- * 🔔の数を取り直し、その通知を帯で出す(ふつうのアプリと同じく、開いている間はアプリの中で知らせる)。
- * iOS 上部に出た通知はタップしても何も起きないので、帯を出したら通知センターからは消す
- * (その通知は🔔の一覧に「まだ開いていない」で残る)。
- * 端末の中を見るだけで、サーバへの問い合わせは増えない。
- */
-const ARRIVAL_POLL_MS = 2000;
-let arrivalTimer = null;
-let arrivalWatch = 0;
-let arrivalChecking = false;
-// 表示し始めたときにすでにあった通知と、帯に出した通知(同じ通知を二度出さない)
-let seenNids = new Set();
-
-const nidOf = (notification) => (notification.data && notification.data.nid) || null;
-
-async function shownNotifications() {
-  const registration = await navigator.serviceWorker.getRegistration('/');
-  return registration ? registration.getNotifications() : [];
-}
-
-async function startArrivalWatch() {
-  stopArrivalWatch();
-  const watch = arrivalWatch;
-  try {
-    if (!(await thisDeviceSubscription())) {
-      return;
-    }
-    // 表示し始めた時点で通知センターにあるもの(バックグラウンドの間に届いた分)は、前面に戻ったときの確認
-    // (checkVanishedNotification)に任せる
-    const list = await shownNotifications();
-    if (watch !== arrivalWatch || document.visibilityState !== 'visible') {
-      return;
-    }
-    seenNids = new Set(list.map(nidOf).filter(Boolean));
-    arrivalTimer = setInterval(checkArrivals, ARRIVAL_POLL_MS);
-  } catch (e) {
-    // 調べられなければ何もしない(🔔は前面に戻ったときに取り直す)
-  }
-}
-
-function stopArrivalWatch() {
-  arrivalWatch++;
-  clearInterval(arrivalTimer);
-  arrivalTimer = null;
-}
-
-async function checkArrivals() {
-  if (arrivalChecking) {
-    return;
-  }
-  arrivalChecking = true;
-  try {
-    const fresh = (await shownNotifications()).filter((n) => nidOf(n) && !seenNids.has(nidOf(n)));
-    if (!fresh.length) {
-      return;
-    }
-    fresh.forEach((n) => seenNids.add(nidOf(n)));
-    refreshUnopened();
-    const latest = fresh.reduce((a, b) => ((b.timestamp || 0) > (a.timestamp || 0) ? b : a));
-    showNoticeBanner({
-      nid: nidOf(latest),
-      url: latest.data.url,
-      title: latest.title,
-      body: latest.body,
-      at: latest.timestamp || Date.now(),
-    });
-    fresh.forEach((n) => n.close());
-  } catch (e) {
-    // 次の回に調べる
-  } finally {
-    arrivalChecking = false;
   }
 }
 
@@ -467,26 +347,19 @@ async function checkArrivals() {
  */
 export function installDeepLinkListeners(store) {
   const check = () => checkDeepLink(store);
-  const detectVanished = isAppleMobile();
+  const tellArrived = isAppleMobile();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       hiddenAt = Date.now();
-      stopArrivalWatch();
     } else if (document.visibilityState === 'visible') {
       check();
-      if (detectVanished && hiddenAt !== null) {
+      if (tellArrived && hiddenAt !== null) {
         const since = hiddenAt;
         hiddenAt = null;
-        checkVanishedNotification(store, since);
-      }
-      if (detectVanished) {
-        startArrivalWatch();
+        checkArrivedWhileAway(since);
       }
     }
   });
-  if (detectVanished && document.visibilityState === 'visible') {
-    startArrivalWatch();
-  }
   window.addEventListener('focus', check);
   window.addEventListener('pageshow', check);
   if ('serviceWorker' in navigator) {

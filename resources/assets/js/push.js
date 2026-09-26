@@ -206,6 +206,8 @@ export async function subscribe(vapidPublicKey) {
 // 🔔の数(まだ開いていない通知の数)。ホーム画面のアイコンの数も同じにする。
 // 一覧を開いただけでは減らず、1 件ずつ開く(タップ・その投稿を開く)と減る
 export const noticeState = Vue.observable({ unopened: 0 });
+// iPhone でアプリを表示している間に、🔔の数を聞き直す間隔
+const UNOPENED_POLL_MS = 30000;
 
 /** アイコンのバッジを消す。対応していない端末では何もしない */
 export function clearAppBadge() {
@@ -242,9 +244,27 @@ export function installNoticeCount() {
       return;
     }
     refreshUnopened();
+    // iPhone では、アプリを表示している間に届いた通知を sw.js から画面に知らせられない
+    // (sw.js から開いている画面が見えない。2026-09-26 実機で確認)。表示している間は一定の間隔で数を聞く
+    let poll = null;
+    const startPoll = () => {
+      if (isIOS() && !poll) {
+        poll = setInterval(refreshUnopened, UNOPENED_POLL_MS);
+      }
+    };
+    const stopPoll = () => {
+      clearInterval(poll);
+      poll = null;
+    };
+    if (document.visibilityState === 'visible') {
+      startPoll();
+    }
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         refreshUnopened();
+        startPoll();
+      } else {
+        stopPoll();
       }
     });
     if ('serviceWorker' in navigator) {

@@ -51,8 +51,9 @@ class NoticeLog
     }
 
     /**
-     * 最近届いた通知(古い順)。「消えた通知から開く」用。at は届いた時刻のミリ秒。
-     * 見つけた通知は帯で「開きますか」と出すので、題名(チーム名)と本文も返す
+     * 最近届いて、まだ開いていない通知(古い順)。アプリがバックグラウンドから戻ったときに、
+     * その間に届いた通知を帯で知らせるのに使う(#125 §3.2)。at は届いた時刻のミリ秒。
+     * 帯に出すので、題名(チーム名)と本文も返す
      *
      * @return array<int, array{nid: string, tag: string, url: string, team_id: ?int, title: string, body: string, at: int}>
      */
@@ -60,6 +61,7 @@ class NoticeLog
     {
         return DB::table('notices')
             ->where('user_id', $user->id)
+            ->whereNull('opened_at')
             ->orderByDesc('created_at')->orderByDesc('id')
             ->limit(self::RECENT_MAX)
             ->get(['nid', 'tag', 'url', 'team_id', 'title', 'body', 'created_at'])

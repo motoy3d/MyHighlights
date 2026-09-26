@@ -1,13 +1,13 @@
 <template>
-  <!-- 前面に戻ったときの「この通知を開きますか」の帯(#125。notice-banner.js)。
-       帯のどこをタップしても開く。✕か数秒で消える -->
+  <!-- 前面に戻ったときの「届いたお知らせ」の帯(#125。notice-banner.js)。
+       帯のどこをタップしても開く(2 件以上なら🔔の一覧を開く)。✕か数秒で消える -->
   <transition name="notice-banner">
     <div v-if="notice" class="notice-banner" :style="{ top: top + 'px' }" role="alert" @click="open()">
       <div class="nb-icon"><v-ons-icon icon="fa-bell"></v-ons-icon></div>
       <div class="nb-text">
         <!-- チーム名は、複数のチームに所属している人にだけ出す(お知らせ一覧と同じ) -->
-        <div class="nb-label">{{ multiTeam && notice.title ? notice.title : 'お知らせ' }}・{{ notice.at | moment('from') }}</div>
-        <div class="nb-body">{{ notice.body }}</div>
+        <div class="nb-label">{{ multiTeam && notice.title && !notice.count ? notice.title : 'お知らせ' }}・{{ notice.at | moment('from') }}</div>
+        <div class="nb-body">{{ notice.count ? 'お知らせが' + notice.count + '件届いています' : notice.body }}</div>
       </div>
       <button class="nb-open" type="button">開く</button>
       <div class="nb-close" aria-label="閉じる" @click.stop="close()">
@@ -21,6 +21,7 @@
   import { bannerState, hideNoticeBanner } from '../notice-banner.js';
   import { markNoticeOpened } from '../push.js';
   import { openNoticeTarget } from '../deep-link.js';
+  import Notifications from './Notifications.vue';
 
   export default {
     computed: {
@@ -36,6 +37,14 @@
         const notice = this.notice;
         hideNoticeBanner();
         if (!notice) {
+          return;
+        }
+        if (notice.count) {
+          // 2 件以上届いていたら、どれを開くかは🔔の一覧で選んでもらう
+          this.$store.commit('navigator/push', {
+            extends: Notifications,
+            onsNavigatorOptions: { animation: 'lift' }
+          });
           return;
         }
         markNoticeOpened(notice.nid);

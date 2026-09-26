@@ -274,31 +274,28 @@ test.describe('通知のタップの書き置き', () => {
 });
 
 /**
- * 通知をタップしてもタップが sw.js に届かないとき(iPhone でアプリがバックグラウンドのとき。WebKit bug 268797)：
- * 前面に戻ったときに、バックグラウンドの間にサーバが送った通知(GET /api/push/recent)のうち、
- * 通知センターから消えたものをタップされた通知とみなす。
- * ここではテスト用のブラウザに通知が無いので、送った通知はすべて「消えた」扱いになる。
+ * iPhone でアプリがバックグラウンドのとき、通知をタップしても sw.js に届かない(WebKit bug 268797)。
+ * 画面からは通知センターの中身も見えない(2026-09-26 実機)ので、どの通知をタップしたかは分からない。
+ * 前面に戻ったときに、バックグラウンドの間に届いてまだ開いていない通知(POST /api/push/recent)を帯で知らせる。
  * サーバの応答は差し替え、バックグラウンドに回って戻ったことにして確かめる。
  */
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36';
 
-test.describe('通知センターから消えた通知', () => {
+test.describe('前面に戻ったときの帯(iPhone)', () => {
   // iOS の不具合への対策なので、iPhone のときだけ動く
   test.use({ userAgent: IPHONE_UA });
 
   // Service Worker に制御されたページからの通信は、WebKit では page.route で差し替えられない。
-  // sw.js の登録を止めて、サーバの応答を差し替えられるようにする（通知は元々表示されないので、
-  // 「消えた通知」の判定にも影響しない）
+  // sw.js の登録を止めて、サーバの応答を差し替えられるようにする
   test.beforeEach(async ({ page }) => {
     await page.route('**/sw.js', (route) => route.abort());
   });
 
-  // 消えた通知を調べるのは、ホーム画面のアプリで通知が許可され、この端末が購読しているときだけ。
+  // 帯を出すのは、ホーム画面のアプリで通知が許可され、この端末が購読しているときだけ。
   // テスト用のブラウザはどれも満たさないので、そう見えるように差し替える。
-  // 通知センターに残っている通知は displayed(既定は無し)。
-  async function actAsSubscribedHomeScreenApp(page, displayed = []) {
-    await page.evaluate((displayed) => {
+  async function actAsSubscribedHomeScreenApp(page) {
+    await page.evaluate(() => {
       Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });
       if (typeof window.Notification === 'undefined') {
         window.Notification = {};
@@ -306,17 +303,17 @@ test.describe('通知センターから消えた通知', () => {
       Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
       const registration = {
         pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
-        getNotifications: async () => displayed.map((nid) => ({ tag: 'x', data: { nid } })),
+        getNotifications: async () => [],
       };
       navigator.serviceWorker.getRegistration = async () => registration;
-    }, displayed);
+    });
   }
 
   // バックグラウンドに回る → notices がその間に送られた → 前面に戻る。
   // notices の nid は 'nid0', 'nid1'...(指定が無ければ)
-  async function backgroundAndReturn(page, notices, { subscribed = true, displayed = [] } = {}) {
+  async function backgroundAndReturn(page, notices, { subscribed = true } = {}) {
     if (subscribed) {
-      await actAsSubscribedHomeScreenApp(page, displayed);
+      await actAsSubscribedHomeScreenApp(page);
     }
     await page.evaluate(() => {
       window.__vis = 'visible';
@@ -342,8 +339,8 @@ test.describe('通知センターから消えた通知', () => {
   const pages = (page) => page.locator('ons-navigator > ons-page').count();
   const banner = (page) => page.locator('.notice-banner');
 
-  test('バックグラウンドの間に届いた通知が1件だけ消えていれば、画面は切り替えず帯を出し、帯のタップで開く', async ({ page }) => {
-    // タップしたのか削除しただけなのかは見分けられないので、勝手には切り替えない(#125)
+  test('バックグラウンドの間に届いた通知が1件なら、画面は切り替えず帯で知らせ、帯のタップで開く', async ({ page }) => {
+    // タップしたのか、触らずに戻ったのか、削除したのかは見分けられないので、勝手には切り替えない(#125)
     await gotoApp(page);
     const post = await firstPost(page);
     expect(post, '投稿が 1 件も無い').toBeTruthy();
@@ -373,73 +370,6 @@ test.describe('通知センターから消えた通知', () => {
 
   // iPhone では、表示している間に届いた通知もタップも画面に伝わらない(2026-09-26 実機)。
   // 通知センターに増えた通知を画面から見つけて、帯で知らせる
-  test('アプリを表示している間に通知が届くと、帯で知らせ、🔔の数を取り直し、通知センターからは消す', async ({ page }) => {
-    await gotoApp(page);
-    const post = await firstPost(page);
-    expect(post, '投稿が 1 件も無い').toBeTruthy();
-    await page.waitForTimeout(3500);
-    const before = await pages(page);
-    const opened = [];
-    await page.route('**/api/notices/open', (route) => {
-      opened.push(JSON.parse(route.request().postData() || '{}'));
-      route.fulfill({ json: { unopened: 0 } });
-    });
-    let unopenedCalls = 0;
-    await page.route('**/api/notices/unopened', (route) => { unopenedCalls++; route.fulfill({ json: { unopened: 1 } }); });
-
-    // 通知センター(window.__shown)を差し替える。すでに 1 件ある状態で表示し始める
-    await page.evaluate(() => {
-      const make = (nid, body, url) => ({
-        tag: 'x', title: 'テストチーム', body, timestamp: Date.now(), data: { nid, url },
-        close() { window.__shown = window.__shown.filter((n) => n !== this); window.__closed.push(nid); },
-      });
-      window.__make = make;
-      window.__closed = [];
-      window.__shown = [make('old', '前からある通知', '/home?launcher=true')];
-      Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });
-      if (typeof window.Notification === 'undefined') {
-        window.Notification = {};
-      }
-      Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
-      const registration = {
-        pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
-        getNotifications: async () => window.__shown.slice(),
-      };
-      navigator.serviceWorker.getRegistration = async () => registration;
-      window.__vis = 'visible';
-      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
-      window.__vis = 'hidden';
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
-    await page.route('**/api/push/recent', (route) => route.fulfill({ json: { now: Date.now(), notices: [] } }));
-    await page.evaluate(() => { window.__vis = 'visible'; document.dispatchEvent(new Event('visibilitychange')); });
-
-    // 表示し始めたときにあった通知では帯を出さない
-    await page.waitForTimeout(3000);
-    await expect(banner(page)).toHaveCount(0);
-    const callsBefore = unopenedCalls;
-
-    // 表示している間に 1 件届く
-    await page.evaluate((url) => { window.__shown.push(window.__make('fresh', '今届いた通知', url)); },
-      '/home?launcher=true&post=' + post.id);
-    await expect(banner(page)).toBeVisible({ timeout: 5000 });
-    await expect(banner(page)).toContainText('今届いた通知');
-    expect(await pages(page), '帯を出しただけで画面は切り替えない').toBe(before);
-    expect(unopenedCalls, '🔔の数を取り直す').toBeGreaterThan(callsBefore);
-    await expect.poll(() => page.evaluate(() => window.__closed)).toEqual(['fresh']);
-    expect(opened, '帯を出しただけでは「開いた」にしない').toHaveLength(0);
-
-    await banner(page).click();
-    const article = page.locator('ons-navigator > ons-page').nth(1);
-    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
-    expect(opened).toContainEqual({ nid: 'fresh' });
-
-    // 同じ通知で二度は出さない。バックグラウンドの間は調べない
-    await page.evaluate(() => { window.__vis = 'hidden'; document.dispatchEvent(new Event('visibilitychange')); });
-    await page.evaluate(() => { window.__shown.push(window.__make('while-hidden', '裏にいる間の通知', '/home?launcher=true')); });
-    await page.waitForTimeout(3000);
-    await expect(banner(page)).toHaveCount(0);
-  });
 
   test('帯の✕で閉じると開かず、「開いた」にもしない', async ({ page }) => {
     await gotoApp(page);
@@ -456,26 +386,29 @@ test.describe('通知センターから消えた通知', () => {
     expect(opened).toHaveLength(0);
   });
 
-  test('同じ投稿の通知が2件あっても、タップして消えた方を開く', async ({ page }) => {
-    // iPhone は同じ tag の通知を置き換えずに並べる。古い方をタップしても開けること
+
+  test('2件以上届いていたら件数を帯で知らせ、帯のタップで🔔の一覧を開く', async ({ page }) => {
+    // どれをタップしたかは分からないので、どれを開くかは一覧で選んでもらう
     await gotoApp(page);
-    const post = await firstPost(page);
-    expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
-    const url = '/home?launcher=true&post=' + post.id;
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: 2, items: [] } }));
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => { opened.push(1); route.fulfill({ json: { unopened: 2 } }); });
     await backgroundAndReturn(page, [
-      { nid: 'older', tag: 'post-' + post.id, url },
-      { nid: 'newer', tag: 'post-' + post.id, url },
-    ], { displayed: ['newer'] });
+      { tag: 'post-1', url: '/home?launcher=true&post=1' },
+      { tag: 'post-2', url: '/home?launcher=true&post=2' },
+    ]);
     await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await expect(banner(page)).toContainText('お知らせが2件届いています');
     await banner(page).click();
-    const article = page.locator('ons-navigator > ons-page').nth(1);
-    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
+    expect(opened, '一覧を開いただけでは「開いた」にしない').toHaveLength(0);
   });
 
   test('ホーム画面のアプリで購読していない端末では調べない', async ({ page }) => {
-    // Safari のタブで開いている・通知を切っている端末には通知が表示されないので、
-    // 送った通知がすべて「消えた」ように見えてしまう
+    // Safari のタブで開いている・通知を切っている端末には通知が届いていない(🔔の数で分かる)
     await gotoApp(page);
     await page.waitForTimeout(3500);
     const before = await pages(page);
@@ -487,20 +420,8 @@ test.describe('通知センターから消えた通知', () => {
     expect(await pages(page)).toBe(before);
   });
 
-  test('2件以上消えていたら(すべて消去など)開かない', async ({ page }) => {
-    await gotoApp(page);
-    await page.waitForTimeout(3500);
-    const before = await pages(page);
-    await backgroundAndReturn(page, [
-      { tag: 'post-1', url: '/home?launcher=true&post=1' },
-      { tag: 'post-2', url: '/home?launcher=true&post=2' },
-    ]);
-    await page.waitForTimeout(3000);
-    expect(await pages(page)).toBe(before);
-    await expect(banner(page)).toHaveCount(0);
-  });
 
-  test('バックグラウンドに回る前に送られた通知は、消えていても開かない', async ({ page }) => {
+  test('バックグラウンドに回る前に送られた通知は帯に出さない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
     const before = await pages(page);
@@ -510,13 +431,14 @@ test.describe('通知センターから消えた通知', () => {
     await expect(banner(page)).toHaveCount(0);
   });
 
-  test('sw.js からの知らせで開いた直後に、同じ通知が消えていても帯は出さない', async ({ page }) => {
+
+  test('sw.js からの知らせで開いた直後は、同じ通知の帯を出さない', async ({ page }) => {
     await gotoApp(page);
     const post = await firstPost(page);
     expect(post, '投稿が 1 件も無い').toBeTruthy();
     await page.waitForTimeout(3500);
     const url = '/home?launcher=true&post=' + post.id;
-    // sw.js はタップの目印にサーバの nid を使う(消えた通知の判定と同じ目印)
+    // sw.js はタップの目印にサーバの nid を使う(帯と同じ目印)
     await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
       { data: { type: 'open-url', url, tapId: 'nid0' } })), url);
     const article = page.locator('ons-navigator > ons-page').nth(1);
@@ -528,14 +450,14 @@ test.describe('通知センターから消えた通知', () => {
   });
 });
 
-test.describe('通知センターから消えた通知(Android)', () => {
+test.describe('前面に戻ったときの帯(Android)', () => {
   test.use({ userAgent: ANDROID_UA });
 
   test.beforeEach(async ({ page }) => {
     await page.route('**/sw.js', (route) => route.abort());
   });
 
-  test('Android ではタップが sw.js に届くので、消えた通知からは開かない', async ({ page }) => {
+  test('Android ではタップが sw.js に届くので、帯は出さない(問い合わせもしない)', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
     const before = await page.locator('ons-navigator > ons-page').count();
@@ -553,6 +475,7 @@ test.describe('通知センターから消えた通知(Android)', () => {
     expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
   });
 });
+
 
 /**
  * アプリ内のお知らせ一覧(🔔。#125)と、ホーム画面のアイコンの数(#123)。
@@ -773,6 +696,37 @@ test.describe('お知らせ(🔔)', () => {
     await gotoApp(page);
     await bell(page).click();
     await expect(page.locator('#notices_page .notice-meta').first()).toContainText('横浜SCつばさ', { timeout: 15000 });
+  });
+
+  test.describe('iPhone で表示している間', () => {
+    test.use({ userAgent: IPHONE_UA });
+
+    // iPhone では、表示している間に届いた通知を sw.js から画面に知らせられない(2026-09-26 実機)。
+    // 表示している間は 30 秒ごとに🔔の数を聞き直す。バックグラウンドの間は聞かない
+    test('30 秒ごとに🔔の数を聞き直し、バックグラウンドの間は聞かない', async ({ page }) => {
+      await page.clock.install();
+      const calls = await stubNotices(page, { unopened: 0 });
+      let asked = 0;
+      await page.route('**/api/notices/unopened', (route) => { asked++; route.fulfill({ json: { unopened: calls.unopened } }); });
+      await gotoApp(page);
+      await expect(bell(page)).toBeVisible({ timeout: 15000 });
+      await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
+
+      // 表示している間に 2 件届いた
+      calls.unopened = 2;
+      await page.clock.runFor(31_000);
+      await expect(bell(page).locator('.notice-bell-count')).toHaveText('2');
+
+      // バックグラウンドの間は聞かない
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+        window.__vis = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      const whileHidden = asked;
+      await page.clock.runFor(95_000);
+      expect(asked).toBe(whileHidden);
+    });
   });
 
   test('通知を開放していない人には🔔を出さない', async ({ page }) => {
