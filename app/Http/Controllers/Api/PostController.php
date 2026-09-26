@@ -349,7 +349,9 @@ class PostController extends Controller
       'likes' => $likes,
       'categories' => $categories,
       'user' => Auth::user(),
-      'app_url' => Config::get('app.url')
+      'app_url' => Config::get('app.url'),
+      // この投稿のお知らせを開いた後の🔔の数(#125)。画面はこれで🔔とアイコンの数をすぐ合わせる
+      'unopened' => NoticeLog::unopenedCount(Auth::user()),
     ]);
   }
 

@@ -644,6 +644,28 @@ test.describe('お知らせ(🔔)', () => {
     await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(2);
   });
 
+  test('タイムラインから投稿を開くと、その投稿の通知の分だけ🔔の数がすぐ減る', async ({ page }) => {
+    // 投稿を開くとサーバで「開いた」になる。以前は次の問い合わせ(30 秒ごと)まで数が変わらなかった(2026-09-26 実機)
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    await stubNotices(page, { unopened: 2 });
+    await page.route(new RegExp(`/api/posts/${post.id}$`), async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      await route.fulfill({ response, json: { ...json, unopened: 1 } });
+    });
+    await gotoApp(page);
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('2', { timeout: 15000 });
+
+    await page.locator('#timeline_list ons-list-item').filter({ hasText: post.title.trim() }).first().click();
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('1', { timeout: 3000 });
+  });
+
   test('もう無い投稿の通知をタップすると、エラーではなく「削除されたか、見られなくなっています」と出す', async ({ page }) => {
     await stubNotices(page, { unopened: 1, items: [notice({ nid: 'gone', url: '/home?launcher=true&post=999999999' })] });
     await gotoApp(page);

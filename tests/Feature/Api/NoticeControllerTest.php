@@ -157,8 +157,10 @@ class NoticeControllerTest extends TestCase
         $this->notify($this->user, 'post-' . $post->id, 'コメント', 'post_comment');
         $this->notify($this->user, 'post-999999', '別の投稿');
 
+        // 画面が🔔の数をすぐ合わせられるよう、開いた後の数も返す(2026-09-26 実機：30 秒遅れて減っていた)
         $this->actingAsTeamMember($this->user, $this->team)
-            ->getJson('/api/posts/' . $post->id)->assertStatus(200);
+            ->getJson('/api/posts/' . $post->id)->assertStatus(200)
+            ->assertJsonPath('unopened', 1);
 
         $opened = collect(NoticeLog::list($this->user))->pluck('opened', 'body');
         $this->assertTrue($opened['新しい投稿']);
