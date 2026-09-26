@@ -16,6 +16,25 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+
+// ===== 一時的な診断(iPhone でアプリを開いている間の通知。確認後に消す) =====
+const DIAG_V = 'd1';
+const diagChannel = ('BroadcastChannel' in self) ? new BroadcastChannel('tsubasa-diag') : null;
+function diag(e, extra) {
+  const q = new URLSearchParams(Object.assign({ e, v: DIAG_V, t: Date.now() }, extra || {}));
+  return fetch('/__diag?' + q.toString(), { cache: 'no-store' }).catch(() => {});
+}
+async function diagClients() {
+  const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const ctl = await self.clients.matchAll({ type: 'window' });
+  return {
+    n: all.length, nctl: ctl.length,
+    c: all.map((c) => [c.visibilityState, c.focused ? 'F' : 'f', new URL(c.url).pathname].join(':')).join('|'),
+  };
+}
+self.addEventListener('activate', (event) => { event.waitUntil(diag('activate')); });
+// ===== ここまで =====
+
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
 
@@ -67,7 +86,9 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(title, options),
     setBadge(data.badge),
     tellNoticeArrived(),
+    diagClients().then((c) => diag('push', Object.assign({ nid: data.nid || '' }, c))), // 診断
   ]));
+  if (diagChannel) { diagChannel.postMessage({ type: 'push', nid: data.nid || '' }); } // 診断
 });
 
 // 開いている画面に「通知が届いた」と知らせる(🔔の数を取り直させる。#125)
@@ -112,6 +133,8 @@ self.addEventListener('notificationclick', (event) => {
   const tapId = data.id || Math.random().toString(36).slice(2, 10);
 
   event.waitUntil((async () => {
+    await diagClients().then((c) => diag('click', Object.assign({ nid: data.id }, c))); // 診断
+    if (diagChannel) { diagChannel.postMessage({ type: 'click', nid: data.id }); } // 診断
     // 控えの書き置きは最初に済ませる（アプリが前面に出た瞬間に読みに来ても間に合うように）
     try {
       await leaveDeepLink(target, tapId);
@@ -123,9 +146,11 @@ self.addEventListener('notificationclick', (event) => {
     const client = windows.find((c) => new URL(c.url).origin === self.location.origin);
 
     if (!client) {
+      await diag('click-openwindow'); // 診断
       await self.clients.openWindow(target);
       return;
     }
+    await diag('click-post', { vis: client.visibilityState }); // 診断
 
     const message = { type: 'open-url', url: target, tapId };
     // 前面に出す処理が終わらない環境でも指示は届くよう、先に一度伝える
