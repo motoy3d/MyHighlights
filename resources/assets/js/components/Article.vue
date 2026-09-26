@@ -325,6 +325,8 @@
             this.user = response.data.user;
             this.loading = false;
             this.app_url = response.data.app_url;
+            // サーバで既読になった。通知やお知らせの一覧から開いたときも、タイムラインの表示と未読数を合わせる
+            this.$store.dispatch('timeline/markRead', {postId: Number(post_id), http: this.$http});
             // この投稿についてのお知らせはサーバで「開いた」になった。通知センターに残っていれば消す(#125)
             closeShownNotifications((n) => n.tag === 'post-' + post_id);
           })

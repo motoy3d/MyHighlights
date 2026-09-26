@@ -158,10 +158,7 @@
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
       },
       openArticle(post) {
-        if (!post.read_flg) {
-          post.read_flg = true;
-          this.$store.commit('timeline/setUnreadCount', this.$store.state.timeline.unreadCount - 1);
-        }
+        this.$store.dispatch('timeline/markRead', {postId: post.id, http: this.$http});
         this.$store.commit('article/setPostId', post.id);
         this.$store.commit('navigator/push', {
           extends: Article,

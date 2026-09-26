@@ -485,6 +485,101 @@ test.describe('通知センターから消えた通知(Android)', () => {
  * アプリ内のお知らせ一覧(🔔。#125)と、ホーム画面のアイコンの数(#123)。
  * サーバの応答は差し替える(WebKit では Service Worker があると差し替えが効かないので sw.js の登録を止める)。
  */
+/**
+ * タイムラインの一覧(GET /api/posts)で、その投稿を「未読」として返す。詳細(GET /api/posts/{id})が
+ * 返った後はサーバの応答どおり(既読)に戻す。通知から開く前に読み込んだ一覧(や、開く前に出した問い合わせ)を真似る。
+ * テスト用のチームには自分の投稿しか無く未読が作れないため、一覧の応答を書き換える。
+ */
+async function stubUnreadInTimeline(page, postId) {
+  const state = { shown: false, realCount: null };
+  await page.route(/\/api\/posts(\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.continue();
+    }
+    const response = await route.fetch();
+    const json = await response.json();
+    state.realCount = json.unreadCount;
+    if (!state.shown) {
+      json.posts.data.forEach((p) => { if (p.id === postId) p.read_flg = 0; });
+      json.unreadCount += 1;
+    }
+    await route.fulfill({ response, json });
+  });
+  await page.route(new RegExp(`/api/posts/${postId}$`), async (route) => {
+    const response = await route.fetch();
+    state.shown = true;
+    await route.fulfill({ response });
+  });
+  return state;
+}
+
+/** タイムラインのその投稿の行と、タブの未読数 */
+const timelineRow = (page, post) => page.locator('#timeline_list ons-list-item').filter({ hasText: post.title.trim() }).first();
+const timelineBadge = (page) => page.locator('ons-tab[label="タイムライン"] .tabbar__badge');
+
+/** 投稿の詳細から戻ると、その投稿はタイムラインで既読になり、タブの未読数にも数えない */
+async function expectReadInTimeline(page, post, state) {
+  const article = page.locator('ons-navigator > ons-page').nth(1);
+  await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 30_000 });
+  await article.locator('.navbar .left ons-toolbar-button').click();
+  await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 15_000 });
+  await expect(timelineRow(page, post).locator('.new_icon')).toHaveCount(0);
+  if (state.realCount) {
+    await expect(timelineBadge(page)).toHaveText(String(state.realCount));
+  } else {
+    await expect(timelineBadge(page)).toBeHidden();
+  }
+}
+
+/**
+ * 通知やお知らせの一覧から投稿を開いたときも、タイムラインの表示を既読に合わせる
+ * (2026-09-26 実機：通知から開いて戻ると、その投稿が未読のままで、タブの未読数にも数えられていた)。
+ */
+test.describe('通知から開いた投稿はタイムラインでも既読になる', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
+  test('アプリが終了していて、通知のリンクで起動したとき', async ({ page }) => {
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    const state = await stubUnreadInTimeline(page, post.id);
+    await withRateLimitRetry(page, async () => {
+      await page.goto(`/home?launcher=true&post=${post.id}`);
+      await expectReadInTimeline(page, post, state);
+    });
+  });
+
+  test('タイムラインを表示している間に、お知らせの一覧から開いたとき', async ({ page }) => {
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    const state = await stubUnreadInTimeline(page, post.id);
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route('**/api/notices/unopened', (route) => route.fulfill({ json: { unopened: 1 } }));
+    await page.route('**/api/notices/open', (route) => route.fulfill({ json: { unopened: 0 } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: 1, items: [{
+      id: 1, nid: 'nid-read', type: 'new_post', team_id: null, title: 'テストチーム', body: '投稿しました',
+      url: '/home?launcher=true&post=' + post.id, opened: false, created_at: new Date().toISOString(),
+    }] } }));
+    await gotoApp(page);
+
+    // 開く前は未読として出ている
+    await expect(timelineRow(page, post).locator('.new_icon')).toHaveCount(1, { timeout: 15_000 });
+    await expect(timelineBadge(page)).toHaveText(String(state.realCount + 1));
+
+    await page.locator('#timeline_page .notice-bell').click();
+    await page.locator('#notices_page .notice-item').first().click();
+    await expectReadInTimeline(page, post, state);
+  });
+});
+
 test.describe('お知らせ(🔔)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/sw.js', (route) => route.abort());

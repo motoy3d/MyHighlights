@@ -1,5 +1,7 @@
 // カレンダーの読み込みの通し番号(calendar/load で、古い応答を捨てるため)
 let calendarLoadSeq = 0;
+// タイムラインの未読数を返す問い合わせの通し番号(古い応答の数で上書きしないため)
+let unreadCountSeq = 0;
 
 export default {
   modules: {
@@ -69,14 +71,31 @@ export default {
         searchKeyword: null,
         searchCategoryId: null,
         searchUnread: null,
-        unreadCount: null
+        unreadCount: null,
+        // この起動の間に詳細を開いた投稿。開く前に出した問い合わせの応答が後から届いても、既読のまま見せる
+        readIds: []
       },
       mutations: {
         set(state, posts) {
+          posts.forEach((p) => { if (state.readIds.includes(p.id)) p.read_flg = true; });
           state.posts = posts;
         },
         add(state, morePosts) {
+          morePosts.forEach((p) => { if (state.readIds.includes(p.id)) p.read_flg = true; });
           state.posts = state.posts.concat(morePosts);
+        },
+        // 投稿の詳細を開いた(サーバでは既読になった)。一覧にあって未読なら既読にし、未読数を 1 減らす
+        markRead(state, postId) {
+          if (!state.readIds.includes(postId)) {
+            state.readIds.push(postId);
+          }
+          const post = state.posts.find((p) => p.id === postId);
+          if (post && !post.read_flg) {
+            post.read_flg = true;
+            if (0 < state.unreadCount) {
+              state.unreadCount = state.unreadCount - 1 || null;
+            }
+          }
         },
         setNextPageUrl(state, url) {
           state.nextPageUrl = url;
@@ -102,7 +121,28 @@ export default {
         }
       },
       actions: {
+        // 投稿の詳細を開いたとき(タイムライン・通知・お知らせの一覧のどこからでも)に、タイムラインの表示を既読に合わせる
+        markRead(context, {postId, http}) {
+          if (context.state.readIds.includes(postId)) {
+            return;
+          }
+          const inList = context.state.posts.some((p) => p.id === postId);
+          context.commit('markRead', postId);
+          if (inList && !context.state.loading) {
+            return;
+          }
+          // 一覧に無い(読み込み中・古い投稿)ときは、減らしてよいか分からないので未読数をサーバに聞き直す
+          const seq = ++unreadCountSeq;
+          http.get('/api/posts', {silentErrors: true})
+            .then((response) => {
+              if (seq === unreadCountSeq) {
+                context.commit('setUnreadCount', response.data.unreadCount);
+              }
+            })
+            .catch(() => {});
+        },
         load(context, $http) {
+          const seq = ++unreadCountSeq;
           context.commit('setLoading', true);
           let api = '/api/posts';
           let paramFlg = false;
@@ -130,7 +170,9 @@ export default {
                 nextUrl += '&unread=' + context.state.searchUnread;
               }
               context.commit('set', response.data.posts.data);
-              context.commit('setUnreadCount', response.data.unreadCount);
+              if (seq === unreadCountSeq) {
+                context.commit('setUnreadCount', response.data.unreadCount);
+              }
               context.commit('setNextPageUrl', nextUrl);
               context.commit('setLoading', false);
             })
