@@ -21,7 +21,8 @@
       openList() {
         this.$store.commit('navigator/push', {
           extends: Notifications,
-          onsNavigatorOptions: { animation: 'lift' }
+          // 横から開く(slide)と、左端から右へのスワイプで戻れる(lift では戻れない)
+          onsNavigatorOptions: { animation: 'slide' }
         });
       }
     }

@@ -680,6 +680,23 @@ test.describe('お知らせ(🔔)', () => {
     await expect(page.locator('.post-not-found')).toContainText('削除されたか、見られなくなっています', { timeout: 15000 });
   });
 
+  test('お知らせの一覧は、左端から右へのスワイプで前の画面に戻れる', async ({ page }) => {
+    // 下から出す開き方(lift)ではスワイプで戻れなかった(2026-09-26 実機)
+    await stubNotices(page, { unopened: 0, items: [] });
+    await gotoApp(page);
+    await bell(page).click();
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(800);
+    const { height } = page.viewportSize();
+    await page.mouse.move(5, height / 2);
+    await page.mouse.down();
+    for (let x = 20; x <= 300; x += 20) {
+      await page.mouse.move(x, height / 2);
+    }
+    await page.mouse.up();
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 5000 });
+  });
+
   test('お知らせが無いときは「お知らせはありません」', async ({ page }) => {
     await stubNotices(page, { unopened: 0, items: [] });
     await gotoApp(page);
