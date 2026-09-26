@@ -1,0 +1,812 @@
+import { test, expect } from '@playwright/test';
+import { gotoApp, openTab, fetchInPage, watchPageErrors, withRateLimitRetry } from '../helpers/app.js';
+
+/**
+ * #110 Web プッシュ通知の画面側。
+ *
+ * 設計: docs/design/110-web-push.md §6 / §9
+ * - 実際に通知が届くかはここでは確かめない
+ *   (Playwright 同梱の Chromium は Google のプッシュサービスに接続できない。§9 の手順で手作業で確認する)
+ * - 設定画面のスイッチは /api/push/config の enabled で出し分けるので、そこだけ page.route で差し替える
+ * - 起動時のリンク処理(deep-link.js)は本物の API で確かめる
+ */
+
+const PREFERENCES = {
+  new_post: true,
+  comment_on_mine: true,
+  comment_on_others: false,
+  schedule_change: true,
+  schedule_comment: true,
+};
+// テスト用の VAPID 公開鍵の形をした値(購読は偽物に差し替えるので実際には使われない)
+const DUMMY_VAPID_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+
+/** /api/push/config を差し替える */
+async function mockPushConfig(page, enabled) {
+  await page.route('**/api/push/config', (route) => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({
+      enabled,
+      vapid_public_key: enabled ? DUMMY_VAPID_KEY : null,
+      preferences: PREFERENCES,
+    }),
+  }));
+}
+
+/** 日本時間の今日(YYYY-MM-DD) */
+function todayJst() {
+  const jst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${jst.getFullYear()}-${pad(jst.getMonth() + 1)}-${pad(jst.getDate())}`;
+}
+
+test.describe('プッシュ通知の設定', () => {
+  test('enabled が false なら、この端末で通知を受け取るの項目を出さない', async ({ page }) => {
+    await mockPushConfig(page, false);
+    const configLoaded = page.waitForResponse('**/api/push/config');
+    await gotoApp(page);
+    await configLoaded;
+    await openTab(page, '設定');
+
+    await expect(page.getByText('メールで通知を受け取る')).toBeVisible();
+    await expect(page.locator('#push_device_item')).toHaveCount(0);
+    await expect(page.locator('#push_unavailable_item')).toHaveCount(0);
+  });
+
+  test('enabled が true なら、端末の状態に応じてスイッチか理由を出す', async ({ page }, testInfo) => {
+    await mockPushConfig(page, true);
+    const configLoaded = page.waitForResponse('**/api/push/config');
+    await gotoApp(page);
+    await configLoaded;
+    await openTab(page, '設定');
+
+    await expect(page.getByText('この端末で通知を受け取る')).toBeVisible();
+
+    if (testInfo.project.name === 'mobile') {
+      // iPhone の Safari(ホーム画面から開いていない)では、スイッチの代わりに案内を出す
+      await expect(page.locator('#push_unavailable_message'))
+        .toHaveText('iPhoneでは、ホーム画面に追加したアイコンから開くと通知を受け取れます。');
+      await expect(page.getByText('ホーム画面に追加する方法')).toBeVisible();
+      return;
+    }
+
+    // デスクトップの Chromium は Push API を持つ。
+    // ただしヘッドレスでは通知の許可が「拒否」になるので、その場合は拒否の案内が出ることを確かめる
+    const permission = await page.evaluate(() => Notification.permission);
+    if (permission === 'denied') {
+      await expect(page.locator('#push_unavailable_message'))
+        .toHaveText('通知が拒否されています。端末の設定からこのアプリの通知を許可してください。');
+    } else {
+      await expect(page.locator('#push_device_switch')).toBeVisible();
+    }
+  });
+
+  test('スイッチをオンにすると購読をサーバへ送り、種類ごとの設定とテスト通知が使える', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', 'iPhone の Safari ではスイッチを出さない');
+
+    // 通知の許可と PushManager を偽物にする(本物の購読はプッシュサービスに接続できず失敗するため)
+    await page.addInitScript(() => {
+      Object.defineProperty(Notification, 'permission', { get: () => 'granted', configurable: true });
+      Notification.requestPermission = () => Promise.resolve('granted');
+      let subscription = null;
+      const fake = () => ({
+        endpoint: 'https://push.example.invalid/playwright',
+        options: {},
+        toJSON() { return { endpoint: this.endpoint, keys: { p256dh: 'p256dh', auth: 'auth' } }; },
+        unsubscribe() { subscription = null; return Promise.resolve(true); },
+      });
+      PushManager.prototype.subscribe = function () { subscription = fake(); return Promise.resolve(subscription); };
+      PushManager.prototype.getSubscription = function () { return Promise.resolve(subscription); };
+    });
+    await mockPushConfig(page, true);
+
+    // サーバの購読・設定・テスト送信は差し替える(テスト用アカウントに購読を残さないため)
+    const requests = [];
+    await page.route('**/api/push/subscriptions', (route) => {
+      requests.push(`${route.request().method()} subscriptions ${route.request().postData() || ''}`);
+      return route.fulfill({ status: 204, body: '' });
+    });
+    await page.route('**/api/push/preferences', (route) => {
+      requests.push(`PUT preferences ${route.request().postData()}`);
+      return route.fulfill({ contentType: 'application/json', body: route.request().postData() });
+    });
+    await page.route('**/api/push/test', (route) => {
+      requests.push('POST test');
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ sent: 2 }) });
+    });
+
+    const jsErrors = watchPageErrors(page);
+    await gotoApp(page);
+    await openTab(page, '設定');
+
+    // オンにする → 購読がサーバへ送られ、種類ごとのスイッチが出る
+    await page.locator('#push_device_switch').click();
+    await expect(page.locator('.push_pref_item')).toHaveCount(5);
+    expect(requests.find((r) => r.startsWith('POST subscriptions'))).toContain('"content_encoding"');
+
+    // 種類ごとのスイッチを切り替えると、全体を PUT する
+    await page.locator('.push_pref_item ons-switch').nth(2).click();
+    await expect.poll(() => requests.find((r) => r.startsWith('PUT preferences')))
+      .toContain('"comment_on_others":true');
+
+    // テスト通知
+    await page.locator('#push_test_btn').click();
+    await expect(page.locator('ons-toast').getByText('テスト通知を送りました（2台）')).toBeVisible();
+
+    // オフにする → サーバから購読を消す
+    await page.locator('#push_device_switch').click();
+    await expect(page.locator('.push_pref_item')).toHaveCount(0);
+    await expect.poll(() => requests.find((r) => r.startsWith('DELETE subscriptions')))
+      .toContain('push.example.invalid');
+
+    expect(jsErrors, `JSエラー: ${jsErrors.join(', ')}`).toHaveLength(0);
+  });
+
+  test('Service Worker が登録される', async ({ page }) => {
+    // 本番ホスト名をポートフォワードで叩くときは証明書が一致せず、Service Worker を登録できない
+    test.skip(!!process.env.TSUBASA_RESOLVE, '証明書が一致しない接続では登録できない');
+    await gotoApp(page);
+    const supported = await page.evaluate(() => 'serviceWorker' in navigator);
+    test.skip(!supported, 'このブラウザは Service Worker を持たない');
+
+    await expect.poll(() => page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration('/');
+      return registration ? new URL(registration.active?.scriptURL || registration.installing?.scriptURL
+        || registration.waiting?.scriptURL || '', location.origin).pathname : null;
+    }), { timeout: 15_000 }).toBe('/sw.js');
+  });
+});
+
+test.describe('通知のリンクで該当画面を開く', () => {
+  test('?post= で投稿の詳細が開き、URL からパラメータが消える', async ({ page }) => {
+    const jsErrors = watchPageErrors(page);
+    await gotoApp(page);
+
+    // 本物の投稿を 1 件使う(page.request はホストの差し替えが効かないので、画面の中から取る)
+    const res = await fetchInPage(page, '/api/posts');
+    expect(res.status).toBe(200);
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    await withRateLimitRetry(page, async () => {
+      // タイムラインを一瞬見せないよう、投稿の画面は最初から積んである(読み込みが終わった時点で 2 枚目がある。
+      // 以前は読み込み後に積んでいて、タイムラインが一瞬見えてから切り替わっていた。2026-09-26 実機)
+      await page.goto(`/home?launcher=true&post=${post.id}`, { waitUntil: 'load' });
+      expect(await page.locator('ons-navigator > ons-page').count()).toBe(2);
+      // ナビゲーターに積まれた 2 枚目のページ(投稿の詳細)に、その投稿のタイトルが出る
+      const article = page.locator('ons-navigator > ons-page').nth(1);
+      await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 30_000 });
+    });
+
+    // 再読み込みで開き直さないよう、パラメータは消える(launcher=true は残す)
+    await expect(page).not.toHaveURL(/post=/);
+    expect(new URL(page.url()).search).toBe('?launcher=true');
+    expect(jsErrors, `JSエラー: ${jsErrors.join(', ')}`).toHaveLength(0);
+  });
+
+  test('?date= でカレンダーが開き、その日が選ばれる', async ({ page }) => {
+    const jsErrors = watchPageErrors(page);
+    const date = todayJst();
+
+    await withRateLimitRetry(page, async () => {
+      await page.goto(`/home?launcher=true&date=${date}`);
+      await expect(page.locator('ons-tab[label="カレンダー"]')).toHaveClass(/active/, { timeout: 30_000 });
+      await expect(page.locator(`td.selectedDate[data-date="${date}"]`)).toBeVisible({ timeout: 15_000 });
+    });
+
+    await expect(page).not.toHaveURL(/date=/);
+    expect(jsErrors, `JSエラー: ${jsErrors.join(', ')}`).toHaveLength(0);
+  });
+});
+
+/**
+ * 通知をタップしたとき(#110)：sw.js は開きたい画面を Cache Storage に書き置きし、
+ * アプリは前面に戻ったときにそれを読んで開く(iPhone では navigate による遷移が効かなかったため)。
+ * ここでは sw.js の代わりに書き置きを置き、前面に戻ったことにして確かめる。
+ */
+test.describe('通知のタップの書き置き', () => {
+  async function leave(page, url, at) {
+    await page.evaluate(async ({ url, at }) => {
+      const cache = await caches.open('tsubasa-deeplink');
+      await cache.put('/__deeplink__', new Response(JSON.stringify({ url, at: at || Date.now() }),
+        { headers: { 'Content-Type': 'application/json' } }));
+    }, { url, at });
+  }
+  async function firstPost(page) {
+    const res = await fetchInPage(page, '/api/posts');
+    expect(res.status).toBe(200);
+    return JSON.parse(res.text).posts.data[0];
+  }
+
+  test('前面に戻ると、書き置きの投稿が読み込み直さずに開く', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500); // 起動直後は書き置きを読まない期間がある
+    let reloaded = false;
+    page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
+    await leave(page, '/home?launcher=true&post=' + post.id);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    // ナビゲーターに積まれた 2 枚目のページ(投稿の詳細)に、その投稿のタイトルが出る
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    expect(reloaded, '読み込み直さずに開くはず').toBe(false);
+    // 書き置きは取り出したら消える
+    const left = await page.evaluate(async () => !!(await (await caches.open('tsubasa-deeplink')).match('/__deeplink__')));
+    expect(left).toBe(false);
+  });
+
+  test('sw.js からの「この画面を開いて」で投稿が開き、同じタップは書き置きがあっても二度開かない', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const url = '/home?launcher=true&post=' + post.id;
+    // sw.js は同じタップを、書き置き・知らせ(2回)の3通りで届ける
+    await leave(page, url);
+    await page.evaluate(async (url) => {
+      const c = await caches.open('tsubasa-deeplink');
+      await c.put('/__deeplink__', new Response(JSON.stringify({ url, tapId: 'tap-dup', at: Date.now() }),
+        { headers: { 'Content-Type': 'application/json' } }));
+      const send = () => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
+        { data: { type: 'open-url', url, tapId: 'tap-dup' } }));
+      send(); send();
+      window.dispatchEvent(new Event('focus'));
+    }, url);
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await page.waitForTimeout(2500);
+    // 投稿の画面は1枚だけ積まれる(タイムライン + 投稿 = 2枚)
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(2);
+  });
+
+  test('古い書き置き(5分より前)は開かない', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const before = await page.locator('ons-navigator > ons-page').count();
+    await leave(page, '/home?launcher=true&post=' + post.id, Date.now() - 10 * 60 * 1000);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(2500);
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
+  });
+});
+
+/**
+ * iPhone でアプリがバックグラウンドのとき、通知をタップしても sw.js に届かない(WebKit bug 268797)。
+ * 画面からは通知センターの中身も見えない(2026-09-26 実機)ので、どの通知をタップしたかは分からない。
+ * 前面に戻ったときに、バックグラウンドの間に届いてまだ開いていない通知(POST /api/push/recent)を帯で知らせる。
+ * サーバの応答は差し替え、バックグラウンドに回って戻ったことにして確かめる。
+ */
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36';
+
+test.describe('前面に戻ったときの帯(iPhone)', () => {
+  // iOS の不具合への対策なので、iPhone のときだけ動く
+  test.use({ userAgent: IPHONE_UA });
+
+  // Service Worker に制御されたページからの通信は、WebKit では page.route で差し替えられない。
+  // sw.js の登録を止めて、サーバの応答を差し替えられるようにする
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
+  // 帯を出すのは、ホーム画面のアプリで通知が許可され、この端末が購読しているときだけ。
+  // テスト用のブラウザはどれも満たさないので、そう見えるように差し替える。
+  async function actAsSubscribedHomeScreenApp(page) {
+    await page.evaluate(() => {
+      Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });
+      if (typeof window.Notification === 'undefined') {
+        window.Notification = {};
+      }
+      Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
+      const registration = {
+        pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
+        getNotifications: async () => [],
+      };
+      navigator.serviceWorker.getRegistration = async () => registration;
+    });
+  }
+
+  // バックグラウンドに回る → notices がその間に送られた → 前面に戻る。
+  // notices の nid は 'nid0', 'nid1'...(指定が無ければ)
+  async function backgroundAndReturn(page, notices, { subscribed = true } = {}) {
+    if (subscribed) {
+      await actAsSubscribedHomeScreenApp(page);
+    }
+    await page.evaluate(() => {
+      window.__vis = 'visible';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      window.__vis = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(100);
+    await page.route('**/api/push/recent', (route) => {
+      const now = Date.now();
+      route.fulfill({ json: { now, notices: notices.map((x, i) => ({ nid: 'nid' + i, title: 'テストチーム', body: '通知の本文 ' + i, ...x, at: x.old ? now - 60 * 60 * 1000 : now - 50 })) } });
+    });
+    await page.evaluate(() => {
+      window.__vis = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+  }
+  async function firstPost(page) {
+    const res = await fetchInPage(page, '/api/posts');
+    expect(res.status).toBe(200);
+    return JSON.parse(res.text).posts.data[0];
+  }
+  const pages = (page) => page.locator('ons-navigator > ons-page').count();
+  const banner = (page) => page.locator('.notice-banner');
+
+  test('バックグラウンドの間に届いた通知が1件なら、画面は切り替えず帯で知らせ、帯のタップで開く', async ({ page }) => {
+    // タップしたのか、触らずに戻ったのか、削除したのかは見分けられないので、勝手には切り替えない(#125)
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    let reloaded = false;
+    page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => {
+      opened.push(JSON.parse(route.request().postData() || '{}'));
+      route.fulfill({ json: { unopened: 0 } });
+    });
+    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url: '/home?launcher=true&post=' + post.id, body: 'この投稿の通知' }]);
+
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await expect(banner(page)).toContainText('この投稿の通知');
+    expect(await pages(page), '帯を出しただけで画面は切り替えない').toBe(before);
+    expect(opened, '帯を出しただけでは「開いた」にしない').toHaveLength(0);
+
+    await banner(page).click();
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await expect(banner(page)).toHaveCount(0);
+    expect(reloaded, '読み込み直さずに開くはず').toBe(false);
+    expect(opened).toContainEqual({ nid: 'nid0' });
+  });
+
+  // iPhone では、表示している間に届いた通知もタップも画面に伝わらない(2026-09-26 実機)。
+  // 通知センターに増えた通知を画面から見つけて、帯で知らせる
+
+  test('帯の✕で閉じると開かず、「開いた」にもしない', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => { opened.push(1); route.fulfill({ json: { unopened: 1 } }); });
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1' }]);
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await banner(page).locator('.nb-close').click();
+    await expect(banner(page)).toHaveCount(0);
+    await page.waitForTimeout(1000);
+    expect(await pages(page)).toBe(before);
+    expect(opened).toHaveLength(0);
+  });
+
+
+  test('2件以上届いていたら件数を帯で知らせ、帯のタップで🔔の一覧を開く', async ({ page }) => {
+    // どれをタップしたかは分からないので、どれを開くかは一覧で選んでもらう
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: 2, items: [] } }));
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => { opened.push(1); route.fulfill({ json: { unopened: 2 } }); });
+    await backgroundAndReturn(page, [
+      { tag: 'post-1', url: '/home?launcher=true&post=1' },
+      { tag: 'post-2', url: '/home?launcher=true&post=2' },
+    ]);
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await expect(banner(page)).toContainText('お知らせが2件届いています');
+    await banner(page).click();
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
+    expect(opened, '一覧を開いただけでは「開いた」にしない').toHaveLength(0);
+  });
+
+  test('ホーム画面のアプリで購読していない端末では調べない', async ({ page }) => {
+    // Safari のタブで開いている・通知を切っている端末には通知が届いていない(🔔の数で分かる)
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    let asked = false;
+    page.on('request', (r) => { if (r.url().includes('/api/push/recent')) asked = true; });
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1' }], { subscribed: false });
+    await page.waitForTimeout(3000);
+    expect(asked, '問い合わせないはず').toBe(false);
+    expect(await pages(page)).toBe(before);
+  });
+
+
+  test('バックグラウンドに回る前に送られた通知は帯に出さない', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1', old: true }]);
+    await page.waitForTimeout(3000);
+    expect(await pages(page)).toBe(before);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+
+  test('sw.js からの知らせで開いた直後は、同じ通知の帯を出さない', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const url = '/home?launcher=true&post=' + post.id;
+    // sw.js はタップの目印にサーバの nid を使う(帯と同じ目印)
+    await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent('message',
+      { data: { type: 'open-url', url, tapId: 'nid0' } })), url);
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);
+    await page.waitForTimeout(3000);
+    expect(await pages(page)).toBe(2);
+    await expect(banner(page)).toHaveCount(0);
+  });
+});
+
+test.describe('前面に戻ったときの帯(Android)', () => {
+  test.use({ userAgent: ANDROID_UA });
+
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
+  test('Android ではタップが sw.js に届くので、帯は出さない(問い合わせもしない)', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    const before = await page.locator('ons-navigator > ons-page').count();
+    let asked = false;
+    page.on('request', (r) => { if (r.url().includes('/api/push/recent')) asked = true; });
+    await page.evaluate(() => {
+      window.__vis = 'hidden';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.__vis = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(2500);
+    expect(asked, 'Android では問い合わせない').toBe(false);
+    expect(await page.locator('ons-navigator > ons-page').count()).toBe(before);
+  });
+});
+
+
+/**
+ * アプリ内のお知らせ一覧(🔔。#125)と、ホーム画面のアイコンの数(#123)。
+ * サーバの応答は差し替える(WebKit では Service Worker があると差し替えが効かないので sw.js の登録を止める)。
+ */
+/**
+ * タイムラインの一覧(GET /api/posts)で、その投稿を「未読」として返す。詳細(GET /api/posts/{id})が
+ * 返った後はサーバの応答どおり(既読)に戻す。通知から開く前に読み込んだ一覧(や、開く前に出した問い合わせ)を真似る。
+ * テスト用のチームには自分の投稿しか無く未読が作れないため、一覧の応答を書き換える。
+ */
+async function stubUnreadInTimeline(page, postId) {
+  const state = { shown: false, realCount: null };
+  await page.route(/\/api\/posts(\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.continue();
+    }
+    const response = await route.fetch();
+    const json = await response.json();
+    state.realCount = json.unreadCount;
+    if (!state.shown) {
+      json.posts.data.forEach((p) => { if (p.id === postId) p.read_flg = 0; });
+      json.unreadCount += 1;
+    }
+    await route.fulfill({ response, json });
+  });
+  await page.route(new RegExp(`/api/posts/${postId}$`), async (route) => {
+    const response = await route.fetch();
+    state.shown = true;
+    await route.fulfill({ response });
+  });
+  return state;
+}
+
+/** タイムラインのその投稿の行と、タブの未読数 */
+const timelineRow = (page, post) => page.locator('#timeline_list ons-list-item').filter({ hasText: post.title.trim() }).first();
+const timelineBadge = (page) => page.locator('ons-tab[label="タイムライン"] .tabbar__badge');
+
+/** 投稿の詳細から戻ると、その投稿はタイムラインで既読になり、タブの未読数にも数えない */
+async function expectReadInTimeline(page, post, state) {
+  const article = page.locator('ons-navigator > ons-page').nth(1);
+  await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 30_000 });
+  await article.locator('.navbar .left ons-toolbar-button').click();
+  await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 15_000 });
+  await expect(timelineRow(page, post).locator('.new_icon')).toHaveCount(0);
+  if (state.realCount) {
+    await expect(timelineBadge(page)).toHaveText(String(state.realCount));
+  } else {
+    await expect(timelineBadge(page)).toBeHidden();
+  }
+}
+
+/**
+ * 通知やお知らせの一覧から投稿を開いたときも、タイムラインの表示を既読に合わせる
+ * (2026-09-26 実機：通知から開いて戻ると、その投稿が未読のままで、タブの未読数にも数えられていた)。
+ */
+test.describe('通知から開いた投稿はタイムラインでも既読になる', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
+  test('アプリが終了していて、通知のリンクで起動したとき', async ({ page }) => {
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    const state = await stubUnreadInTimeline(page, post.id);
+    await withRateLimitRetry(page, async () => {
+      await page.goto(`/home?launcher=true&post=${post.id}`);
+      await expectReadInTimeline(page, post, state);
+    });
+  });
+
+  test('タイムラインを表示している間に、お知らせの一覧から開いたとき', async ({ page }) => {
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    const state = await stubUnreadInTimeline(page, post.id);
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route('**/api/notices/unopened', (route) => route.fulfill({ json: { unopened: 1 } }));
+    await page.route('**/api/notices/open', (route) => route.fulfill({ json: { unopened: 0 } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: 1, items: [{
+      id: 1, nid: 'nid-read', type: 'new_post', team_id: null, title: 'テストチーム', body: '投稿しました',
+      url: '/home?launcher=true&post=' + post.id, opened: false, created_at: new Date().toISOString(),
+    }] } }));
+    await gotoApp(page);
+
+    // 開く前は未読として出ている
+    await expect(timelineRow(page, post).locator('.new_icon')).toHaveCount(1, { timeout: 15_000 });
+    await expect(timelineBadge(page)).toHaveText(String(state.realCount + 1));
+
+    await page.locator('#timeline_page .notice-bell').click();
+    await page.locator('#notices_page .notice-item').first().click();
+    await expectReadInTimeline(page, post, state);
+  });
+});
+
+test.describe('お知らせ(🔔)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/sw.js', (route) => route.abort());
+  });
+
+  // 通知を開放している人として、🔔の数と一覧を差し替える。数は「まだ開いていない通知の数」
+  async function stubNotices(page, { enabled = true, unopened = 0, items = [] } = {}) {
+    const calls = { unopened, opened: [] };
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled, vapid_public_key: null, preferences: {} } }));
+    await page.route('**/api/notices/unopened', (route) => route.fulfill({ json: { unopened: calls.unopened } }));
+    await page.route('**/api/notices/open', (route) => {
+      const body = JSON.parse(route.request().postData() || '{}');
+      calls.opened.push(body);
+      calls.unopened = body.all ? 0 : Math.max(0, calls.unopened - 1);
+      route.fulfill({ json: { unopened: calls.unopened } });
+    });
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: calls.unopened, items } }));
+    return calls;
+  }
+  const bell = (page) => page.locator('#timeline_page .notice-bell');
+  const notice = (over) => Object.assign({
+    id: 1, nid: 'nid-a', type: 'new_post', team_id: null, title: 'テストチーム', body: '山田さんが投稿しました：練習',
+    url: '/home?launcher=true', opened: false, created_at: new Date().toISOString(),
+  }, over);
+
+  test('🔔にまだ開いていない数が出て、一覧を開いても減らず、タップした分だけ減る', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__badges = [];
+      navigator.setAppBadge = (n) => { window.__badges.push(n); return Promise.resolve(); };
+      navigator.clearAppBadge = () => { window.__badges.push(0); return Promise.resolve(); };
+    });
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    const calls = await stubNotices(page, {
+      unopened: 3,
+      items: [
+        notice({ id: 2, nid: 'nid-new', body: 'まだ開いていない通知', url: '/home?launcher=true&post=' + post.id }),
+        notice({ id: 1, nid: 'nid-old', body: '開いた通知', opened: true }),
+      ],
+    });
+    // 投稿の詳細も、開いた後の🔔の数を返す(差し替えた数に合わせる)
+    await page.route(new RegExp(`/api/posts/${post.id}$`), async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      await route.fulfill({ response, json: { ...json, unopened: 2 } });
+    });
+    await gotoApp(page);
+
+    await expect(bell(page)).toBeVisible({ timeout: 15000 });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('3');
+    // ホーム画面のアイコンの数も同じ
+    await expect.poll(() => page.evaluate(() => window.__badges)).toContain(3);
+
+    await bell(page).click();
+    const list = page.locator('#notices_page');
+    await expect(list.locator('.notice-item')).toHaveCount(2, { timeout: 15000 });
+    await expect(list.locator('.notice-unopened')).toHaveCount(1);
+    await expect(list.locator('.notice-unopened')).toContainText('まだ開いていない通知');
+    // 一覧を開いただけでは減らない(2026-09-24 実機：開いただけで 0 になり、まだ見ていない通知が分からなかった)
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('3');
+
+    await list.locator('.notice-unopened').click();
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    expect(calls.opened).toContainEqual({ nid: 'nid-new' });
+    // 1 件開いたので 1 減る。アイコンの数も同じ
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('2');
+    await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(2);
+  });
+
+  test('タイムラインから投稿を開くと、その投稿の通知の分だけ🔔の数がすぐ減る', async ({ page }) => {
+    // 投稿を開くとサーバで「開いた」になる。以前は次の問い合わせ(30 秒ごと)まで数が変わらなかった(2026-09-26 実機)
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+
+    await stubNotices(page, { unopened: 2 });
+    await page.route(new RegExp(`/api/posts/${post.id}$`), async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      await route.fulfill({ response, json: { ...json, unopened: 1 } });
+    });
+    await gotoApp(page);
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('2', { timeout: 15000 });
+
+    await page.locator('#timeline_list ons-list-item').filter({ hasText: post.title.trim() }).first().click();
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveText('1', { timeout: 3000 });
+  });
+
+  test('もう無い投稿の通知をタップすると、エラーではなく「削除されたか、見られなくなっています」と出す', async ({ page }) => {
+    await stubNotices(page, { unopened: 1, items: [notice({ nid: 'gone', url: '/home?launcher=true&post=999999999' })] });
+    await gotoApp(page);
+    await bell(page).click();
+    await page.locator('#notices_page .notice-item').first().click();
+    await expect(page.locator('.post-not-found')).toContainText('削除されたか、見られなくなっています', { timeout: 15000 });
+  });
+
+  test('お知らせの一覧は、左端から右へのスワイプで前の画面に戻れる', async ({ page }) => {
+    // 下から出す開き方(lift)ではスワイプで戻れなかった(2026-09-26 実機)
+    await stubNotices(page, { unopened: 0, items: [] });
+    await gotoApp(page);
+    await bell(page).click();
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(800);
+    const { width, height } = page.viewportSize();
+    const y = height / 2;
+    const xs = [];
+    for (let x = 5; x <= width * 0.8; x += 15) {
+      xs.push(x);
+    }
+    const hasTouch = await page.evaluate(() => 'ontouchstart' in window);
+    if (hasTouch) {
+      // スマートフォン(タッチ)はマウスの操作をスワイプとして扱わないので、タッチを送る
+      // (WebKit では Touch を作れないので、座標を持たせたイベントで代える)
+      await page.evaluate(async ({ xs, y }) => {
+        const target = document.elementFromPoint(xs[0], y);
+        const touch = (x) => ({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y, screenX: x, screenY: y });
+        const send = (type, x) => {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          const list = type === 'touchend' ? [] : [touch(x)];
+          Object.defineProperty(event, 'touches', { value: list });
+          Object.defineProperty(event, 'targetTouches', { value: list });
+          Object.defineProperty(event, 'changedTouches', { value: [touch(x)] });
+          target.dispatchEvent(event);
+        };
+        send('touchstart', xs[0]);
+        for (const x of xs.slice(1)) {
+          await new Promise((r) => setTimeout(r, 16));
+          send('touchmove', x);
+        }
+        send('touchend', xs[xs.length - 1]);
+      }, { xs, y });
+    } else {
+      await page.mouse.move(xs[0], y);
+      await page.mouse.down();
+      for (const x of xs.slice(1)) {
+        await page.mouse.move(x, y);
+      }
+      await page.mouse.up();
+    }
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 5000 });
+  });
+
+  test('お知らせが無いときは「お知らせはありません」', async ({ page }) => {
+    await stubNotices(page, { unopened: 0, items: [] });
+    await gotoApp(page);
+    await expect(bell(page)).toBeVisible({ timeout: 15000 });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
+    await bell(page).click();
+    await expect(page.locator('#notices_page .notices-empty')).toBeVisible({ timeout: 15000 });
+  });
+
+  test('すべて既読にすると、まだ開いていない通知が無くなる', async ({ page }) => {
+    const calls = await stubNotices(page, { unopened: 2, items: [notice({ id: 2, nid: 'a' }), notice({ id: 1, nid: 'b' })] });
+    await gotoApp(page);
+    await bell(page).click();
+    const list = page.locator('#notices_page');
+    await expect(list.locator('.notice-unopened')).toHaveCount(2, { timeout: 15000 });
+    await list.locator('.notices-open-all').click();
+    await expect(list.locator('.notice-unopened')).toHaveCount(0);
+    expect(calls.opened).toContainEqual({ all: true });
+    await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
+  });
+
+  test('チーム名は複数のチームに所属している人にだけ出す', async ({ page }) => {
+    await stubNotices(page, { unopened: 1, items: [notice({ title: '横浜SCつばさ' })] });
+    // 1 チームだけに所属している人として見せる(/api/me の所属チームを 1 つに絞る)
+    let singleTeam = true;
+    await page.route('**/api/me', async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      if (singleTeam && Array.isArray(json.myTeams)) {
+        json.myTeams = json.myTeams.slice(0, 1);
+      }
+      route.fulfill({ response, json });
+    });
+    await gotoApp(page);
+    await bell(page).click();
+    const meta = page.locator('#notices_page .notice-meta').first();
+    await expect(meta).toBeVisible({ timeout: 15000 });
+    await expect(meta).not.toContainText('横浜SCつばさ');
+
+    // 複数のチームに所属している人には出す(テスト用のアカウントは複数のチームに所属している)
+    singleTeam = false;
+    await gotoApp(page);
+    await bell(page).click();
+    await expect(page.locator('#notices_page .notice-meta').first()).toContainText('横浜SCつばさ', { timeout: 15000 });
+  });
+
+  test.describe('iPhone で表示している間', () => {
+    test.use({ userAgent: IPHONE_UA });
+
+    // iPhone では、表示している間に届いた通知を sw.js から画面に知らせられない(2026-09-26 実機)。
+    // 表示している間は 30 秒ごとに🔔の数を聞き直す。バックグラウンドの間は聞かない
+    test('30 秒ごとに🔔の数を聞き直し、バックグラウンドの間は聞かない', async ({ page }) => {
+      await page.clock.install();
+      const calls = await stubNotices(page, { unopened: 0 });
+      let asked = 0;
+      await page.route('**/api/notices/unopened', (route) => { asked++; route.fulfill({ json: { unopened: calls.unopened } }); });
+      await gotoApp(page);
+      await expect(bell(page)).toBeVisible({ timeout: 15000 });
+      await expect(bell(page).locator('.notice-bell-count')).toHaveCount(0);
+
+      // 表示している間に 2 件届いた
+      calls.unopened = 2;
+      await page.clock.runFor(31_000);
+      await expect(bell(page).locator('.notice-bell-count')).toHaveText('2');
+
+      // バックグラウンドの間は聞かない
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+        window.__vis = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      const whileHidden = asked;
+      await page.clock.runFor(95_000);
+      expect(asked).toBe(whileHidden);
+    });
+  });
+
+  test('通知を開放していない人には🔔を出さない', async ({ page }) => {
+    await stubNotices(page, { enabled: false, unopened: 5 });
+    await gotoApp(page);
+    await page.waitForTimeout(3000);
+    await expect(bell(page)).toHaveCount(0);
+  });
+});

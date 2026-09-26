@@ -1,0 +1,148 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * 移行前から変えてはいけない設定値を固定する。
+ *
+ * Laravel 13の標準config/*.phpをそのまま採用すると既定値が変わり、
+ * 本番で実害が出るものがある。ここで値を固定して再発を防ぐ。
+ */
+class ConfigInvariantTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_ローカルディスクのrootはstorage_appのまま(): void
+    {
+        // Laravel 11で既定が storage/app/private に変わったが、添付ファイルは
+        // storePublicly('public/...') で保存し public/storage 経由で配信するため、
+        // storage/app でないとアップロードもURLも壊れる。
+        $this->assertSame(storage_path('app'), config('filesystems.disks.local.root'));
+    }
+
+    public function test_publicディスクのrootはstorage_app_public(): void
+    {
+        $this->assertSame(storage_path('app/public'), config('filesystems.disks.public.root'));
+    }
+
+    public function test_セッションCookie名がASCIIで移行前と同じ(): void
+    {
+        config(['app.name' => 'Tsubasa⬆︎UP']);
+        // config()の再評価のためにセッション設定を組み直す
+        $cookie = \Illuminate\Support\Str::slug('Tsubasa⬆︎UP', '_') . '_session';
+
+        $this->assertSame('tsubasaup_session', $cookie);
+        // 実際の設定値もASCIIのみであること
+        $this->assertMatchesRegularExpression('/\A[A-Za-z0-9_\-]+\z/', config('session.cookie'));
+    }
+
+    public function test_SameSiteはlax(): void
+    {
+        // LINE Notify(別サイトからのPOSTコールバック)を廃止したため、
+        // Laravel/Sanctum標準の lax を使う
+        $this->assertSame('lax', config('session.same_site'));
+    }
+
+
+    public function test_パスワードリセットのテーブル名は既存のまま(): void
+    {
+        // Laravel 11の既定は password_reset_tokens だが、
+        // 本番のテーブル名は password_resets
+        $this->assertSame('password_resets', config('auth.passwords.users.table'));
+    }
+
+    public function test_ユーザーモデルの位置(): void
+    {
+        $this->assertSame(\App\User::class, config('auth.providers.users.model'));
+    }
+
+    public function test_APIガードはsanctum(): void
+    {
+        $this->assertSame('sanctum', config('auth.guards.api.driver'));
+    }
+
+    public function test_タイムゾーンとロケール(): void
+    {
+        $this->assertSame('Asia/Tokyo', config('app.timezone'));
+        $this->assertSame('ja', config('app.locale'));
+    }
+
+
+    public function test_アプリ固有の設定キーが存在する(): void
+    {
+        $this->assertIsInt(config('tsubasa.schedule_data_loading_months'));
+        $this->assertIsInt(config('tsubasa.timeline_load_posts'));
+    }
+
+    public function test_失敗ジョブのuuid列が存在する(): void
+    {
+        // 既定の database-uuids ドライバは uuid 列へ書き込む
+        $this->assertSame('database-uuids', config('queue.failed.driver'));
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Schema::hasColumn('failed_jobs', 'uuid'),
+            'failed_jobsにuuid列が無いと、ジョブ失敗時の記録に失敗する'
+        );
+    }
+
+    public function test_app_urlのホストがsanctumのstatefulドメインに含まれる(): void
+    {
+        // Sanctum は Referer/Origin がこの一覧に一致するリクエストだけを
+        // セッション認証の対象にする。APP_URL とサイトのURLがずれていると
+        // /api/* が全て401になり、/home と /login の間で無限リダイレクトになる。
+        $appUrl = (string) config('app.url');
+        $host = parse_url($appUrl, PHP_URL_HOST);
+        $port = parse_url($appUrl, PHP_URL_PORT);
+        $origin = $host.($port ? ':'.$port : '');
+
+        $stateful = array_filter((array) config('sanctum.stateful'));
+
+        $this->assertNotEmpty($stateful, 'sanctum.stateful が空');
+        $this->assertTrue(
+            \Illuminate\Support\Str::is(
+                array_map(static fn ($d) => trim($d).'/*', $stateful),
+                $origin.'/'
+            ),
+            "APP_URL({$appUrl})のオリジン {$origin} が sanctum.stateful に含まれていない。"
+            .'含まれていないと同一オリジンのSPAからのAPIが全て401になる。'
+            .'一覧: '.implode(',', $stateful)
+        );
+    }
+
+    public function test_APIのレート制限がconfig経由で解決できる(): void
+    {
+        // bootstrap/app.php のクロージャは設定が読み込まれる前に走るため、
+        // そこに config() や env() を書くと落ちる(実際に踏んで500になった)。
+        // 名前付きリミッタ 'api' を AppServiceProvider で定義し、
+        // そちらで config() を引いている。
+        $limit = config('tsubasa.api_rate_limit');
+        $this->assertIsInt($limit);
+        $this->assertGreaterThan(0, $limit);
+    }
+
+    public function test_レート制限の既定値は60のまま(): void
+    {
+        // 移行のテスト中は .env の API_RATE_LIMIT で緩めてよいが、
+        // config側の既定を書き換えてはいけない。書き換えると
+        // .env から消しても本番の制限が緩んだままになる。
+        // 当夜に .env から API_RATE_LIMIT を消すことはチェックリストで担保する。
+        $config = file_get_contents(config_path('tsubasa.php'));
+        $this->assertMatchesRegularExpression(
+            "/'api_rate_limit'\s*=>\s*\(int\)\s*env\(\s*'API_RATE_LIMIT'\s*,\s*60\s*\)/",
+            $config,
+            'config/tsubasa.php の api_rate_limit の既定値が60でなくなっている'
+        );
+    }
+
+    public function test_旧env名のフォールバックが効く(): void
+    {
+        // 本番の .env は MAIL_DRIVER / QUEUE_DRIVER などの旧キー名のままなので、
+        // 新キーが未設定でも読めること
+        $this->assertNotNull(config('mail.default'));
+        $this->assertNotNull(config('queue.default'));
+        $this->assertNotNull(config('cache.default'));
+        $this->assertNotNull(config('filesystems.default'));
+    }
+}

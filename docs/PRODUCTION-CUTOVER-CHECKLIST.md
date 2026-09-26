@@ -1,0 +1,330 @@
+# 本番移行チェックリスト
+
+作業の進め方（フェーズ構成・当夜のタイムライン・切り戻し）は
+`docs/MIGRATION-PLAN.md` を参照。こちらは項目単位の確認事項。
+
+Amazon Linux 1 / PHP 7.1 / Laravel 5.6 から
+Amazon Linux 2023 / PHP 8.4 / Laravel 13 へ切り替える際の手順と確認項目。
+
+---
+
+## ✅ 本番 `.env` との突き合わせ検証（実施済み）
+
+本番の `.env` の実物を受領し、これを配置した状態で設定解決と
+自動テスト199件を実行して確認した。**結果として、切り替え前に
+手を打つ必要がある項目が4つ見つかった**（次節）。
+
+`.env` そのものはリポジトリに含めない。`APP_KEY` を失うと
+暗号化済みデータを復号できなくなるので、退避を最優先で行うこと。
+
+再実行する場合:
+
+```bash
+php artisan optimize:clear
+php artisan tinker --execute='
+foreach ([
+  "app.name","app.env","app.url","app.timezone","app.locale","app.debug",
+  "session.driver","session.cookie","session.lifetime","session.same_site","session.secure",
+  "sanctum.stateful",
+  "cache.default","queue.default","queue.failed.driver","broadcasting.default",
+  "mail.default","mail.from.address","services.ses",
+  "filesystems.default","filesystems.disks.local.root","filesystems.disks.public.url",
+  "logging.default","logging.channels.stack.channels","logging.channels.single.level",
+  "auth.guards.api.driver","auth.passwords.users.table",
+  "tsubasa.schedule_data_loading_months","tsubasa.timeline_load_posts",
+] as $k) printf("%-42s %s\n", $k,
+  is_scalar(config($k))||is_null(config($k)) ? var_export(config($k), true)
+                                             : json_encode(config($k), JSON_UNESCAPED_UNICODE));'
+./vendor/bin/phpunit
+```
+
+### 問題なかった項目
+
+| 項目 | 解決値 | 補足 |
+| --- | --- | --- |
+| `app.url` | `https://tsubasa.smartj.mobi` | 実URLと一致。Sanctumの401ループは起きない |
+| `sanctum.stateful` | `tsubasa.smartj.mobi` を含む | `SANCTUM_STATEFUL_DOMAINS` 未設定で自動追加された |
+| `app.timezone` | `Asia/Tokyo` | **`.env` に `APP_TIMEZONE` が無い**が、移行時に既定値を `Asia/Tokyo` にしてあるため9時間ずれない |
+| `app.locale` | `ja` | 同上（既定値を `ja` にしてある） |
+| `session.cookie` | `tsubasaup_session` | ASCIIのみ。旧Laravelと同じ生成式なので名前も変わらない |
+| `session.same_site` | `lax` | LINE連携削除によりLaravel標準に戻した値 |
+| `filesystems.disks.local.root` | `.../storage/app` | `app/private` ではない（回帰なし） |
+| `filesystems.disks.public.url` | `https://tsubasa.smartj.mobi/storage` | 既存添付のURLが変わらない |
+| `auth.passwords.users.table` | `password_resets` | 旧テーブル名を維持 |
+| `mail.default` / `cache.default` / `broadcasting.default` | `ses` / `file` / `log` | 旧キー名（`MAIL_DRIVER` 等）のフォールバックが効いている |
+| `queue.failed.driver` | `database-uuids` | 追加した uuid 列のマイグレーションで対応済み |
+| `config:cache` の安全性 | — | `config/` の外に `env()` 呼び出しが無いことを確認（キャッシュ後に `null` 化する箇所は無い） |
+| 自動テスト | PHPUnit 199件 + ブラウザ 33件 成功 | 本番 `.env`・本番データ・本番vhost(HTTPS)で実行 |
+
+### ⚠️ 切り替え前に対応が必要な項目
+
+#### 1. SESがEC2のIAMロールに依存している（メールが全滅する可能性）
+
+`SES_KEY` と `SES_SECRET` が**空**のまま `MAIL_DRIVER=ses` になっている。
+Laravelは資格情報が空の場合、明示的なcredentialsを渡さずSDKに任せるため、
+**EC2インスタンスプロファイル（IAMロール）から資格情報を取得している。**
+
+```php
+// Illuminate\Mail\MailManager::addSesCredentials()
+if (! empty($config['key']) && ! empty($config['secret'])) { ... }  // 空なので通らない
+```
+
+→ **EC2インスタンス作成時に、次の2つを含むIAMロールを必ずアタッチする**
+（付け忘れ防止のため、`deploy/setup-al2023.sh` は
+IAMロールが付いていない場合に停止するようにしてある）。
+
+- SES送信権限（`ses:SendRawEmail`）
+- `AmazonSSMManagedInstanceCore` — SSH無しでSSM経由の操作を行うため
+移行先は本番と同じAWSアカウントなので、SESの検証済みドメインは
+そのまま使える。
+付け忘れると、招待メール・パスワード再設定・投稿通知が
+**画面上はエラーにならないまま全て失敗する**（キュー経由のため
+`failed_jobs` に積まれるだけで、利用者にも管理者にも見えない）。
+
+確認方法（新サーバで、切り替え前に）:
+
+```bash
+php artisan tinker --execute='
+  Mail::raw("SES疎通確認", fn($m) => $m->to("自分のアドレス")->subject("test"));
+  echo "送信呼び出し完了\n";'
+```
+
+`SES_REGION=us-east-1` は現行で稼働している値なので**変えないこと**
+（`.env` 内にコメントアウトされたSMTP設定は `ap-northeast-1` だが、
+稼働しているのはSES APIの `us-east-1` 側）。
+
+#### 2. `QUEUE_DRIVER=database` — キューワーカーが必須
+
+本番は `sync` ではなく `database`。つまり通知メールは
+すべて `jobs` テーブル経由で送られる。
+
+→ **`tsubasa-queue` が起動していないと、通知メールが一切飛ばない**
+（エラーにもならず `jobs` に溜まり続ける）。
+切り替え後の必須確認項目にすること。
+
+```bash
+systemctl status tsubasa-queue
+mysql -e "SELECT COUNT(*) FROM tsubasa.jobs;"   # 増え続けていないこと
+```
+
+#### 3. `DB_HOST=localhost` — UNIXソケット接続になる
+
+MySQL/MariaDBのクライアントは `localhost` を指定するとTCPではなく
+UNIXソケットで接続する。そのため新サーバでは次の2つが一致している必要がある。
+
+- MariaDBのソケットパスと、PHPの `pdo_mysql.default_socket`
+- DBユーザーが **`'tsubasa'@'localhost'`** で作られていること
+
+`'tsubasa'@'%'` だけでは接続できない。
+（検証環境でも `@'%'` のみでは `Access denied for user 'tsubasa'@'localhost'`
+になることを実際に確認した。）
+
+`DB_HOST=127.0.0.1` に変更する手もあるが、その場合はDBユーザーも
+`'tsubasa'@'127.0.0.1'` で作り直す必要がある。**現行と揃えるなら
+`localhost` のまま、`@'localhost'` のユーザーを作るのが安全。**
+
+#### 4. ログが1ファイルに無限に増える
+
+`LOG_CHANNEL=stack`（→ `single`）で `LOG_LEVEL` は未設定（＝`debug`）。
+加えて `AppServiceProvider` が**全SQLを `Log::info` で出力している**
+（移行前からの実装）。ローテーションもされないため、
+`storage/logs/laravel.log` が単調に増え続ける。
+
+新サーバのディスクを圧迫するので、次のいずれかを入れること。
+
+```dotenv
+LOG_CHANNEL=daily      # 日次ローテーション（既定14日保持）
+# または
+LOG_LEVEL=warning      # SQLログ(info)ごと抑止する
+```
+
+### 整理してよい項目（動作には影響しない）
+
+| キー | 理由 |
+| --- | --- |
+| `LINE_NOTIFY_CLIENT_ID` / `_SECRET` / `_CALLBACK_URI` | サービス終了。コードから削除済みで未参照 |
+| `TEST_IP` | コード上どこからも参照されていない |
+| `MIX_PUSHER_*` | Vite移行により `MIX_` プレフィックスは無効（`VITE_` が新しい接頭辞）。`BROADCAST_DRIVER=log` なので実害なし |
+| `APP_FAKER_LOCALE` | テストデータ生成用。本番では不要 |
+
+### 推奨（任意）
+
+| キー | 現状 | 推奨 |
+| --- | --- | --- |
+| `SESSION_SECURE_COOKIE` | 未設定（`null`） | `true`。HTTPS運用なので明示すべき。現状でもリクエストがHTTPSなら実質secureになるが、暗黙に依存しない方がよい |
+
+### `APP_URL` と Sanctum の関係（検証中に実際に踏んだ）
+
+   SanctumはリクエストのReferer/Originが `sanctum.stateful` の一覧に
+   一致する場合だけ、セッションCookieでの認証を有効にする。
+   一覧の既定値は `localhost` などに加えて **`APP_URL` のホスト:ポート**
+   が自動で追加されたものになっている。
+
+   そのため `APP_URL` が実際のURLとずれていると、ログインは成功するのに
+   直後の `/api/me` などが全て401を返し、SPAが `/login` へ飛ばす →
+   ログイン済みなので `/home` へ戻される、というリダイレクトループになる。
+   画面上は「ログインできないアプリ」に見えるので原因が分かりにくい。
+
+   `tests/Feature/ConfigInvariantTest.php` で
+   「`APP_URL` のオリジンが `sanctum.stateful` に含まれること」を
+   検査しているので、本番の `.env` を新サーバに置いた状態で
+   `./vendor/bin/phpunit --filter ConfigInvariantTest` を実行すると
+   このずれを事前に検出できる。
+
+### 旧キー名について
+
+旧キー名（`MAIL_DRIVER` / `QUEUE_DRIVER` / `CACHE_DRIVER` /
+   `BROADCAST_DRIVER` / `FILESYSTEM_DRIVER`）はconfig側でフォールバック
+   しているため、そのままでも動く。新キー名へ移すかは任意
+
+---
+
+## 事前準備
+
+- [ ] 現行サーバの `.env` を退避（`APP_KEY` 必須）
+- [ ] 現行DBのダンプを取得
+- [ ] `storage/app/public` 配下のアップロード済みファイルを退避
+      （投稿添付・コメント添付・プロフィール画像）
+
+## 新サーバ構築（実施済み。2026-09-06 の点検で追加になった項目に ★）
+
+- [x] EC2 に Amazon Linux 2023 を用意（t4g.medium / arm64 / 40GB）
+- [x] `deploy/setup-al2023.sh` を実行
+      → 内部で `deploy/configure-runtime.sh` を呼び、**OSタイムゾーン(JST)・php.ini
+      (upload 20M / post 20M / memory 256M)・MariaDB(utf8mb4 / buffer pool 512M)・
+      certbot-renew.timer・tsubasa-queue.service** を旧サーバと揃える ★
+- [x] MariaDB の初期設定（`mariadb-secure-installation`）とDB/ユーザー作成
+- [x] DBダンプをリストア
+- [x] `storage/app/public` のファイルをリストア（`deploy/sync-attachments.sh`）
+- [x] `.env` を配置（上記の検証を実施）
+- [x] `deploy/tsubasa.conf` を `/etc/httpd/conf.d/` に配置
+      （証明書パスは旧vhostと同じ `/etc/letsencrypt/live/tsubasa.smartj.mobi/`） ★
+- [x] `deploy/deploy.sh` を実行
+- [x] 旧サーバの `/etc/letsencrypt` を丸ごと持ち込む（証明書・アカウント鍵・更新設定） ★
+      ~~`sudo certbot --apache -d tsubasa.smartj.mobi`~~ は使わない。
+      新規発行は不要で、`--apache` は vhost を書き換えてしまう
+- [x] `systemctl list-timers certbot-renew.timer` で自動更新を確認 ★
+      （AL2023 の certbot rpm は timer を同梱しないので configure-runtime.sh が入れる）
+
+## 切り替え当夜（AWS側）
+
+- [ ] **セキュリティグループ `sg-06a9c13cfebdfd595` に 80/443 を開ける** ★
+      （今はインバウンド無し。80 は https への301と certbot の HTTP-01 に必要）
+      ```
+      aws ec2 authorize-security-group-ingress --group-id sg-06a9c13cfebdfd595 \
+        --ip-permissions 'IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0}]' \
+                         'IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges=[{CidrIp=0.0.0.0/0}]'
+      ```
+- [ ] EIP `52.199.130.187` を新サーバの ENI `eni-06ba927a409a6bd65` へ付け替える
+      （`--dry-run` で権限確認済み。戻す時は旧 ENI `eni-76e2b738` の
+      `172.31.8.179` へ `--allow-reassociation` 付きで associate）
+- [x] 新サーバを日次スナップショットの対象にした ★（2026-09-06）
+      DLM ポリシー `policy-0e8fc7d2e26794363` の対象タグに `Name=Tsubasa-AL2023-arm64` を追加。
+      毎日 19:00 UTC（04:00 JST）、保持 1 世代（旧サーバと同じ）。
+      停止中のインスタンスでも EBS のスナップショットは取られる
+
+## 切り替え前の動作確認
+
+- [ ] ログイン / ログアウト
+- [ ] タイムライン表示、投稿の作成・編集・削除
+- [ ] **添付ファイルのアップロードと表示**（保存先が変わる回帰があった箇所）
+- [ ] **画像添付のリサイズ**（1000px超の画像で確認）
+- [ ] コメント投稿、いいね
+- [ ] 予定の登録・編集・削除、カレンダー表示
+- [ ] アンケートの作成・回答・CSVダウンロード
+- [ ] メンバー招待（招待メールが届くこと）
+- [ ] パスワード再設定メール
+- [ ] **チーム切り替え**（複数チーム所属者で、切り替え後に
+      投稿・予定・メンバーが入れ替わること）
+- [ ] iCal購読URLをカレンダーアプリに登録して表示
+- [ ] 既存のアップロード済みファイルが表示できること
+- [ ] **添付ファイルのレスポンスヘッダ**（自動テスト不可 / Apache設定のため）
+      ```
+      curl -sI https://tsubasa.smartj.mobi/storage/<既存の添付ファイル> \
+        | grep -i 'content-disposition\|x-content-type-options'
+      ```
+      → `Content-Disposition: attachment` と
+        `X-Content-Type-Options: nosniff` の両方が返ること。
+      返らない場合は `mod_headers` が有効か確認する
+      (`httpd -M | grep headers`)。
+      これが無いと、HTMLやSVGを添付された際に同一オリジンで
+      スクリプトが実行される（Stored XSS）
+- [ ] **添付が壊れていないこと**（上記ヘッダ追加による副作用の確認）
+      画像添付がタイムライン上でサムネイル表示される /
+      非画像添付がGoogle Docs Viewerで開ける /
+      ダウンロードリンクで保存できる
+- [ ] **ログイン / パスワード再設定 / 退会画面の表示崩れが無いこと**
+      （OnsenUIをCDNからバンドルに移したため。ヘッダが青く、
+      ログインボタンが青いボタンとして描画されていればOK。
+      枠線の無い素のテキストとリンクに見える場合はOnsenUIが
+      効いていない）
+- [ ] **OnsenUIのCDN廃止の確認**（DevToolsのNetworkタブで
+      `cdnjs.cloudflare.com` へのリクエストが1件も無いこと）
+
+## 切り替え後
+
+- [ ] **`.env` から `API_RATE_LIMIT` を消す**
+      （フェーズ2のテスト用に600へ緩めてある。消すと既定の60/分に戻る。
+      消し忘れると本番のレート制限が緩んだままになる）
+- [ ] （`.env` の本番値への戻しは**切り替え前**に行う。計画書 §4 のタイムライン 00:15 / 00:25 を正とする。
+      `APP_URL` の `:8443` を外し忘れると Sanctum の stateful 判定が外れて API が 401 になる）
+- [ ] **実機確認用のアドレス（`tsubasa-stg.smartj.mobi`、2026-09-21 に用意）を片付ける**
+      - `.env`：`APP_URL=https://tsubasa.smartj.mobi` に戻し、`SANCTUM_STATEFUL_DOMAINS` の行を消す
+        （残すと本番のアドレスが Sanctum の同一サイト扱いから外れ、API が 401 になる）
+      - `/etc/httpd/conf.d/tsubasa-stg.conf` を削除して `systemctl reload httpd`
+      - `sudo certbot delete --cert-name tsubasa-stg.smartj.mobi`（残すと毎日の更新が失敗し続ける）
+      - セキュリティグループ `sg-06a9c13cfebdfd595` から「tsubasa-stg home only」の 443 の許可を外す
+        （切り替え当夜は 80/443 を全体に開けるので、その後で外してよい）
+      - 本番の EIP を付け替えると確認用の EIP（`eipalloc-0365416ee47287597`）は外れるので、**解放する**（残すと課金が続く）
+      - DNS（お名前.com）の `tsubasa-stg` の A レコードを削除する
+- [ ] **Web プッシュ通知（#110）の設定を `.env` に残す**（切り替え前の `.env` の書き換えで消さない）
+      - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`：**作り直すと全員の購読が無効になる**。新サーバで作った値をそのまま使う
+      - `VAPID_SUBJECT=mailto:...`（送信元の連絡先）
+      - `PUSH_ENABLED_EMAILS`：切り替え直後は**管理者自身のメールアドレスだけ**にする（設計書 §8 の段階的な公開）。
+        検証用アカウントのアドレスが残っていたら消す
+      - プッシュはキューワーカーが送るので、`tsubasa-queue` が動いていないと届かない
+- [ ] `SELECT COUNT(*) FROM jobs;` が 0 であることを確認してから、キューワーカーを**入れ直す** `sudo systemctl restart tsubasa-queue`
+      **`start` ではだめ。**ワーカーは OS の起動時に自動で立ち上がり、そのときの設定を持ち続ける。
+      `.env` を本番値に戻した後に `start` しても「すでに動いている」ので何も起きず、
+      切り替え前の設定（メールを外に出さない・通知を開放していない）のまま動き続ける
+      （2026-09-21 の実機確認で、通知を開放したのに宛先 0 人になって発覚）。
+      **`.env` を書き換えたら、`config:cache` とワーカーの入れ直しを必ずセットで行う**
+      （スモークテストの投稿通知が実メンバー宛に積まれている可能性がある。
+      ユニットは登録・enable 済みで、リハーサルで実際にジョブを処理させて確認済み）
+- [ ] 検証アカウントと検証チームを消す `sudo -u apache php artisan smoke:account delete`
+- [ ] 移行用 S3 バケットを削除し、ロールから `MigrationBucketRead` を外す(1週間以内)
+- [ ] 旧サーバの renewal から tsubasa を外す `sudo certbot delete --cert-name tsubasa.smartj.mobi`
+- [ ] **全ユーザーが一度ログアウトされる**ことを周知する
+      （Laravel 7以降、暗号化Cookieの形式が変わったため、
+      移行前に発行されたセッションCookieは復号検証に失敗する。回避不能）
+- [ ] `storage/logs/laravel.log` にエラーが出ていないか確認
+- [ ] `logs` テーブルにエラーが記録されていないか確認
+      `SELECT * FROM logs WHERE level='error' ORDER BY id DESC LIMIT 20;`
+- [ ] **キューワーカーの状態確認** `systemctl status tsubasa-queue`
+      本番は `QUEUE_DRIVER=database` なので**ワーカーは必須**。
+      止まっていると通知メールがエラーにもならず `jobs` に溜まり続ける
+      `SELECT COUNT(*) FROM jobs;` が増え続けていないことも見る
+- [ ] **SES送信の疎通確認**（IAMロールが付いていないと全て失敗する）
+      テスト用アドレス宛にパスワード再設定メールを送り、実際に届くこと。
+      `SELECT COUNT(*) FROM failed_jobs;` を見る。ただし
+      **`ModelNotFoundException`（投稿/コメントが通知前に削除された）は旧サーバでも
+      日常的に起きている**（旧の failed_jobs 1,674 件のうち大半。最終 2026-09-05）ので、
+      これは移行の失敗ではない。見るべきは SES/認証系の例外が無いこと。
+      移行後の改善候補: ジョブに `public $deleteWhenMissingModels = true;` を付けると
+      この種の失敗が failed_jobs に残らなくなる
+- [ ] `certbot renew --dry-run` が成功すること
+      （EIP付け替え後は新サーバがドメインのIPを持つため、
+      HTTP-01のまま更新できる。ここを確認しないと今回の失効を繰り返す）
+
+## 移行後に検討したいこと
+
+- LINE Notify はサービス終了に伴いコードから削除済み。
+  `users.line_notification_flg` と `users.line_access_token` の
+  2カラムは残してあるので、不要なら削除するマイグレーションを追加する
+
+- 古いiOS向けに `@vitejs/plugin-legacy` の導入を検討する
+  （ViteはESモジュールを出力するため）
+- Vue 2 はEOL。`vue-onsenui` 3.x でVue 3に上げる作業は別途
+- `AppServiceProvider` が全SQLをログ出力する設定はそのまま残してある。
+  ログ肥大化が問題なら `logging` を `daily` に変更する
+- `/api/*` に付くCORSヘッダを絞るなら `config/cors.php` を用意する

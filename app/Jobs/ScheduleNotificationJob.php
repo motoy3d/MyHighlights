@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Mail\PostNotification;
 use App\Member;
 use App\Team;
-use GuzzleHttp\Client;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -19,7 +18,6 @@ class ScheduleNotificationJob implements ShouldQueue
 {
   use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-  const LINE_NOTIFY_SEND_URL = 'https://notify-api.line.me/api/notify';
   public $timeout = 3600; // タイムアウト設定１時間
   public $fromMember;
   public $schedule;
@@ -46,7 +44,6 @@ class ScheduleNotificationJob implements ShouldQueue
   public function handle()
   {
     $this->sendMail();
-    $this->sendLINE();
   }
 
   /**
@@ -98,62 +95,6 @@ class ScheduleNotificationJob implements ShouldQueue
     Log::info('メール送信処理時間: ' . $runningTime . ' [s]');
   }
 
-  /**
-   * LINEでメッセージを送信する。
-   */
-  private function sendLINE()
-  {
-    $startTime = microtime(true);
-    // 送信先取得（投稿のチームに所属していて、退会していなくて、LINE通知オンのユーザーのアドレスリスト取得）
-    $users = Member::select(['users.id', 'users.line_access_token'])
-      ->join('users', 'users.id', '=', 'members.user_id')
-      ->where('members.team_id', $this->schedule->team_id)
-      ->whereNull('members.withdrawal_date')
-      ->whereNull('users.withdrawal_date')
-      ->where('users.line_notification_flg', 1)
-      ->get();
-    Log::info('>>LINE送信開始 ' . count($users) . '件');
-    $i = 1;
-    $team = Team::findOrFail($this->schedule->team_id);
-
-    // タイトルと本文
-    $title = $this->makeTitle($this->schedule);
-    $message = '';
-    if ($this->scheduleComment) {
-      $message = $this->fromMember->name . "さんが「" . $title . "」にコメントしました。\n\n"
-        . $this->scheduleComment->comment_text;
-    } else {
-      $message = $this->fromMember->name . "さんが予定を登録しました。\n\n" . $title;
-    }
-    Log::info('>>タイトル：' . $title);
-
-    // 一人ずつ間隔を空けながら送信
-    foreach ($users as $user) {
-      Log::info('LINE送信(' . $i++ . '/' . count($users) . ') ' . $user->id);
-      try {
-        if (!$user->line_access_token) {
-          Log::info('LINEアクセストークンなし.ユーザーID=' . $user->id);
-          continue;
-        }
-        // LINE送信実行
-        $this->postLINE($user, $message);
-        sleep(1);
-      } catch(\Exception $ex) {
-        Log::error('LINE送信エラー1: ' . $ex->getMessage());
-//        // エラー発生したら10秒置いて１回だけリトライ
-//        try {
-//          sleep(10);
-//          $this->postLINE($user, $message);
-//        } catch(\Exception $ex) {
-//          Log::error('LINE送信エラー2: ' . $ex->getMessage());
-//        }
-      }
-    }
-    $runningTime =  microtime(true) - $startTime;
-    Log::info('LINE送信処理時間: ' . $runningTime . ' [s]');
-  }
-
-
   private function makeTitle($schedule)
   {
     $date = Carbon::createFromFormat('Y-m-d', $schedule->schedule_date);
@@ -164,22 +105,4 @@ class ScheduleNotificationJob implements ShouldQueue
     return $title;
   }
 
-  /**
-   * LINEへの送信のためにAPIにPOSTする。
-   * @param $user
-   * @param string $message
-   */
-  private function postLINE($user, string $message): void
-  {
-    $client = new Client();
-    $client->post(self::LINE_NOTIFY_SEND_URL, [
-      'headers' => [
-        'Content-Type' => 'application/x-www-form-urlencoded',
-        'Authorization' => 'Bearer ' . $user->line_access_token
-      ],
-      'form_params' => [
-        'message' => $message
-      ]
-    ]);
-  }
 }

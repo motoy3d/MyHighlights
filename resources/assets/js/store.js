@@ -1,3 +1,8 @@
+// カレンダーの読み込みの通し番号(calendar/load で、古い応答を捨てるため)
+let calendarLoadSeq = 0;
+// タイムラインの未読数を返す問い合わせの通し番号(古い応答の数で上書きしないため)
+let unreadCountSeq = 0;
+
 export default {
   modules: {
     navigator: {
@@ -66,14 +71,31 @@ export default {
         searchKeyword: null,
         searchCategoryId: null,
         searchUnread: null,
-        unreadCount: null
+        unreadCount: null,
+        // この起動の間に詳細を開いた投稿。開く前に出した問い合わせの応答が後から届いても、既読のまま見せる
+        readIds: []
       },
       mutations: {
         set(state, posts) {
+          posts.forEach((p) => { if (state.readIds.includes(p.id)) p.read_flg = true; });
           state.posts = posts;
         },
         add(state, morePosts) {
+          morePosts.forEach((p) => { if (state.readIds.includes(p.id)) p.read_flg = true; });
           state.posts = state.posts.concat(morePosts);
+        },
+        // 投稿の詳細を開いた(サーバでは既読になった)。一覧にあって未読なら既読にし、未読数を 1 減らす
+        markRead(state, postId) {
+          if (!state.readIds.includes(postId)) {
+            state.readIds.push(postId);
+          }
+          const post = state.posts.find((p) => p.id === postId);
+          if (post && !post.read_flg) {
+            post.read_flg = true;
+            if (0 < state.unreadCount) {
+              state.unreadCount = state.unreadCount - 1 || null;
+            }
+          }
         },
         setNextPageUrl(state, url) {
           state.nextPageUrl = url;
@@ -99,7 +121,28 @@ export default {
         }
       },
       actions: {
+        // 投稿の詳細を開いたとき(タイムライン・通知・お知らせの一覧のどこからでも)に、タイムラインの表示を既読に合わせる
+        markRead(context, {postId, http}) {
+          if (context.state.readIds.includes(postId)) {
+            return;
+          }
+          const inList = context.state.posts.some((p) => p.id === postId);
+          context.commit('markRead', postId);
+          if (inList && !context.state.loading) {
+            return;
+          }
+          // 一覧に無い(読み込み中・古い投稿)ときは、減らしてよいか分からないので未読数をサーバに聞き直す
+          const seq = ++unreadCountSeq;
+          http.get('/api/posts', {silentErrors: true})
+            .then((response) => {
+              if (seq === unreadCountSeq) {
+                context.commit('setUnreadCount', response.data.unreadCount);
+              }
+            })
+            .catch(() => {});
+        },
         load(context, $http) {
+          const seq = ++unreadCountSeq;
           context.commit('setLoading', true);
           let api = '/api/posts';
           let paramFlg = false;
@@ -127,7 +170,9 @@ export default {
                 nextUrl += '&unread=' + context.state.searchUnread;
               }
               context.commit('set', response.data.posts.data);
-              context.commit('setUnreadCount', response.data.unreadCount);
+              if (seq === unreadCountSeq) {
+                context.commit('setUnreadCount', response.data.unreadCount);
+              }
               context.commit('setNextPageUrl', nextUrl);
               context.commit('setLoading', false);
             })
@@ -246,7 +291,11 @@ export default {
       state: {
         loading: false,
         schedules: null,
-        holidays: null
+        holidays: null,
+        // 読み込みの基準にした年月(yyyyMM)。null なら今月
+        month: null,
+        // 通知のリンクで開くよう頼まれた日 { date: 'YYYY-MM-DD', scheduleId }（deep-link.js → Calendar.vue）
+        requestedDate: null
       },
       mutations: {
         set(state, data) {
@@ -255,20 +304,38 @@ export default {
         },
         setLoading(state, isLoading) {
           state.loading = isLoading;
+        },
+        setMonth(state, month) {
+          state.month = month;
+        },
+        requestDate(state, request) {
+          state.requestedDate = request;
         }
       },
       actions: {
-        load(context, $http) {
+        /**
+         * 予定を読み込む。引数は $http か { http, month: 'yyyyMM' }。
+         * サーバは基準の月の前後数か月分を返すので、通知のリンクで離れた月を開くときは month を渡す。
+         * month を省くと前回の基準の月(無ければ今月)で読み直す
+         */
+        load(context, arg) {
+          const $http = arg && arg.http ? arg.http : arg;
+          if (arg && arg.month) {
+            context.commit('setMonth', arg.month);
+          }
+          const yearMonth = context.state.month || window.fn.dateFormat.format(new Date(), 'yyyyMM');
+          // 起動時の読み込みと通知のリンクの読み込みが並んだとき、古い応答で上書きしないようにする
+          const seq = ++calendarLoadSeq;
           context.commit('setLoading', true);
-          var yearMonth = window.fn.dateFormat.format(new Date(), 'yyyyMM');
-          $http.get('/api/schedules?month=' + yearMonth)
+          return $http.get('/api/schedules?month=' + yearMonth)
             .then((response)=>{
+              if (seq !== calendarLoadSeq) {return;}
               context.commit('set', response.data);
               context.commit('setLoading', false)
             })
             .catch(error => {
               console.log(error);
-              if (error.response.status === 401) {
+              if (error.response && error.response.status === 401) {
                 window.location.href = "/login";
               }
               context.commit('setLoading', false);

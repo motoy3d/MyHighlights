@@ -17,7 +17,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Tsubasa⬆︎UP</title>
   <link rel="manifest" href="/manifest.json">
-  <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+  @vite(['resources/assets/sass/app.scss', 'resources/assets/js/app.js'])
   <link rel="apple-touch-icon" href="appicon.png">
   {{-- https://developer.apple.com/design/human-interface-guidelines/ios/icons-and-images/launch-screen/#static-launch-screen-images --}}
   <link rel="apple-touch-startup-image" href="img/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
@@ -45,8 +45,5 @@
     <input type="hidden" id="withdrawal_user_id" name="user_id" value="{{ Auth::id() }}">
     <input type="hidden" id="withdrawal_team_id" name="team_id" value="{{ Cookie::get('current_team_id') }}">
   </form>
-  <script src="{{ mix('js/manifest.js') }}"></script>
-  <script src="{{ mix('js/vendor.js') }}"></script>
-  <script src="{{ mix('js/app.js') }}"></script>
   </body>
 </html>

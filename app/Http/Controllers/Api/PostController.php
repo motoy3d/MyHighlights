@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Category;
 use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
+use App\Jobs\PushNotificationJob;
 use App\Post;
 use App\PostAttachment;
 use App\PostResponse;
 use App\Questionnaire;
+use App\Rules\NotEmptyFile;
+use App\Support\NoticeLog;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -36,8 +39,8 @@ class PostController extends Controller
   public function index(Request $request)
   {
 //    Log::info("session lifetime=" . \Illuminate\Support\Facades\Config::get('session.lifetime'));
-    $perPageCount = env('TIMELINE_LOAD_POSTS', 10);  //1ページあたりの件数
-//    Log::info('★perPageCount=' . $perPageCount . ', ' . env('TIMELINE_LOAD_POSTS'));
+    $perPageCount = config('tsubasa.timeline_load_posts');  //1ページあたりの件数
+//    Log::info('★perPageCount=' . $perPageCount . ', ' . config('tsubasa.timeline_load_posts'));
     Log::info("PostController#index");
     $teamId = Cookie::get('current_team_id');
     $posts = DB::table('posts')
@@ -122,6 +125,10 @@ class PostController extends Controller
   public function store(Request $request)
   {
     //TODO validate
+    // 添付ファイルのチェックは投稿・アンケートの登録より前に行う。
+    // 後で弾くと、添付の無い投稿だけが登録されてしまい、選び直して
+    // 再投稿すると投稿が二重になるため。
+    $this->validateAttachments($request);
 
     // アンケート登録
     $questionnaire = null;
@@ -153,6 +160,17 @@ class PostController extends Controller
       "category_id" => $request->category_id,
       "questionnaire_id" => $questionnaire? $questionnaire->id : null,
       "notification_flg" => $request->notification_flg == 1? true : false,
+      "created_id" => Auth::id(),
+      "updated_id" => Auth::id()
+    ]);
+    // 投稿した人は既読にする(#123)。既読は詳細を開いたときに付くが、投稿した直後は
+    // タイムラインに戻るだけなので、付けないと自分の投稿で自分の未読が1つ増えてしまう
+    PostResponse::create([
+      "user_id" => Auth::id(),
+      "post_id" => $post->id,
+      "read_flg" => true,
+      "like_flg" => false,
+      "star_flg" => false,
       "created_id" => Auth::id(),
       "updated_id" => Auth::id()
     ]);
@@ -198,6 +216,9 @@ class PostController extends Controller
     if (!$post) {// ヒットしない場合は404
       return response()->json(null, 404);
     }
+
+    // この投稿についてのお知らせ(新しい投稿・コメント)は、どこから開いても「開いた」にする(#125)
+    NoticeLog::openByTag(Auth::user(), 'post-' . $post->id);
 
     // 投稿の既読、いいね、スター　(ログインユーザーの行動)
     // 一度INSERTしてからSELECT
@@ -328,7 +349,9 @@ class PostController extends Controller
       'likes' => $likes,
       'categories' => $categories,
       'user' => Auth::user(),
-      'app_url' => Config::get('app.url')
+      'app_url' => Config::get('app.url'),
+      // この投稿のお知らせを開いた後の🔔の数(#125)。画面はこれで🔔とアイコンの数をすぐ合わせる
+      'unopened' => NoticeLog::unopenedCount(Auth::user()),
     ]);
   }
 
@@ -347,6 +370,8 @@ class PostController extends Controller
     }
 
     //TODO validate
+    // 添付ファイルのチェックは投稿・アンケートの更新より前に行う(storeと同じ理由)
+    $this->validateAttachments($request);
     $questionnaire = null;
     Log::info("added_questionnaire_selections:" . $request->added_questionnaire_selections);
     if ($request->added_questionnaire_selections && $request->added_questionnaire_selections != 'null') {
@@ -392,6 +417,8 @@ class PostController extends Controller
       DB::table('post_comments')->where('post_id', $post->id)->delete();
 //TODO      DB::table('post_comment_attachments')->where('post_id', $post->id)->delete();
       DB::table('post_responses')->where('post_id', $post->id)->delete();
+      // この投稿についてのお知らせ(🔔)も全員の一覧から消す。残すと、タップしても投稿が無く開けない(#125)
+      NoticeLog::forgetTag('post-' . $post->id);
       if ($post->questionnaire_id != 0) {
         $questionnaire = Questionnaire::findOrFail($post->questionnaire_id);
         DB::table('questionnaire_answers')->where('questionnaire_id', $questionnaire->id)->delete();
@@ -417,7 +444,21 @@ class PostController extends Controller
   }
 
   /**
+   * 添付ファイルをチェックする。不正な場合は422を返す(ValidationException)。
+   * DBへの書き込みより前に呼ぶこと。
+   * @param Request $request
+   */
+  private function validateAttachments(Request $request): void
+  {
+    $request->validate([
+      // 0バイトのファイルは壊れた添付になるため弾く(#45)
+      'files.*' => ['file', new NotEmptyFile(), 'max:' . config('tsubasa.attachment_max_kb')],
+    ]);
+  }
+
+  /**
    * 添付ファイルを保存する。
+   * チェックは validateAttachments() で済ませておくこと。
    * @param Request $request
    * @param $post
    */
@@ -429,9 +470,11 @@ class PostController extends Controller
         $originalFilename = $file->getClientOriginalName();
         // ファイル保存
         $filePath = $file->storePublicly('public/post_attachment');
-        // 画像リサイズ
-        $extensions = ['jpg','JPG','jpeg','JPEG','png','PNG','gif','GIF','bmp','BMP'];
-        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+        // 画像リサイズ。
+        // 保存後のファイル名の拡張子はアップロード内容から判定されたものなので、
+        // クライアントが送ってきた拡張子ではなくこちらを見る
+        // (テキストを .gif という名前で送られてもリサイズを試みないようにする)
+        if ($this->isResizableImage($filePath)) {
           $this->resizeImage($filePath);
         }
         // URLのために置換
@@ -461,6 +504,9 @@ class PostController extends Controller
     $startTime = microtime(true);
     $fromMember = DB::table('members')->where('user_id', Auth::id())
       ->where('team_id', $post->team_id)->first();
+    // プッシュはメールより先に積む。メールのジョブは1通ごとに待つので、
+    // 後ろに積むとワーカーが1つの間はプッシュがメールを送り終えるまで待たされる
+    $this->dispatch(PushNotificationJob::newPost($post, (int) Auth::id()));
     $this->dispatch(new PostNotificationJob($fromMember, $post, null, $hasAttachment));
     $runningTime =  microtime(true) - $startTime;
     Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');

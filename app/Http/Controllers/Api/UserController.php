@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
@@ -36,10 +37,10 @@ class UserController extends Controller
       $team = $teams[0];
       $currentTeamId = $team->id;
       $currentTeamName = $team->name;
-      $minutes = env('SESSION_LIFETIME', 129600);
+      $minutes = config('session.lifetime');
       $path = "/";
       $domain = "";
-      $secure = env('APP_ENV', 'production') == 'production';
+      $secure = app()->environment('production');
       $httpOnly = false; //jsで扱うために必要
       Cookie::queue(Cookie::make('current_team_id', $currentTeamId,
         $minutes, $path, $domain, $secure, $httpOnly));
@@ -55,9 +56,8 @@ class UserController extends Controller
       'name' => Auth::user()->name,
       'name_kana' => Auth::user()->name_kana,
       'email' => Auth::user()->email,
-      'currentTeamAdminFlg' => $member->admin_flg,
+      'currentTeamAdminFlg' => $member?->admin_flg,
       'mail_notification_flg' => Auth::user()->mail_notification_flg,
-      'line_notification_flg' => Auth::user()->line_notification_flg,
       'myTeams' => $teams
     ];
     return Response::json($user);
@@ -110,13 +110,27 @@ class UserController extends Controller
    */
   public function updateEmail(Request $request)
   {
-    //TODO validate
     $user = User::findOrFail(Auth::user()->id);
     if (!$user) {// ヒットしない場合は404
       return response()->json(null, 404);
     }
 
-    $user->email = $request->email;
+    // 空・@ の無いアドレスで保存するとログインできなくなる。厳密な検証はしない
+    // (携帯キャリアの古いアドレスは RFC の検証で弾かれるため。MemberController と同じ)
+    $email = trim((string) $request->email);
+    if ($email === '' || mb_strlen($email) > 255 || !preg_match('/^[^@\s]+@[^@\s]+$/u', $email)) {
+      throw ValidationException::withMessages([
+        'email' => 'メールアドレスを正しく入れてください。',
+      ]);
+    }
+    // users.email には一意制約があるので、確認せずに保存すると DB のエラーで500になる(#124)
+    if (User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
+      throw ValidationException::withMessages([
+        'email' => 'このメールアドレスは他の方が使っています。',
+      ]);
+    }
+
+    $user->email = $email;
     $user->updated_id = Auth::id();
     $user = $user->save();
     return Response::json($user);
@@ -165,27 +179,6 @@ class UserController extends Controller
     Log::info("メール通知フラグ " . $request->mail_notification_flg);
     $user = Auth::user();
     $user->mail_notification_flg = $request->mail_notification_flg;
-    $user->save();
-    return Response::json($user);
-  }
-
-  /**
-   * ユーザーのLINE通知フラグの更新。
-   *
-   * @param  \Illuminate\Http\Request  $request
-   * @return \Illuminate\Http\JsonResponse
-   */
-  public function updateLINENotificationFlg(Request $request)
-  {
-    if (!in_array($request->line_notification_flg, ['0', '1'])) {
-      return response()->json(['message' => 'invalid',], 400);
-    }
-    Log::info("LINE通知フラグ " . $request->line_notification_flg);
-    $user = Auth::user();
-    $user->line_notification_flg = $request->line_notification_flg;
-    if (!$request->line_notification_flg) {
-      $user->line_access_token = null;
-    }
     $user->save();
     return Response::json($user);
   }

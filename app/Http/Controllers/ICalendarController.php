@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Team;
 use Carbon\Carbon;
+use DateTimeZone;
+use Eluceo\iCal\Domain\Entity\Calendar;
+use Eluceo\iCal\Domain\Entity\Event;
+use Eluceo\iCal\Domain\Entity\TimeZone;
+use Eluceo\iCal\Domain\ValueObject\Date as ICalDate;
+use Eluceo\iCal\Domain\ValueObject\DateTime as ICalDateTime;
+use Eluceo\iCal\Domain\ValueObject\SingleDay;
+use Eluceo\iCal\Domain\ValueObject\TimeSpan;
+use Eluceo\iCal\Presentation\Factory\CalendarFactory;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
 
 /**
  * Class ICalendarController
@@ -18,82 +26,93 @@ use Illuminate\Support\Facades\Response;
  */
 class ICalendarController extends Controller
 {
-  /**
-   * 指定チームのiCalを返す。
-   * @return string icalコンテンツ
-   */
-  public function make($ical_id)
-  {
-    $months = env('SCHEDULE_DATA_LOADING_MONTHS', 6);
-    $month = date('Ym');
-    $fromDate = Carbon::createFromFormat('Ymd', $month . '01')
-      ->addMonths($months * -1)->setTime(0, 0);  //nヶ月前の1日
-    $toDate = Carbon::createFromFormat('Ymd', $month . '01')
-      ->addMonths($months + 1)->addDays(-1)->setTime(0, 0);  //nヶ月後の月末
-    Log::info("$fromDate - $toDate");
+    /**
+     * 指定チームのiCalを返す。
+     */
+    public function make(string $ical_id): Response
+    {
+        $months = (int) config('tsubasa.schedule_data_loading_months');
+        $month = date('Ym');
+        $fromDate = Carbon::createFromFormat('Ymd', $month . '01')
+            ->addMonths($months * -1)->setTime(0, 0);  //nヶ月前の1日
+        $toDate = Carbon::createFromFormat('Ymd', $month . '01')
+            ->addMonths($months + 1)->addDays(-1)->setTime(0, 0);  //nヶ月後の月末
+        Log::info("$fromDate - $toDate");
 
-    $calendar = new \Eluceo\iCal\Component\Calendar('tsubasa.smartj.mobi');
+        $team = DB::table('teams')
+            ->where('teams.ical_id', $ical_id)
+            ->first();
+        if (! $team) {
+            return response('', 404);
+        }
 
-    $team = DB::table('teams')
-      ->where('teams.ical_id', $ical_id)
-      ->first();
-    if (!$team) {
-      return null;
-    }
-    $calendar->setName($team->name);
-    $schedules = DB::table('schedules')
-      ->select(['schedules.*'])
-      ->where('schedules.team_id', '=', $team->id)
-      ->whereBetween('schedules.schedule_date', [$fromDate, $toDate])
-      ->orderBy('schedules.schedule_date')
-      ->orderBy('schedules.time_from')
-      ->get();
+        $schedules = DB::table('schedules')
+            ->select(['schedules.*'])
+            ->where('schedules.team_id', '=', $team->id)
+            ->whereBetween('schedules.schedule_date', [$fromDate, $toDate])
+            ->orderBy('schedules.schedule_date')
+            ->orderBy('schedules.time_from')
+            ->get();
 
-    // iCal作成
-    foreach($schedules as $schedule) {
-      $start = new Carbon($schedule->schedule_date);
-      if ($schedule->time_from) {
-        $start = new Carbon($schedule->schedule_date . ' ' . $schedule->time_from);
-      }
-//      Log::info('----> start ' . $start . ' ' . $start->getTimezone()->getName());
+        $calendar = new Calendar();
+        $calendar->setProductIdentifier('tsubasa.smartj.mobi');
+        $calendar->setCalName($team->name);
 
-      $end = new Carbon($schedule->schedule_date);
-      if ($schedule->time_to) {
-        $end = new Carbon($schedule->schedule_date . ' ' . $schedule->time_to);
-      } else if ($schedule->time_from) {//time_fromが設定されていてtime_toが設定されていない場合
-        $end = $start;
-      }
+        // 時刻付きの予定はローカルタイムで出力するため、VTIMEZONEを添える
+        $timeZone = new DateTimeZone(config('app.timezone'));
+        $calendar->addTimeZone(
+            TimeZone::createFromPhpDateTimeZone($timeZone, $fromDate, $toDate)
+        );
 
-      $event = new \Eluceo\iCal\Component\Event();
-      $event->setUseTimezone(true);
-      $event->setUseUtc(false);
-      $event
-        ->setDtStart(new Carbon($start))
-        ->setDtEnd(new Carbon($end))
-        ->setSummary($schedule->title)
-      ;
-      if (!$schedule->time_from) {
-        $event->setNoTime(true);
-      }
-      $calendar->addComponent($event);
-//      Log::info('event: ' . $event);
+        foreach ($schedules as $schedule) {
+            $calendar->addEvent($this->makeEvent($schedule, $timeZone));
+        }
+
+        $content = (string) (new CalendarFactory())->createCalendar($calendar);
+
+        return response($content, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $team->name . '.ics"',
+        ]);
     }
 
-    header('Content-Type: text/calendar; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $team->name . '.ics"');
-    return $calendar->render();
-  }
+    /**
+     * scheduleレコード1件をiCalのVEVENTに変換する。
+     */
+    private function makeEvent(object $schedule, DateTimeZone $timeZone): Event
+    {
+        $event = new Event();
+        $event->setSummary((string) $schedule->title);
 
-  /**
-   * 指定チームのiCalを返す。
-   * @return JsonResponse
-   */
-  public function getConfig()
-  {
-    $team = Team::findOrFail(Cookie::get('current_team_id'));
-    if (!$team) {
-      return response()->json(['message' => 'not found',], 404);
+        // 開始時刻が未設定の予定は終日予定として扱う
+        if (! $schedule->time_from) {
+            $date = Carbon::parse($schedule->schedule_date, $timeZone);
+
+            return $event->setOccurrence(new SingleDay(new ICalDate($date)));
+        }
+
+        $start = Carbon::parse($schedule->schedule_date . ' ' . $schedule->time_from, $timeZone);
+
+        // 終了時刻が未設定の場合は開始時刻と同じにする
+        $end = $schedule->time_to
+            ? Carbon::parse($schedule->schedule_date . ' ' . $schedule->time_to, $timeZone)
+            : $start->copy();
+
+        return $event->setOccurrence(new TimeSpan(
+            new ICalDateTime($start, true),
+            new ICalDateTime($end, true)
+        ));
     }
-    return Response::json(['ical_url' => env('APP_URL', 'https://tsubasa.smartj.mobi') . '/ical/' . $team->ical_id]);
-  }
+
+    /**
+     * 現在のチームのiCal購読URLを返す。
+     */
+    public function getConfig(): JsonResponse
+    {
+        $team = Team::findOrFail(Cookie::get('current_team_id'));
+
+        return response()->json([
+            'ical_url' => config('app.url') . '/ical/' . $team->ical_id,
+        ]);
+    }
 }

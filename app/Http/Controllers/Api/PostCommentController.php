@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ResizeImage;
 use App\Jobs\PostNotificationJob;
+use App\Jobs\PushNotificationJob;
 use App\Post;
 use App\PostComment;
 use App\PostCommentAttachment;
 use App\PostResponse;
+use App\Rules\NotEmptyFile;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +19,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
-use Intervention\Image\Facades\Image;
 
 class PostCommentController extends Controller
 {
@@ -37,6 +38,12 @@ class PostCommentController extends Controller
         'message' => 'not found',
       ], 404);
     }
+    // 添付ファイルのチェックはコメントの登録より前に行う。
+    // 後で弾くと、添付の無いコメントだけが登録されてしまうため。
+    $request->validate([
+      // 0バイトのファイルは壊れた添付になるため弾く(#45)
+      'comment_files.*' => ['file', new NotEmptyFile(), 'max:' . config('tsubasa.attachment_max_kb')],
+    ]);
     $postCommentResult = PostComment::create([
       "post_id" => $request->post_id,
       "user_id" => Auth::id(),
@@ -47,7 +54,6 @@ class PostCommentController extends Controller
     Log::info("public_path=" . public_path() . ', storage_path=' . storage_path());
     $hasAttachment = false;
     if ($request->allFiles()) { //添付がある場合
-//      $allowedfileExtension=['pdf','jpg','jpeg','png','gif','xlsx','docx'];
       $files = $request->file('comment_files');
       foreach ($files as $file) {
         $originalFilename = $file->getClientOriginalName();
@@ -57,9 +63,10 @@ class PostCommentController extends Controller
 //        }
         // ファイル保存
         $filePath = $file->storePublicly('public/comment_attachment');
-        // 画像リサイズ
-        $extensions = ['jpg','JPG','jpeg','JPEG','png','PNG','gif','GIF','bmp','BMP'];
-        if (in_array($file->getClientOriginalExtension(), $extensions)) {
+        // 画像リサイズ。
+        // 保存後のファイル名の拡張子はアップロード内容から判定されたものなので、
+        // クライアントが送ってきた拡張子ではなくこちらを見る
+        if ($this->isResizableImage($filePath)) {
           $this->resizeImage($filePath);
         }
 
@@ -87,6 +94,8 @@ class PostCommentController extends Controller
       Log::info('コメント通知実行');
       $startTime = microtime(true);
       $fromUser = User::findOrFail(Auth::id());
+      // プッシュはメールより先に積む(メールのジョブの後ろで待たされないように)
+      $this->dispatch(PushNotificationJob::postComment($post, $postCommentResult, (int) Auth::id()));
       $this->dispatch(new PostNotificationJob($fromUser, $post, $postCommentResult, $hasAttachment));
       $runningTime =  microtime(true) - $startTime;
       Log::info('メール/LINE送信キュー入れ処理時間: ' . $runningTime . ' [s]');

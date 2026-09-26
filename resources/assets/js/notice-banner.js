@@ -1,0 +1,42 @@
+/**
+ * 前面に戻ったときに出す「届いたお知らせ」の帯(#125)。
+ *
+ * iPhone でアプリがバックグラウンドのとき、通知をタップしても、触らずに戻っても、削除しても、
+ * アプリには同じように見える(前面に出るだけ。deep-link.js の checkArrivedWhileAway)。
+ * 勝手に画面を切り替えると、タップしていない人には不自然なので、切り替えずにこの帯で知らせ、
+ * タップしたら開く(2 件以上なら🔔の一覧を開く)。✕か数秒で消え、通知は「まだ開いていない」のまま🔔に残る。
+ *
+ * 画面(NoticeBanner.vue)はアプリ全体の最前面に 1 つだけ置き、ここで状態を持つ。
+ */
+import Vue from 'vue';
+
+const AUTO_HIDE_MS = 8000;
+
+// notice: { nid, url, title, body, team_id, at }、2 件以上なら { count, at }。null なら出さない。top: 帯の上端(ツールバーの真下)
+export const bannerState = Vue.observable({ notice: null, top: 0 });
+
+let hideTimer = null;
+
+/** 今見えているツールバーの下端。見つからなければ一般的な高さ */
+function toolbarBottom() {
+  let bottom = 0;
+  document.querySelectorAll('ons-toolbar').forEach((bar) => {
+    const rect = bar.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && rect.top <= 1 && rect.bottom > bottom) {
+      bottom = rect.bottom;
+    }
+  });
+  return bottom || 44;
+}
+
+export function showNoticeBanner(notice) {
+  bannerState.top = toolbarBottom();
+  bannerState.notice = notice;
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(hideNoticeBanner, AUTO_HIDE_MS);
+}
+
+export function hideNoticeBanner() {
+  clearTimeout(hideTimer);
+  bannerState.notice = null;
+}

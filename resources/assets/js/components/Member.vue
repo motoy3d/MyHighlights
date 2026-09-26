@@ -64,6 +64,18 @@
             <div class="space" v-if="!user_id">
               このメンバーを招待する <v-ons-switch v-model="invitationFlg"></v-ons-switch>
             </div>
+            <!-- 既にアカウントがあるメンバーを、別のアカウントに付け替える(#124)。
+                 同じ人がアカウントを二重に持っている場合に、今使っているアカウントへ寄せるために使う -->
+            <div class="space" v-else>
+              別のアカウントに紐づけ直す <v-ons-switch v-model="invitationFlg"></v-ons-switch>
+            </div>
+            <div class="mlr-15 mt-5" v-if="user_id && invitationFlg">
+              <small class="gray">
+                入力したメールアドレスのアカウントに付け替えます。そのアドレスの登録が無ければ、新しく招待します。
+                このチームでの過去の投稿・コメント・回答なども、付け替え先のアカウントに移ります。
+                今のアカウントは、他のチームに所属していなければ退会扱いになります。
+              </small>
+            </div>
             <div class="ml-15 mt-10">
               <small class="gray">メールアドレス</small>
               <span class="notification ml-5 bg-gray" v-if="invitationFlg || user_id"><small>必須</small></span>
@@ -220,24 +232,50 @@
           this.$ons.notification.alert('氏名を入れてください', {title: ''});
           return;
         }
-        if (this.memberTypeSegment !== 0 && this.invitationFlg && !this.email) {
+        if (this.memberTypeSegment !== 0 && (this.invitationFlg || this.user_id) && !this.email
+            && this.$store.state.navigator.user.currentTeamAdminFlg) {
           this.$ons.notification.alert('メールアドレスを入れてください', {title: ''});
           return;
         }
+        // 付け替えは元のアカウントとの紐づきが切れるので、一度確認する(#124)
+        if (this.user_id && this.invitationFlg) {
+          this.$ons.notification.confirm(
+            this.email + ' のアカウントに紐づけ直します。よろしいですか？\n'
+              + 'このチームでの過去の投稿・コメント・回答も移ります。'
+              + '（' + (this.member.email || '今のアドレス') + ' のアカウントは、他のチームに所属していなければ退会扱いになります）',
+            {title: '', buttonLabels: ['キャンセル', 'OK']})
+            .then((answer) => {
+              if (answer === 1) {
+                this.send();
+              }
+            });
+          return;
+        }
+        this.send();
+      },
+      send() {
         this.$http.put('/api/members/' + this.member.id, this.$data)
           .then(response => {
             // console.log(response.data);
             this.loading = false;
+            // 画面を閉じるのは保存に成功した時だけ(422 で弾かれた時は入力を直せるよう残す)
+            this.$store.dispatch('members/load', this.$http);
+            this.$store.commit('navigator/pop');
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status == 401) {window.location.href = "/login";}
             this.loading = false;
+            if (!error.response) {return;}
+            if (error.response.status == 401) {window.location.href = "/login"; return;}
+            // 入力エラー(すでにチームのメンバーであるメールアドレス等)はこの画面で知らせる
+            if (error.response.status === 422) {
+              const errors = error.response.data.errors || {};
+              const messages = Object.keys(errors).map(key => errors[key][0]);
+              this.$ons.notification.alert(messages.join('\n') || error.response.data.message, {title: ''});
+            }
           })
         // .finally(() => this.loading = false)
         ;
-        this.$store.dispatch('members/load', this.$http);
-        this.$store.commit('navigator/pop');
       },
       confirmDeleteMember() {
         let self = this;

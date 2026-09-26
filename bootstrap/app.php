@@ -1,55 +1,55 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Create The Application
-|--------------------------------------------------------------------------
-|
-| The first thing we will do is create a new Laravel application instance
-| which serves as the "glue" for all the components of Laravel, and is
-| the IoC container for the system binding all of the various parts.
-|
-*/
+use App\Http\Middleware\EnsureCurrentTeamIsOwn;
+use App\Http\Middleware\LogOperations;
+use App\Support\ExceptionLogger;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
 
-$app = new Illuminate\Foundation\Application(
-    realpath(__DIR__.'/../')
-);
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
+        channels: __DIR__ . '/../routes/channels.php',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // 旧 app/Http/Kernel.php の設定をそのまま移設したもの。
 
-/*
-|--------------------------------------------------------------------------
-| Bind Important Interfaces
-|--------------------------------------------------------------------------
-|
-| Next, we need to bind some important interfaces into the container so
-| we will be able to resolve them when needed. The kernels serve the
-| incoming requests to this application from both the web and CLI.
-|
-*/
+        // jsから読む必要があるためこの2つは暗号化しない
+        $middleware->encryptCookies(except: [
+            'current_team_id',
+            'current_team_name',
+        ]);
 
-$app->singleton(
-    Illuminate\Contracts\Http\Kernel::class,
-    App\Http\Kernel::class
-);
+        $middleware->trimStrings(except: [
+            'password',
+            'password_confirmation',
+        ]);
 
-$app->singleton(
-    Illuminate\Contracts\Console\Kernel::class,
-    App\Console\Kernel::class
-);
+        // 同一オリジンのSPAからのAPIリクエストをセッション認証で通す(旧Passportの
+        // CreateFreshApiTokenミドルウェアの代替)。SANCTUM_STATEFUL_DOMAINSを参照する。
+        $middleware->statefulApi();
+        // レート制限は AppServiceProvider で定義した名前付きリミッタ 'api' を使う。
+        //
+        // ここに config() や env() を直接書いてはいけない。
+        // このクロージャはアプリの構築中に走り、設定がまだ読み込まれていないため
+        // 例外になる(実際に踏んで500になった)。
+        $middleware->throttleApi();
 
-$app->singleton(
-    Illuminate\Contracts\Debug\ExceptionHandler::class,
-    App\Exceptions\Handler::class
-);
+        $middleware->alias([
+            'log' => LogOperations::class,
+            // current_team_id クッキーが所属チームを指していることを保証する
+            'team' => EnsureCurrentTeamIsOwn::class,
+        ]);
 
-/*
-|--------------------------------------------------------------------------
-| Return The Application
-|--------------------------------------------------------------------------
-|
-| This script returns the application instance. The instance is given to
-| the calling script so we can separate the building of the instances
-| from the actual running of the application and sending responses.
-|
-*/
-
-return $app;
+        // ALB等のリバースプロキシを前段に置く場合は下記を有効化する。
+        // $middleware->trustProxies(at: '*');
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        // 旧 app/Exceptions/Handler.php の report() 相当。
+        $exceptions->report(function (Throwable $e) {
+            ExceptionLogger::record($e);
+        });
+    })->create();

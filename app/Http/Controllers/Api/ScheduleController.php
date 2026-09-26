@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Category;
 use App\Holiday;
 use App\Http\Controllers\Controller;
+use App\Jobs\PushNotificationJob;
 use App\Schedule;
+use App\Support\NoticeLog;
+use App\Support\ScheduleChange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +32,7 @@ class ScheduleController extends Controller
    */
   public function index(Request $request)
   {
-    $months = env('SCHEDULE_DATA_LOADING_MONTHS', 12);
+    $months = config('tsubasa.schedule_data_loading_months');
     //TODO validate
     $month = $request->month;
     $fromDate = Carbon::createFromFormat('Ymd', $month . '01')
@@ -110,6 +113,9 @@ class ScheduleController extends Controller
       ], 404);
     }
 
+    // 変更の通知(#110)の判定のため、書き換える前の値を取っておく
+    $before = $schedule->getAttributes();
+
     $schedule->schedule_date = $request->schedule_date;
     $schedule->title = $request->title;
     $schedule->allday_flg = $request->allday_flg == 'true'? true : false;
@@ -119,10 +125,19 @@ class ScheduleController extends Controller
     $schedule->content = $request->contents;
     $schedule->notification_flg = $request->notification_flg == 'true'? true : false;
     $schedule->updated_id = Auth::id();
-    $schedule = $schedule->save();
+    $saved = $schedule->save();
+
+    // 予定の変更のプッシュ通知(#110)。
+    // 編集画面の「変更をみんなに通知する」がオンで、かつ日付・時刻・終日・タイトルの
+    // いずれかが変わったときだけ送る。notify_change を送ってこない古い画面では送らない。
+    $notifyChange = $request->input('notify_change');
+    if ($saved && ($notifyChange === 'true' || $notifyChange === true)
+      && ScheduleChange::isSignificant($before, $schedule->getAttributes())) {
+      $this->dispatch(PushNotificationJob::scheduleChanged($schedule, (int) Auth::id()));
+    }
 
     //TODO 添付ファイル
-    return Response::json($schedule);
+    return Response::json($saved);
   }
 
   /**
@@ -139,7 +154,29 @@ class ScheduleController extends Controller
         'message' => 'not found',
       ], 404);
     }
+    // 削除した予定は読み直せないので、通知に使う内容を先に取っておく
+    $snapshot = [
+      'id' => (int) $schedule->id,
+      'team_id' => (int) $schedule->team_id,
+      'title' => (string) $schedule->title,
+      'schedule_date' => ScheduleChange::normalizeDate($schedule->schedule_date),
+    ];
     $count = Schedule::destroy($id);
+
+    // この予定についてのこれまでのお知らせ(変更・コメント)は全員の一覧から消す。
+    // 残すと、タップしても予定が無い(#125)。このあと送る「予定が削除されました」の通知は、
+    // この後に記録されるので残る(カレンダーのその日を開く)
+    if ($count > 0) {
+      NoticeLog::forgetTag('schedule-' . $snapshot['id']);
+    }
+
+    // 今日以降の予定の削除は「中止」としてプッシュで知らせる(#110)。
+    // 過去の予定の整理では送らない。
+    $today = Carbon::now('Asia/Tokyo')->toDateString();
+    if ($count > 0 && $snapshot['schedule_date'] !== null && $snapshot['schedule_date'] >= $today) {
+      $this->dispatch(PushNotificationJob::scheduleDeleted($snapshot, (int) Auth::id()));
+    }
+
     $result = ["deleted_count" => $count];
     return Response::json($result);
   }

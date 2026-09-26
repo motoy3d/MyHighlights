@@ -73,9 +73,12 @@
             <!--<input type="file" name="myfile" />-->
           <!--</div>-->
         <!--</div>-->
-        <!--<div class="space">-->
-          <!--みんなに通知 <v-ons-switch v-model="notification_flg"></v-ons-switch>-->
-        <!--</div>-->
+        <!-- #110 予定の変更をプッシュ通知で知らせる。送るかどうかの判定(変わった項目)はサーバ側 -->
+        <div class="space">
+          <v-ons-switch id="notify_change_switch" v-model="notify_change"></v-ons-switch>
+          <label for="notify_change_switch" class="ml-5">変更をみんなに通知する</label>
+          <p class="gray small mt-5 mb-0">日付・時刻・タイトルを変えたときだけ通知されます</p>
+        </div>
         <div class="space">
           <v-ons-button id="postBtn" class="mtb-20" modifier="large"
                         @click="save();" :disabled="posting">
@@ -152,7 +155,8 @@
         contents: '',
         files: [],
         fileNames: [],
-        notification_flg: false
+        notification_flg: false,
+        notify_change: true
       };
     },
     methods: {
@@ -185,6 +189,7 @@
         formData.append('contents', this.contents);
         formData.append('category_id', this.category_id);
         formData.append('notification_flg', this.notification_flg);
+        formData.append('notify_change', this.notify_change? 'true' : 'false');
         for(let i = 0; i < this.files.length; i++) {
           formData.append('files[]', this.files[i]);
         }
