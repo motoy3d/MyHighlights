@@ -687,13 +687,42 @@ test.describe('お知らせ(🔔)', () => {
     await bell(page).click();
     await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
     await page.waitForTimeout(800);
-    const { height } = page.viewportSize();
-    await page.mouse.move(5, height / 2);
-    await page.mouse.down();
-    for (let x = 20; x <= 300; x += 20) {
-      await page.mouse.move(x, height / 2);
+    const { width, height } = page.viewportSize();
+    const y = height / 2;
+    const xs = [];
+    for (let x = 5; x <= width * 0.8; x += 15) {
+      xs.push(x);
     }
-    await page.mouse.up();
+    const hasTouch = await page.evaluate(() => 'ontouchstart' in window);
+    if (hasTouch) {
+      // スマートフォン(タッチ)はマウスの操作をスワイプとして扱わないので、タッチを送る
+      // (WebKit では Touch を作れないので、座標を持たせたイベントで代える)
+      await page.evaluate(async ({ xs, y }) => {
+        const target = document.elementFromPoint(xs[0], y);
+        const touch = (x) => ({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y, screenX: x, screenY: y });
+        const send = (type, x) => {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          const list = type === 'touchend' ? [] : [touch(x)];
+          Object.defineProperty(event, 'touches', { value: list });
+          Object.defineProperty(event, 'targetTouches', { value: list });
+          Object.defineProperty(event, 'changedTouches', { value: [touch(x)] });
+          target.dispatchEvent(event);
+        };
+        send('touchstart', xs[0]);
+        for (const x of xs.slice(1)) {
+          await new Promise((r) => setTimeout(r, 16));
+          send('touchmove', x);
+        }
+        send('touchend', xs[xs.length - 1]);
+      }, { xs, y });
+    } else {
+      await page.mouse.move(xs[0], y);
+      await page.mouse.down();
+      for (const x of xs.slice(1)) {
+        await page.mouse.move(x, y);
+      }
+      await page.mouse.up();
+    }
     await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 5000 });
   });
 
