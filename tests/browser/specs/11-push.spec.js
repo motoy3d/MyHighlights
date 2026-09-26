@@ -620,6 +620,12 @@ test.describe('お知らせ(🔔)', () => {
         notice({ id: 1, nid: 'nid-old', body: '開いた通知', opened: true }),
       ],
     });
+    // 投稿の詳細も、開いた後の🔔の数を返す(差し替えた数に合わせる)
+    await page.route(new RegExp(`/api/posts/${post.id}$`), async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      await route.fulfill({ response, json: { ...json, unopened: 2 } });
+    });
     await gotoApp(page);
 
     await expect(bell(page)).toBeVisible({ timeout: 15000 });
