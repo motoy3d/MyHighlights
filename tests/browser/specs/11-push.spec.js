@@ -371,6 +371,76 @@ test.describe('通知センターから消えた通知', () => {
     expect(opened).toContainEqual({ nid: 'nid0' });
   });
 
+  // iPhone では、表示している間に届いた通知もタップも画面に伝わらない(2026-09-26 実機)。
+  // 通知センターに増えた通知を画面から見つけて、帯で知らせる
+  test('アプリを表示している間に通知が届くと、帯で知らせ、🔔の数を取り直し、通知センターからは消す', async ({ page }) => {
+    await gotoApp(page);
+    const post = await firstPost(page);
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    await page.waitForTimeout(3500);
+    const before = await pages(page);
+    const opened = [];
+    await page.route('**/api/notices/open', (route) => {
+      opened.push(JSON.parse(route.request().postData() || '{}'));
+      route.fulfill({ json: { unopened: 0 } });
+    });
+    let unopenedCalls = 0;
+    await page.route('**/api/notices/unopened', (route) => { unopenedCalls++; route.fulfill({ json: { unopened: 1 } }); });
+
+    // 通知センター(window.__shown)を差し替える。すでに 1 件ある状態で表示し始める
+    await page.evaluate(() => {
+      const make = (nid, body, url) => ({
+        tag: 'x', title: 'テストチーム', body, timestamp: Date.now(), data: { nid, url },
+        close() { window.__shown = window.__shown.filter((n) => n !== this); window.__closed.push(nid); },
+      });
+      window.__make = make;
+      window.__closed = [];
+      window.__shown = [make('old', '前からある通知', '/home?launcher=true')];
+      Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });
+      if (typeof window.Notification === 'undefined') {
+        window.Notification = {};
+      }
+      Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
+      const registration = {
+        pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
+        getNotifications: async () => window.__shown.slice(),
+      };
+      navigator.serviceWorker.getRegistration = async () => registration;
+      window.__vis = 'visible';
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis });
+      window.__vis = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.route('**/api/push/recent', (route) => route.fulfill({ json: { now: Date.now(), notices: [] } }));
+    await page.evaluate(() => { window.__vis = 'visible'; document.dispatchEvent(new Event('visibilitychange')); });
+
+    // 表示し始めたときにあった通知では帯を出さない
+    await page.waitForTimeout(3000);
+    await expect(banner(page)).toHaveCount(0);
+    const callsBefore = unopenedCalls;
+
+    // 表示している間に 1 件届く
+    await page.evaluate((url) => { window.__shown.push(window.__make('fresh', '今届いた通知', url)); },
+      '/home?launcher=true&post=' + post.id);
+    await expect(banner(page)).toBeVisible({ timeout: 5000 });
+    await expect(banner(page)).toContainText('今届いた通知');
+    expect(await pages(page), '帯を出しただけで画面は切り替えない').toBe(before);
+    expect(unopenedCalls, '🔔の数を取り直す').toBeGreaterThan(callsBefore);
+    await expect.poll(() => page.evaluate(() => window.__closed)).toEqual(['fresh']);
+    expect(opened, '帯を出しただけでは「開いた」にしない').toHaveLength(0);
+
+    await banner(page).click();
+    const article = page.locator('ons-navigator > ons-page').nth(1);
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    expect(opened).toContainEqual({ nid: 'fresh' });
+
+    // 同じ通知で二度は出さない。バックグラウンドの間は調べない
+    await page.evaluate(() => { window.__vis = 'hidden'; document.dispatchEvent(new Event('visibilitychange')); });
+    await page.evaluate(() => { window.__shown.push(window.__make('while-hidden', '裏にいる間の通知', '/home?launcher=true')); });
+    await page.waitForTimeout(3000);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
   test('帯の✕で閉じると開かず、「開いた」にもしない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);

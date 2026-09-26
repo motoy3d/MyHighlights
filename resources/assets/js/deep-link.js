@@ -22,7 +22,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Article from './components/Article.vue';
-import { markNoticeOpened } from './push.js';
+import { markNoticeOpened, refreshUnopened } from './push.js';
 import { showNoticeBanner } from './notice-banner.js';
 
 const TAB_TIMELINE = 0;
@@ -382,6 +382,86 @@ async function checkVanishedNotification(store, since) {
 }
 
 /**
+ * iPhone でアプリを表示している間に届いた通知を、アプリの中の帯で知らせる(#125)。
+ *
+ * iOS では、アプリを表示している間に通知が届いても・タップしても、アプリの画面には伝わらない
+ * (2026-09-26 実機で確認：通知を受けた sw.js から開いている画面が見えず(clients.matchAll が 0 件)、
+ *  postMessage も BroadcastChannel も届かず、タップの notificationclick も来ない。WebKit bug 268797 の一部)。
+ * そこで表示している間は、通知センターに新しい通知が増えたかを画面から調べ、増えたら
+ * 🔔の数を取り直し、その通知を帯で出す(ふつうのアプリと同じく、開いている間はアプリの中で知らせる)。
+ * iOS 上部に出た通知はタップしても何も起きないので、帯を出したら通知センターからは消す
+ * (その通知は🔔の一覧に「まだ開いていない」で残る)。
+ * 端末の中を見るだけで、サーバへの問い合わせは増えない。
+ */
+const ARRIVAL_POLL_MS = 2000;
+let arrivalTimer = null;
+let arrivalWatch = 0;
+let arrivalChecking = false;
+// 表示し始めたときにすでにあった通知と、帯に出した通知(同じ通知を二度出さない)
+let seenNids = new Set();
+
+const nidOf = (notification) => (notification.data && notification.data.nid) || null;
+
+async function shownNotifications() {
+  const registration = await navigator.serviceWorker.getRegistration('/');
+  return registration ? registration.getNotifications() : [];
+}
+
+async function startArrivalWatch() {
+  stopArrivalWatch();
+  const watch = arrivalWatch;
+  try {
+    if (!(await thisDeviceSubscription())) {
+      return;
+    }
+    // 表示し始めた時点で通知センターにあるもの(バックグラウンドの間に届いた分)は、前面に戻ったときの確認
+    // (checkVanishedNotification)に任せる
+    const list = await shownNotifications();
+    if (watch !== arrivalWatch || document.visibilityState !== 'visible') {
+      return;
+    }
+    seenNids = new Set(list.map(nidOf).filter(Boolean));
+    arrivalTimer = setInterval(checkArrivals, ARRIVAL_POLL_MS);
+  } catch (e) {
+    // 調べられなければ何もしない(🔔は前面に戻ったときに取り直す)
+  }
+}
+
+function stopArrivalWatch() {
+  arrivalWatch++;
+  clearInterval(arrivalTimer);
+  arrivalTimer = null;
+}
+
+async function checkArrivals() {
+  if (arrivalChecking) {
+    return;
+  }
+  arrivalChecking = true;
+  try {
+    const fresh = (await shownNotifications()).filter((n) => nidOf(n) && !seenNids.has(nidOf(n)));
+    if (!fresh.length) {
+      return;
+    }
+    fresh.forEach((n) => seenNids.add(nidOf(n)));
+    refreshUnopened();
+    const latest = fresh.reduce((a, b) => ((b.timestamp || 0) > (a.timestamp || 0) ? b : a));
+    showNoticeBanner({
+      nid: nidOf(latest),
+      url: latest.data.url,
+      title: latest.title,
+      body: latest.body,
+      at: latest.timestamp || Date.now(),
+    });
+    fresh.forEach((n) => n.close());
+  } catch (e) {
+    // 次の回に調べる
+  } finally {
+    arrivalChecking = false;
+  }
+}
+
+/**
  * アプリが前面に戻ったとき（通知のタップで iOS がアプリを前に出したとき）に、書き置きを読む。
  * AppNavigator.vue の mounted から一度だけ呼ぶ。
  */
@@ -391,6 +471,7 @@ export function installDeepLinkListeners(store) {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       hiddenAt = Date.now();
+      stopArrivalWatch();
     } else if (document.visibilityState === 'visible') {
       check();
       if (detectVanished && hiddenAt !== null) {
@@ -398,8 +479,14 @@ export function installDeepLinkListeners(store) {
         hiddenAt = null;
         checkVanishedNotification(store, since);
       }
+      if (detectVanished) {
+        startArrivalWatch();
+      }
     }
   });
+  if (detectVanished && document.visibilityState === 'visible') {
+    startArrivalWatch();
+  }
   window.addEventListener('focus', check);
   window.addEventListener('pageshow', check);
   if ('serviceWorker' in navigator) {
