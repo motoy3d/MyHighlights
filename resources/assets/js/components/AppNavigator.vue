@@ -15,7 +15,6 @@
   import { installNoticeCount } from '../push.js';
   import Vue from 'vue';
   import NoticeBanner from './NoticeBanner.vue';
-  import { installDiag } from '../diag.js'; // 一時的な診断
   export default {
     beforeCreate() {
       // console.log("AppNavigator#beforeCreate");
@@ -50,7 +49,6 @@
       pushArticleOnStart(this.$store);
     },
     mounted() {
-      installDiag(); // 一時的な診断
       // 通知のリンク(/home?post=… など)で起動したら、そのタブ・投稿を開く(deep-link.js)
       openFromUrl(this.$store);
       // アプリが開いたまま通知をタップしたときは、前面に戻ったときに sw.js の書き置きを読んで開く
