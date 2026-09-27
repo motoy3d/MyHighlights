@@ -515,9 +515,15 @@ const timelineBadge = (page) => page.locator('ons-tab[label="タイムライン"
 
 /** 投稿の詳細から戻ると、その投稿はタイムラインで既読になり、タブの未読数にも数えない */
 async function expectReadInTimeline(page, post, state) {
-  const article = page.locator('ons-navigator > ons-page').nth(1);
+  const article = page.locator('ons-navigator > ons-page').last();
   await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 30_000 });
   await article.locator('.navbar .left ons-toolbar-button').click();
+  // お知らせの一覧から開いた場合は一覧に戻るので、もう一度戻る
+  if (await page.locator('ons-navigator > ons-page').count() > 2 || await page.locator('#notices_page').count()) {
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(500);
+    await page.locator('#notices_page .navbar .left ons-toolbar-button').click();
+  }
   await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 15_000 });
   await expect(timelineRow(page, post).locator('.new_icon')).toHaveCount(0);
   if (state.realCount) {
@@ -642,12 +648,20 @@ test.describe('お知らせ(🔔)', () => {
     await expect(bell(page).locator('.notice-bell-count')).toHaveText('3');
 
     await list.locator('.notice-unopened').click();
-    const article = page.locator('ons-navigator > ons-page').nth(1);
+    // 投稿は一覧の上に重ねて開く(戻ると一覧に戻る。2026-09-27 実機：タイムラインに戻っていた)
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(3, { timeout: 15000 });
+    const article = page.locator('ons-navigator > ons-page').last();
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
     expect(calls.opened).toContainEqual({ nid: 'nid-new' });
     // 1 件開いたので 1 減る。アイコンの数も同じ
     await expect(bell(page).locator('.notice-bell-count')).toHaveText('2');
     await expect.poll(() => page.evaluate(() => window.__badges.slice(-1)[0])).toBe(2);
+
+    await article.locator('.navbar .left ons-toolbar-button').click();
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(2, { timeout: 15000 });
+    await expect(page.locator('#notices_page')).toBeVisible();
+    // 開いた通知は一覧でも「開いた」になっている
+    await expect(list.locator('.notice-unopened')).toHaveCount(0);
   });
 
   test('タイムラインから投稿を開くと、その投稿の通知の分だけ🔔の数がすぐ減る', async ({ page }) => {

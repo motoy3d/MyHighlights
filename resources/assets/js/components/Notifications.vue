@@ -55,7 +55,7 @@
 
 <script>
   import { markNoticeOpened, closeShownNotifications, setUnopened, noticeState } from '../push.js';
-  import { openNoticeTarget } from '../deep-link.js';
+  import { openNoticeTarget, canOpenOverList } from '../deep-link.js';
 
   export default {
     data() {
@@ -93,9 +93,13 @@
           setUnopened(noticeState.unopened - 1);
         }
         markNoticeOpened(item.nid);
-        // この一覧を閉じてから、通知をタップしたときと同じ処理で目的の画面を開く
-        this.$store.commit('navigator/pop');
-        openNoticeTarget(this.$store, item.url);
+        // 今のチームの投稿は、この一覧の上に重ねて開く(戻ると一覧に戻る)。
+        // 予定(カレンダーのタブに切り替える)や別のチーム(読み込み直す)は、一覧を閉じてから開く
+        const overList = canOpenOverList(item.url);
+        if (!overList) {
+          this.$store.commit('navigator/pop');
+        }
+        openNoticeTarget(this.$store, item.url, { overList });
       },
       openAll() {
         this.items.forEach((item) => { item.opened = true; });

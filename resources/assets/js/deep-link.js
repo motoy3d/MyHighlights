@@ -150,13 +150,21 @@ function afterLoad(fn) {
 }
 
 /** パラメータが指す画面を開く（投稿なら投稿の画面、日付ならカレンダー） */
-function openTarget(store, p) {
+function openTarget(store, p, { overList = false } = {}) {
   const post = p.get('post');
   const date = p.get('date');
   const schedule = p.get('schedule');
   if (isId(post)) {
     // タイムラインで投稿を開くのと同じ処理（Timeline.vue の openArticle）
     store.commit('article/setPostId', Number(post));
+    if (overList) {
+      // お知らせ一覧の上に重ねる。戻ると一覧に戻る。タブはそのまま、横から開いてスワイプで戻れるようにする
+      store.commit('navigator/push', {
+        extends: Article,
+        onsNavigatorOptions: { animation: 'slide' }
+      });
+      return;
+    }
     store.commit('tabbar/setIndex', TAB_TIMELINE);
     store.commit('navigator/push', {
       extends: Article,
@@ -199,14 +207,28 @@ function clearDeepLink() {
   }
 }
 
-/** お知らせ一覧(🔔。#125)からタップしたとき。通知をタップしたときと同じ処理で開く */
-export function openNoticeTarget(store, urlString) {
+/**
+ * お知らせ一覧から、一覧を閉じずに上に重ねて開けるか(今のチームの投稿)。
+ * 予定はカレンダーのタブに切り替え、別のチームは読み込み直すので、一覧を閉じてから開く
+ */
+export function canOpenOverList(urlString) {
+  const url = new URL(urlString, window.location.origin);
+  const team = url.searchParams.get('team');
+  return url.origin === window.location.origin && isId(url.searchParams.get('post'))
+    && !(isId(team) && String(Cookies.get('current_team_id')) !== team);
+}
+
+/**
+ * お知らせ一覧(🔔。#125)や帯からタップしたとき。通知をタップしたときと同じ処理で開く。
+ * overList なら一覧の上に重ねて開く(戻ると一覧に戻る。canOpenOverList が true のときだけ)
+ */
+export function openNoticeTarget(store, urlString, { overList = false } = {}) {
   // 一覧からは同じお知らせを何度でも開けるよう、タップの重複の確認(目印)は使わない
-  openDeepLinkInApp(store, urlString, null);
+  openDeepLinkInApp(store, urlString, null, { overList });
 }
 
 /** 通知の画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
-function openDeepLinkInApp(store, urlString, tapId) {
+function openDeepLinkInApp(store, urlString, tapId, { overList = false } = {}) {
   if (tapId) {
     if (handledTaps.has(tapId)) {
       return;
@@ -225,7 +247,7 @@ function openDeepLinkInApp(store, urlString, tapId) {
     window.location.replace(url.href);
     return;
   }
-  openTarget(store, url.searchParams);
+  openTarget(store, url.searchParams, { overList });
 }
 
 let checking = false;
