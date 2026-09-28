@@ -15,6 +15,18 @@
 </template>
 
 <script>
+  // app.scss の --safe-area-bottom (= env(safe-area-inset-bottom)) を px で読む。
+  // カスタムプロパティのままだと getPropertyValue() が式の文字列を返すので、
+  // 実際のプロパティに当てて計算済みの値を取る
+  function safeAreaBottom() {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:var(--safe-area-bottom)';
+    document.body.appendChild(probe);
+    const px = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    probe.remove();
+    return px;
+  }
+
   export default {
     data() {
       return {
@@ -27,12 +39,8 @@
         return document.documentElement.clientWidth;
       },
       iframeHeight() {
-        var bottomForIPhoneX = 0; //iPhoneX系の場合に下の部分を調整する長さ
-        if (this.$ons.platform.isIPhoneX()
-            && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
-          bottomForIPhoneX = 21;
-        }
-        return document.documentElement.clientHeight - 45 - bottomForIPhoneX; // 45はツールバー
+        // 45はツールバー。画面下端のセーフエリア(ホームインジケーター)の分も除く
+        return document.documentElement.clientHeight - 45 - safeAreaBottom();
       }
     },
     methods: {

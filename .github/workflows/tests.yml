@@ -1,0 +1,77 @@
+# サーバ側のテスト(PHPUnit)を GitHub Actions で自動実行する。
+#
+# このリポジトリは公開なので、標準のランナー(ubuntu-latest)は無料・無制限。
+# それでも待ち時間を短くするため、同じブランチで新しい push があれば前の実行は止める。
+#
+# テストは MySQL/MariaDB が必要（マイグレーションが ALTER TABLE ... COMMENT を使うため SQLite は使えない）。
+# ここでは MariaDB を新サーバと同じ 10.11 で動かし、テスト専用のデータベースを使う（phpunit.xml の注意書き参照）。
+#
+# 手元やサーバで流す手順は docs/TESTING.md。
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: tsubasa_phpunit
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 新サーバと同じ PHP 8.4。拡張は composer.json と新サーバに合わせる
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, curl, openssl, gmp, gd, zip, bcmath
+          coverage: none
+
+      # composer の保存先はランナーによって違うので、composer 自身に聞く
+      - id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - run: composer install --no-interaction --no-progress
+
+      # 画面を返すテストが Vite のビルド結果(manifest.json)を読むので、先に作る
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # 設定は見本から作る。見本の誤りもここで見つかる(2026-09-22 に SANCTUM_STATEFUL_DOMAINS の誤りが判明)
+      - name: .env を用意する
+        run: |
+          cp .env.example .env
+          sed -i "s/^DB_HOST=.*/DB_HOST=127.0.0.1/; s/^DB_USERNAME=.*/DB_USERNAME=root/; s/^DB_PASSWORD=.*/DB_PASSWORD=root/" .env
+          php artisan key:generate
+
+      - run: php artisan optimize:clear
+
+      - run: php vendor/bin/phpunit --colors=never

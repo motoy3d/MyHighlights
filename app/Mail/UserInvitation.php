@@ -47,13 +47,13 @@ class UserInvitation extends Mailable
     }
     return $this
       ->subject($this->fromUser->name .
-        'さんから、横浜SCつばさ用アプリ「' . env('APP_NAME', 'Tsubasa⬆︎UP') . '」へ招待されました')
+        'さんから、横浜SCつばさ用アプリ「' . config('app.name') . '」へ招待されました')
       ->view($viewName)
       ->with([
         'name' => $this->newUser->name,
-        'app_name' => env('APP_NAME', 'Tsubasa⬆︎UP'),
+        'app_name' => config('app.name'),
         'team_name' => $this->teamName,
-        'site_link' => env('APP_URL', 'https://tsubasa.smartj.mobi'),
+        'site_link' => config('app.url'),
         'email' => $this->newUser->email,
         'password' => $this->password
       ]);

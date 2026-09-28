@@ -32,8 +32,8 @@ class LogController extends Controller
     $log = Log::create([
       'log_timestamp' => DB::raw('now()'),
       'level' => 'info',
-      'user_agent' => $_SERVER['HTTP_USER_AGENT'],
-      'ipaddress' => $_SERVER['REMOTE_ADDR'],
+      'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+      'ipaddress' => $_SERVER['REMOTE_ADDR'] ?? '',
       'content' => $content,
       'user_id' => Auth::id(),
       'created_id' => Auth::id(),

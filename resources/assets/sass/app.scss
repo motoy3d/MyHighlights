@@ -2,7 +2,25 @@
 //@import url("https://fonts.googleapis.com/css?family=Raleway:300,400,600");
 // Variables
 @import "variables";
-@import "~onsenui/css/onsenui.css";
-@import "~onsenui/css/onsen-css-components.css";
+@import "onsenui/css/onsenui.css";
+@import "onsenui/css/onsen-css-components.css";
+
+// 下タブをホームインジケーター(Face ID 機種の画面下端のバー)の上に出す。
+// 余白の大きさは OS が返す実際のセーフエリアを使う。ホーム画面から起動した
+// Face ID 機種では 34px、ホームボタン機種や Safari のツールバー表示中は 0 になる。
+//
+// OnsenUI の onsflag-iphonex-* / platform.isIPhoneX() は画面サイズの一覧で
+// 機種を判定しており、一覧に無い新機種では余白が付かない(旧版 2.10 は
+// iPhone 14 Pro 以降を判定できず、タブがインジケーターに重なっていた)。
+// その一覧に頼らないため、ここでは使わない。
+:root {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar:not(.tabbar--top) {
+  padding-bottom: var(--safe-area-bottom);
+}
+.tabbar__content:not(.tabbar--top__content) {
+  bottom: calc(var(--tabbar-height) + var(--safe-area-bottom));
+}
 //@import "calendar";
 @import "style";

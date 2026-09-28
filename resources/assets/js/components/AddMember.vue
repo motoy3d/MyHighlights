@@ -139,17 +139,25 @@
         this.$http.post('/api/members', this.$data)
           .then(response => {
             this.loading = false;
+            // 完了表示と画面を閉じるのは登録に成功した時だけ(422 で弾かれた時に「登録しました」と出さない)
+            this.$ons.notification.alert('メンバーを登録しました。', {title: ''});
+            this.$store.dispatch('members/load', this.$http);
+            this.$store.commit('navigator/pop');
           })
           .catch(error => {
             console.log(error.response);
-            if (error.response.status === 401) {window.location.href = "/login";}
             this.loading = false;
+            if (!error.response) {return;}
+            if (error.response.status === 401) {window.location.href = "/login"; return;}
+            // 入力エラー(すでにチームのメンバーであるメールアドレス等)はこの画面で知らせる
+            if (error.response.status === 422) {
+              const errors = error.response.data.errors || {};
+              const messages = Object.keys(errors).map(key => errors[key][0]);
+              this.$ons.notification.alert(messages.join('\n') || error.response.data.message, {title: ''});
+            }
           })
           // .finally(() => this.loading = false)
         ;
-        this.$ons.notification.alert('メンバーを登録しました。', {title: ''});
-        this.$store.dispatch('members/load', this.$http);
-        this.$store.commit('navigator/pop');
       },
       changeMemberType() {
         if (this.memberTypeSegment === 0) {

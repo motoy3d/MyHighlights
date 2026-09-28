@@ -15,6 +15,9 @@
           <v-ons-icon icon="fa-caret-right" size="24px"></v-ons-icon>
         </span>
       </div>
+      <div class="right mr-5">
+        <notice-bell></notice-bell>
+      </div>
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
       <v-ons-icon icon="fa-plus" @click="openAddSchedule();"></v-ons-icon>
@@ -203,9 +206,11 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import AddSchedule from './AddSchedule.vue';
   import EditSchedule from './EditSchedule.vue';
   export default {
+    components: { NoticeBell },
     data() {
       // console.log(">>>>> Calendar#data()");
       var today = new Date();
@@ -224,6 +229,17 @@
     beforeCreate() {
       // APIからデータ取得(AddSchedule.vueからも呼ばれるのでVuexで処理)
       this.$store.dispatch('calendar/load', this.$http);
+    },
+    watch: {
+      // 通知のリンクで日付が指定されたら、その月を読み込んでその日を開く(deep-link.js)
+      '$store.state.calendar.requestedDate': {
+        immediate: true,
+        handler(request) {
+          if (request) {
+            this.openRequestedDate(request);
+          }
+        }
+      }
     },
     computed: {
       schedules : {
@@ -312,7 +328,26 @@
         this.selectedDate = td.getAttribute('data-date');
         this.loadSchedules();
       },
-      loadSchedules() {
+      /**
+       * 指定された日を選んだ状態にする(通知のリンク用)。
+       * 予定の ID が分かっていれば、その予定を展開する
+       */
+      openRequestedDate(request) {
+        this.$store.commit('calendar/requestDate', null);
+        const [y, m] = request.date.split('-').map(Number);
+        this.currentYear = y;
+        this.currentMonth = m - 1;
+        this.selectedDate = request.date;
+        this.selectedDateSchedules = [];
+        const month = request.date.slice(0, 4) + request.date.slice(5, 7);
+        this.$store.dispatch('calendar/load', {http: this.$http, month: month})
+          .then(() => {
+            if (this.selectedDate === request.date) {
+              this.loadSchedules(request.scheduleId);
+            }
+          });
+      },
+      loadSchedules(expandScheduleId) {
         this.selectedDateSchedules = [];
         // console.log('--------------- loadSchedules');
         if (this.schedules) {
@@ -334,11 +369,17 @@
                 });
             }
           }
+          // 展開する予定(通知のリンクで予定が指定されていればそれ、無ければ先頭)
+          let expandIndex = 0;
+          if (expandScheduleId) {
+            let found = this.selectedDateSchedules.findIndex(sche => sche.id == expandScheduleId);
+            if (0 <= found) {expandIndex = found;}
+          }
           setTimeout(function() {
             // 予定の内容を展開する
-            let scheduleListItem0 = document.querySelector('#scheduleListItem0');
-            if (scheduleListItem0 && !scheduleListItem0.expanded) {
-              scheduleListItem0.showExpansion();
+            let scheduleListItem = document.querySelector('#scheduleListItem' + expandIndex);
+            if (scheduleListItem && !scheduleListItem.expanded) {
+              scheduleListItem.showExpansion();
             }
           }, 150);
         }

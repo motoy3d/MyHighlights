@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Team;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Response;
+use Vedmant\FeedReader\Facades\FeedReader;
 
 /**
  * ブログ(RSS)に関するコントローラ

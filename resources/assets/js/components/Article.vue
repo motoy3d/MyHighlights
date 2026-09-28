@@ -19,7 +19,15 @@
     </v-ons-toolbar>
     <!-- メインコンテンツ -->
     <div class="page__background" style="background-color: white;"></div>
-    <section v-if="errored">
+    <!-- ons-page は中身を page__content に移すので、表示を切り替える部分は常にある 1 つの枠に入れる
+         (枠が無いと、読み込み後に切り替えた部分(エラーや「削除された」の表示)が描画されない) -->
+    <div class="article-content">
+    <!-- 投稿が無い(削除された・所属していないチームの投稿)ときは、エラーではなくそう知らせる(#125。
+         お知らせ一覧や通知から、もう無い投稿を開くことがある) -->
+    <section v-if="notFound" class="post-not-found">
+      <p>この投稿は削除されたか、見られなくなっています。</p>
+    </section>
+    <section v-else-if="errored">
       <p>ごめんなさい。エラーになりました。時間をおいてアクセスしてくださいm(_ _)m</p>
     </section>
     <section v-else>
@@ -217,6 +225,7 @@
         </v-ons-row>
       </template>
     </section>
+    </div>
 
     <!-- アンケート回答者一覧Modal -->
     <v-ons-modal>
@@ -241,14 +250,19 @@
 </template>
 
 <script>
+  import {emptyFileMessage, validationErrorMessage} from '../attachment.js';
   import EditPost from './EditPost.vue';
   import IFrameWindow from './IFrameWindow.vue';
+  import {closeShownNotifications, installState, setUnopened} from '../push.js';
   export default {
     mounted() {
       this.load();
     },
     data() {
       return {
+        // この画面が表示している投稿。store の article.post_id は次に開く投稿で上書きされるので、作ったときに控える
+        // (上に別の投稿を重ねて戻ったとき、いいね・コメント・削除などが別の投稿に行かないように)
+        postId: this.$options.postId || this.$store.state.article.post_id,
         post: {},
         post_responses: {},
         post_attachments: {},
@@ -275,6 +289,7 @@
         loading: false,
         deleting: false,
         errored: false,
+        notFound: false,
         app_url: null
       }
     },
@@ -300,7 +315,7 @@
       load() {
         // console.log('start load');
         this.loading = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.get('/api/posts/' + post_id)
           .then((response)=>{
             this.post = response.data.post;
@@ -313,10 +328,25 @@
             this.user = response.data.user;
             this.loading = false;
             this.app_url = response.data.app_url;
+            // サーバで既読になった。通知やお知らせの一覧から開いたときも、タイムラインの表示と未読数を合わせる
+            this.$store.dispatch('timeline/markRead', {postId: Number(post_id), http: this.$http});
+            // この投稿についてのお知らせはサーバで「開いた」になったので、🔔とアイコンの数をすぐ合わせる
+            if (installState.pushEnabled && typeof response.data.unopened === 'number') {
+              setUnopened(response.data.unopened);
+            }
+            // この投稿についてのお知らせはサーバで「開いた」になった。通知センターに残っていれば消す(#125)
+            closeShownNotifications((n) => n.tag === 'post-' + post_id);
           })
           .catch(error => {
             console.log(error);
             this.errored = true;
+            if (error.response && error.response.status === 404) {
+              this.notFound = true;
+              this.loading = false;
+              // もう無い投稿の通知が通知センターに残っていれば消す
+              closeShownNotifications((n) => n.tag === 'post-' + post_id);
+              return;
+            }
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
             }
@@ -329,6 +359,10 @@
         if (!this.comment_text && this.comment_files.length == 0) {
           return;
         }
+        // 0バイトのファイルは送らない(#45)。iPhoneで写真を選んだ後にアプリが
+        // バックグラウンドへ回ると中身が読めなくなり、壊れた添付になるため。
+        const emptyMsg = emptyFileMessage(this.comment_files);
+        if (emptyMsg) {this.$ons.notification.alert(emptyMsg, {title: ''});return;}
         if (!this.comment_text && 0 < this.comment_files.length) {
           this.comment_text = '　'; //添付ファイルのみの場合、ダミー
         }
@@ -336,7 +370,7 @@
           return;
         }
         this.posting_comment = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         // 送信フォームデータ準備
         let formData = new FormData();
@@ -355,6 +389,14 @@
             this.posting_comment = false;
           })
           .catch(error => {
+            // バリデーションエラー(0バイトの添付など)はサーバのメッセージを表示し、
+            // 記事画面はそのまま残して選び直せるようにする(エラー画面にしない)
+            const validationMsg = validationErrorMessage(error);
+            if (validationMsg) {
+              this.$ons.notification.alert(validationMsg, {title: ''});
+              this.posting_comment = false;
+              return;
+            }
             this.errored = true;
             if (error.response.status == 401) {
               window.location.href = "/login"; return;
@@ -375,7 +417,7 @@
       },
       deleteComment(comment_id) {
         // console.log("コメントID=" + comment_id);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         self.$http.delete('/api/post_comments/' + post_id + '/' + comment_id)
           .then((response)=>{
@@ -398,7 +440,7 @@
         this.$store.commit('navigator/push', {
           extends: EditPost,
           onsNavigatorOptions: {animation: 'lift'},
-          onsNavigatorProps: {reloadArticle: this.load} //編集画面で編集して戻る時にリロードするために渡す
+          onsNavigatorProps: {reloadArticle: this.load, postId: this.postId} //編集画面で編集して戻る時にリロードするために渡す
         });
       },
       toggleHeart() {
@@ -409,7 +451,7 @@
         }
         let form = new FormData();
         form.append('like_flg', this.isHeartOn);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.post('/api/post_responses/' + post_id, form)
           .catch(error => {
             this.errored = true;
@@ -423,7 +465,7 @@
         }
         let form = new FormData();
         form.append('star_flg', this.isStarOn);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.post('/api/post_responses/' + post_id, form)
           .catch(error => {
             this.errored = true;
@@ -525,12 +567,12 @@
         this.$ons.notification.confirm("この投稿を削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
-            self.deletePost(self.$store.state.article.post_id);
+            self.deletePost();
           });
       },
       deletePost() {
         this.deleting = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         self.$http.delete('/api/posts/' + post_id)
           .then((response)=>{
@@ -572,6 +614,11 @@
 </script>
 
 <style>
+  .post-not-found {
+    padding: 40px 20px;
+    text-align: center;
+    color: grey;
+  }
   .article_container {
     padding: 15px;
     background-color: white;

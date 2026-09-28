@@ -1,11 +1,13 @@
-window._ = require('lodash');
+import _ from 'lodash';
+window._ = _;
 
 /**
  * First we will load all of this project's JavaScript dependencies which
  * includes Vue and other libraries. It is a great starting point when
  * building robust, powerful web applications using Vue and Laravel.
  */
-window.$ = window.jQuery = require('jquery');
+import jQuery from 'jquery';
+window.$ = window.jQuery = jQuery;
 
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
@@ -15,6 +17,11 @@ window.$ = window.jQuery = require('jquery');
 import axios from 'axios';
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 Vue.prototype.$http = axios;
+
+// 通信エラー(通信断・419・429・5xx など)を利用者に知らせる共通処理。
+// トーストは vue-onsenui が登録した $ons を使う(Vue.use 後に参照するので遅延取得)
+import { installHttpErrorHandling } from './http-errors.js';
+installHttpErrorHandling(axios, () => Vue.prototype.$ons);
 
 /**
  * Next we will register the CSRF Token as a common header with Axios so that
@@ -66,9 +73,13 @@ import VueOnsen from 'vue-onsenui';
 Vue.use(Vuex);
 Vue.use(VueOnsen);
 
-const moment = require('moment');
-require('moment/locale/ja');
-Vue.use(require('vue-moment'), {
+import moment from 'moment';
+// Vite は moment 本体を dist/moment.js(ESM)から読むので、日本語の設定も同じ dist から読む。
+// 'moment/locale/ja' は別の実体(CommonJS 版)に登録されるため効かず、「3 days ago」と英語で出ていた
+import 'moment/dist/locale/ja';
+import VueMoment from 'vue-moment';
+moment.locale('ja');
+Vue.use(VueMoment, {
   moment
 });
 
@@ -83,6 +94,16 @@ Vue.filter('truncate', function(value, len, omission) {
   }
 });
 console.warn('>>>>>>>> アプリ起動');
+
+// #110 Web プッシュ通知: Service Worker の登録と、ホーム画面への追加の案内の準備。
+// 登録だけなら通知の許可は求めないので、全員に対して行ってよい
+import { initPwa } from './push.js';
+initPwa();
+
+// 通知のリンク(/home?team=…&post=…)でチームが指定されていれば、
+// 最初の API 呼び出しより前にチームのクッキーを切り替える(deep-link.js)
+import { applyTeamFromUrl } from './deep-link.js';
+applyTeamFromUrl();
 
 import AppNavigator from './components/AppNavigator.vue';
 var vm = new Vue({
@@ -106,13 +127,6 @@ var vm = new Vue({
     // this.$ons.enableAutoStatusBarFill();
     // this.$ons.disableAutoStatusBarFill();
   },
-  beforeMount() {
-    const html = document.documentElement;
-    if (this.$ons.platform.isIPhoneX()
-        && (/*this.$ons.isWebView() ||*/ window.location.href.indexOf('launcher=true') != -1)) {
-      document.body.style.marginBottom = '21px';
-      // html.setAttribute('onsflag-iphonex-portrait', '');
-      // html.setAttribute('onsflag-iphonex-landscape', '');
-    }
-  },
+  // 画面下端のセーフエリアは app.scss の --safe-area-bottom で扱う
+  // (以前はここで iPhone X 系と判定したら body に 21px の余白を足していた)
 });
