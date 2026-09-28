@@ -23,10 +23,8 @@ const DEEPLINK_KEY = '/__deeplink__';
 //
 // サーバは Declarative Web Push の形式 { web_push: 8030, notification: {...}, mutable: true } で送る
 // （app/Notifications/PushNotice.php）。mutable なので iOS も push を Service Worker に渡してくる。
-// 通知はどの環境でもここで表示する。iOS に表示を任せると、アプリがバックグラウンドのときにタップしても
-// 目的の画面に移れず（WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 ）、
-// 自分で表示した通知でなければ、前面に戻ったときにどれがタップされたかを getNotifications() で調べられないため
-// （resources/assets/js/deep-link.js の checkVanishedNotification）。
+// 通知はどの環境でもここで表示する。受信したときにアイコンの数(data.badge)を更新し、開いている画面に
+// 「届いた」と知らせるため(iOS では画面に届かない。#125 §3.3)。
 self.addEventListener('push', (event) => {
   let payload = null;
   try {
@@ -48,7 +46,7 @@ self.addEventListener('push', (event) => {
     data.url = n.navigate;
   }
   // この通知の目印。タップの重複を防ぐ ID（tapId）としても使う。
-  // サーバが付けた nid があればそれを使い、画面側の「消えた通知」の判定と同じ目印にそろえる
+  // サーバが付けた nid があればそれを使い、「開いた」にする処理や前面に戻ったときの帯と同じ目印にそろえる
   data.id = data.nid || Math.random().toString(36).slice(2, 10);
   const options = {
     body: n.body || '新しいお知らせがあります',
@@ -62,7 +60,7 @@ self.addEventListener('push', (event) => {
   };
 
   // iOS は通知を表示しない push を続けると購読を取り消すので、必ず表示する。
-  // アイコンのバッジ(まだ見ていないお知らせの数。#123)も、アプリを開いていなくてもここで更新する
+  // アイコンのバッジ(まだ開いていない通知の数＝🔔の数。#123/#125)も、アプリを開いていなくてもここで更新する
   event.waitUntil(Promise.all([
     self.registration.showNotification(title, options),
     setBadge(data.badge),
@@ -92,7 +90,7 @@ function setBadge(count) {
 //   開きたい画面を端末内にも書き置きし（Cache Storage を郵便受けとして使う。取得のキャッシュには使わない）、
 //   アプリが前面に戻ったときに読む。どちらで開いても、同じタップ（tapId）は一度しか開かない。
 // iPhone でアプリがバックグラウンドのときはタップ自体がここに届かない（WebKit bug 268797）。
-// その場合は deep-link.js が、前面に戻ったときに通知センターから消えた通知を探して開く。
+// その場合は deep-link.js が、前面に戻ったときにその間に届いてまだ開いていない通知を帯で知らせる(checkArrivedWhileAway)。
 async function leaveDeepLink(url, tapId) {
   const cache = await caches.open(DEEPLINK_MAILBOX);
   await cache.put(DEEPLINK_KEY, new Response(JSON.stringify({ url, tapId, at: Date.now() }), {

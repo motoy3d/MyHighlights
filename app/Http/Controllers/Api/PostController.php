@@ -12,6 +12,7 @@ use App\PostResponse;
 use App\Questionnaire;
 use App\Rules\NotEmptyFile;
 use App\Support\NoticeLog;
+use App\Support\PushRollout;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -350,8 +351,9 @@ class PostController extends Controller
       'categories' => $categories,
       'user' => Auth::user(),
       'app_url' => Config::get('app.url'),
-      // この投稿のお知らせを開いた後の🔔の数(#125)。画面はこれで🔔とアイコンの数をすぐ合わせる
-      'unopened' => NoticeLog::unopenedCount(Auth::user()),
+      // この投稿のお知らせを開いた後の🔔の数(#125)。画面はこれで🔔とアイコンの数をすぐ合わせる。
+      // 🔔を出さない人(段階的な公開の対象外)には数えない
+      'unopened' => PushRollout::isEnabledFor(Auth::user()) ? NoticeLog::unopenedCount(Auth::user()) : null,
     ]);
   }
 

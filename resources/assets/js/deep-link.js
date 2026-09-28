@@ -15,8 +15,9 @@
  *     （WebKit の既知の不具合 https://bugs.webkit.org/show_bug.cgi?id=268797 。上の2つがどちらも起きない）。
  *     そこで前面に戻ったとき、バックグラウンドにいた間に届いてまだ開いていない通知（POST /api/push/recent）を
  *     帯で知らせる（checkArrivedWhileAway）。iOS では sw.js が保存したものも通知センターの中身も
- *     画面から見えない（2026-09-22 / 09-26 実機で確認）ので、控えはサーバに置く。
+ *     画面から見えない（2026-09-22 / 09-26 実機で確認）ので、届いた通知はサーバの記録（notices）から取る。
  * 同じタップ（tapId。通知ごとの目印）はどの経路で受けても一度しか開かない。
+ * アプリの中で開くとき、投稿は今の画面の上に横から重ね（戻ると元の画面）、予定は見るだけの画面を閉じてカレンダーで開く。
  */
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -24,13 +25,12 @@ import Article from './components/Article.vue';
 import { markNoticeOpened } from './push.js';
 import { showNoticeBanner } from './notice-banner.js';
 
-const TAB_TIMELINE = 0;
 // sw.js と合わせる
 const DEEPLINK_MAILBOX = 'tsubasa-deeplink';
 const DEEPLINK_KEY = '/__deeplink__';
 // 書き置きが古すぎたら使わない（タップから時間が経って、関係ない場面で開かないように）
 const DEEPLINK_MAX_AGE_MS = 5 * 60 * 1000;
-// 開いたタップ。知らせ・書き置き・消えた通知のどれで届いても一度だけ開く。
+// 開いたタップ。知らせ・書き置きのどちらで届いても一度だけ開き、前面に戻ったときの帯にも出さない。
 // 目印はサーバが通知ごとに付ける nid で、どの経路でも同じ値になる（sw.js の data.id も nid）
 const handledTaps = new Set();
 
@@ -64,7 +64,7 @@ export function applyTeamFromUrl() {
 /**
  * パラメータに応じて、開く画面の情報を store に入れる。
  * 画面を作る前（AppNavigator.vue の beforeCreate）に呼ぶ。
- * タブの切り替えと投稿の画面を積むのは、描画後の openFromUrl で行う。
+ * 投稿の画面は pushArticleOnStart(beforeCreate)で積み、予定のタブの切り替えは描画後の openFromUrl で行う。
  */
 export function applyUrlToStore(store) {
   const p = params();
@@ -97,13 +97,14 @@ export function pushArticleOnStart(store) {
   }
   store.commit('navigator/push', {
     extends: Article,
+    postId: Number(params().get('post')),
     onsNavigatorOptions: { animation: 'none' }
   });
   articleOpenedOnStart = true;
 }
 
 /**
- * タブを切り替えて投稿を開き、パラメータを URL から消す。
+ * 予定ならカレンダーのタブに切り替えて開き、パラメータを URL から消す(投稿は pushArticleOnStart で積んである)。
  * AppNavigator.vue の mounted から呼ぶ。
  *
  * OnsenUI のタブバーは、読み込み直後に初期位置へ戻す処理を非同期で行う。
@@ -149,28 +150,59 @@ function afterLoad(fn) {
   }
 }
 
+/** 積んである画面の部品(push したときの { extends: 部品 } から取り出す) */
+const componentOf = (page) => (page && page.extends) || page;
+const topPage = (store) => store.state.navigator.stack[store.state.navigator.stack.length - 1];
+
+/** お知らせ一覧(Notifications.vue。noticeList の印を持つ)が一番上か */
+export function isNoticeListOnTop(store) {
+  const component = componentOf(topPage(store));
+  return !!(component && component.noticeList);
+}
+
+/**
+ * 見るだけの画面(投稿の詳細・お知らせ一覧)を閉じて、タブの画面に戻る。
+ * 予定はカレンダーのタブで開くので、上に画面が残っていると切り替えが見えない。
+ * 入力中の画面(投稿・編集など)は勝手に閉じず、そこで止める
+ */
+function backToTabs(store) {
+  const stack = store.state.navigator.stack;
+  let keep = stack.length;
+  while (keep > 1) {
+    const component = componentOf(stack[keep - 1]);
+    if (component !== Article && !(component && component.noticeList)) {
+      break;
+    }
+    keep--;
+  }
+  if (keep < stack.length) {
+    store.commit('navigator/popTo', keep);
+  }
+}
+
+/**
+ * 投稿の画面を、今の画面の上に横から重ねる(戻ると元の画面に戻る。左端からのスワイプでも戻れる)。
+ * 同じ投稿を見ているときは重ねずに開き直す(新しいコメントなどを出す)
+ */
+function openArticle(store, postId) {
+  store.commit('article/setPostId', postId);
+  const top = topPage(store);
+  if (componentOf(top) === Article && top.postId === postId) {
+    store.commit('navigator/replace', { extends: Article, postId, onsNavigatorOptions: { animation: 'none' } });
+    return;
+  }
+  store.commit('navigator/push', { extends: Article, postId, onsNavigatorOptions: { animation: 'slide' } });
+}
+
 /** パラメータが指す画面を開く（投稿なら投稿の画面、日付ならカレンダー） */
-function openTarget(store, p, { overList = false } = {}) {
+function openTarget(store, p) {
   const post = p.get('post');
   const date = p.get('date');
   const schedule = p.get('schedule');
   if (isId(post)) {
-    // タイムラインで投稿を開くのと同じ処理（Timeline.vue の openArticle）
-    store.commit('article/setPostId', Number(post));
-    if (overList) {
-      // お知らせ一覧の上に重ねる。戻ると一覧に戻る。タブはそのまま、横から開いてスワイプで戻れるようにする
-      store.commit('navigator/push', {
-        extends: Article,
-        onsNavigatorOptions: { animation: 'slide' }
-      });
-      return;
-    }
-    store.commit('tabbar/setIndex', TAB_TIMELINE);
-    store.commit('navigator/push', {
-      extends: Article,
-      onsNavigatorOptions: { animation: 'none' }
-    });
+    openArticle(store, Number(post));
   } else if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    backToTabs(store);
     store.commit('calendar/requestDate', {
       date,
       scheduleId: isId(schedule) ? Number(schedule) : null
@@ -208,27 +240,16 @@ function clearDeepLink() {
 }
 
 /**
- * お知らせ一覧から、一覧を閉じずに上に重ねて開けるか(今のチームの投稿)。
- * 予定はカレンダーのタブに切り替え、別のチームは読み込み直すので、一覧を閉じてから開く
- */
-export function canOpenOverList(urlString) {
-  const url = new URL(urlString, window.location.origin);
-  const team = url.searchParams.get('team');
-  return url.origin === window.location.origin && isId(url.searchParams.get('post'))
-    && !(isId(team) && String(Cookies.get('current_team_id')) !== team);
-}
-
-/**
  * お知らせ一覧(🔔。#125)や帯からタップしたとき。通知をタップしたときと同じ処理で開く。
- * overList なら一覧の上に重ねて開く(戻ると一覧に戻る。canOpenOverList が true のときだけ)
+ * 投稿は今の画面(一覧など)の上に重ねるので、戻ると元の画面に戻る
  */
-export function openNoticeTarget(store, urlString, { overList = false } = {}) {
+export function openNoticeTarget(store, urlString) {
   // 一覧からは同じお知らせを何度でも開けるよう、タップの重複の確認(目印)は使わない
-  openDeepLinkInApp(store, urlString, null, { overList });
+  openDeepLinkInApp(store, urlString, null);
 }
 
 /** 通知の画面を、読み込み直さずに開く。チームが違うときだけ、そのアドレスで読み込み直す */
-function openDeepLinkInApp(store, urlString, tapId, { overList = false } = {}) {
+function openDeepLinkInApp(store, urlString, tapId) {
   if (tapId) {
     if (handledTaps.has(tapId)) {
       return;
@@ -247,7 +268,7 @@ function openDeepLinkInApp(store, urlString, tapId, { overList = false } = {}) {
     window.location.replace(url.href);
     return;
   }
-  openTarget(store, url.searchParams, { overList });
+  openTarget(store, url.searchParams);
 }
 
 let checking = false;
@@ -327,7 +348,7 @@ async function thisDeviceSubscription() {
  * タップしたのか、触らずに戻ったのか、削除したのかは見分けられない。そこで画面は切り替えず、
  * どの場合も「届いている」ことを帯で知らせる。
  */
-async function checkArrivedWhileAway(since) {
+async function checkArrivedWhileAway(store, since) {
   if (awayChecking) {
     pendingSince = pendingSince === null ? since : Math.min(pendingSince, since);
     return;
@@ -345,6 +366,10 @@ async function checkArrivedWhileAway(since) {
     const from = since + (data.now - Date.now()) - SENT_MARGIN_MS;
     // すでに別の経路で開いた通知は除く
     const arrived = (data.notices || []).filter((x) => x.at >= from && !handledTaps.has(x.nid));
+    // お知らせの一覧を見ているときは、一覧が新しい通知を出す(🔔の数が変わると読み込み直す)ので帯は要らない
+    if (isNoticeListOnTop(store)) {
+      return;
+    }
     if (arrived.length === 1) {
       showNoticeBanner(arrived[0]);
     } else if (arrived.length > 1) {
@@ -358,7 +383,7 @@ async function checkArrivedWhileAway(since) {
     if (pendingSince !== null) {
       const next = pendingSince;
       pendingSince = null;
-      checkArrivedWhileAway(next);
+      checkArrivedWhileAway(store, next);
     }
   }
 }
@@ -378,7 +403,7 @@ export function installDeepLinkListeners(store) {
       if (tellArrived && hiddenAt !== null) {
         const since = hiddenAt;
         hiddenAt = null;
-        checkArrivedWhileAway(since);
+        checkArrivedWhileAway(store, since);
       }
     }
   });

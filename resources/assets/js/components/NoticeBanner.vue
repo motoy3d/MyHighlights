@@ -6,7 +6,9 @@
       <div class="nb-icon"><v-ons-icon icon="fa-bell"></v-ons-icon></div>
       <div class="nb-text">
         <!-- チーム名は、複数のチームに所属している人にだけ出す(お知らせ一覧と同じ) -->
-        <div class="nb-label">{{ multiTeam && notice.title && !notice.count ? notice.title : 'お知らせ' }}・{{ notice.at | moment('from') }}</div>
+        <!-- 件数の帯は本文に「お知らせが N 件」とあるので、見出しは時刻だけにする -->
+        <div class="nb-label" v-if="notice.count">{{ notice.at | moment('from') }}</div>
+        <div class="nb-label" v-else>{{ multiTeam && notice.title ? notice.title : 'お知らせ' }}・{{ notice.at | moment('from') }}</div>
         <div class="nb-body">{{ notice.count ? 'お知らせが' + notice.count + '件届いています' : notice.body }}</div>
       </div>
       <button class="nb-open" type="button">開く</button>
@@ -20,17 +22,24 @@
 <script>
   import { bannerState, hideNoticeBanner } from '../notice-banner.js';
   import { markNoticeOpened } from '../push.js';
-  import { openNoticeTarget } from '../deep-link.js';
+  import { openNoticeTarget, isNoticeListOnTop } from '../deep-link.js';
   import Notifications from './Notifications.vue';
 
   export default {
     computed: {
       notice() { return bannerState.notice; },
       top() { return bannerState.top; },
+      stackLength() { return this.$store.state.navigator.stack.length; },
+      tabIndex() { return this.$store.state.tabbar.index; },
       multiTeam() {
         const teams = this.$store.state.navigator.user.myTeams;
         return !!teams && teams.length > 1;
       }
+    },
+    watch: {
+      // 帯を出したまま別の画面に移ったら(画面を開く・戻る・タブを切り替える)、移った先の画面に残さない
+      stackLength() { hideNoticeBanner(); },
+      tabIndex() { hideNoticeBanner(); }
     },
     methods: {
       open() {
@@ -40,7 +49,10 @@
           return;
         }
         if (notice.count) {
-          // 2 件以上届いていたら、どれを開くかは🔔の一覧で選んでもらう
+          // 2 件以上届いていたら、どれを開くかは🔔の一覧で選んでもらう(一覧を見ているなら重ねない)
+          if (isNoticeListOnTop(this.$store)) {
+            return;
+          }
           this.$store.commit('navigator/push', {
             extends: Notifications,
             // 横から開く(slide)と、左端から右へのスワイプで戻れる(lift では戻れない)

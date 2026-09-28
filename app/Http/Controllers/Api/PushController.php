@@ -113,12 +113,12 @@ class PushController extends Controller
 
     /**
      * POST /api/push/recent  { endpoint: この端末の購読の endpoint }
-     * 最近この利用者に送った通知 → { now: サーバの今(ミリ秒), notices: [{ nid, tag, url, at }] }
-     * アプリが前面に戻ったとき、通知センターから消えた通知（＝タップされた通知）を探すのに使う（NoticeLog）。
+     * 最近届いて、まだ開いていない通知 → { now: サーバの今(ミリ秒), notices: [{ nid, tag, url, team_id, title, body, at }] }
+     * アプリが前面に戻ったとき、その間に届いた通知を帯で知らせるのに使う(#125 §3.2。NoticeLog::recent)。
      * now は、端末とサーバの時計のずれを直すために返す。
      *
      * endpoint がこの利用者の購読として登録されていない端末には、何も返さない。
-     * その端末には通知が届かない(期限切れで消えた購読など)ので、送った通知がすべて「消えた」ように見えてしまうため。
+     * その端末には通知が届いていない(期限切れで消えた購読など)ので、帯を出さないため。
      * endpoint は URL に載せない(アクセスログに残さない)ために POST で受け取る。
      */
     public function recent(Request $request): JsonResponse

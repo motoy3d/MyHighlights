@@ -156,16 +156,33 @@ class NoticeControllerTest extends TestCase
         $this->notify($this->user, 'post-' . $post->id, '新しい投稿');
         $this->notify($this->user, 'post-' . $post->id, 'コメント', 'post_comment');
         $this->notify($this->user, 'post-999999', '別の投稿');
+        // 別のチームの通知も🔔の数に入る(GET /api/notices/unopened と同じく、全チームの合計)
+        NoticeLog::record($this->user, new PushNotice('別のチーム', '別のチームの投稿', 'post-888888', '/home?launcher=true&post=888888'), 'new_post', $this->team->id + 1000);
+        config(['tsubasa.push_enabled_emails' => '*']);
 
         // 画面が🔔の数をすぐ合わせられるよう、開いた後の数も返す(2026-09-26 実機：30 秒遅れて減っていた)
         $this->actingAsTeamMember($this->user, $this->team)
             ->getJson('/api/posts/' . $post->id)->assertStatus(200)
-            ->assertJsonPath('unopened', 1);
+            ->assertJsonPath('unopened', 2);
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->getJson('/api/notices/unopened')->assertJson(['unopened' => 2]);
 
         $opened = collect(NoticeLog::list($this->user))->pluck('opened', 'body');
         $this->assertTrue($opened['新しい投稿']);
         $this->assertTrue($opened['コメント']);
         $this->assertFalse($opened['別の投稿']);
+    }
+
+    public function test_通知を公開していない人には投稿の詳細で数を返さない(): void
+    {
+        // 🔔を出さない人(段階的な公開の対象外)のために数えない
+        $post = Post::factory()->create(['team_id' => $this->team->id]);
+        $this->notify($this->user, 'post-999999', '別の投稿');
+        config(['tsubasa.push_enabled_emails' => '']);
+
+        $this->actingAsTeamMember($this->user, $this->team)
+            ->getJson('/api/posts/' . $post->id)->assertStatus(200)
+            ->assertJsonPath('unopened', null);
     }
 
     public function test_投稿を削除するとその投稿についてのお知らせが全員の一覧から消える(): void

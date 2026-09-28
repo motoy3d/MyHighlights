@@ -202,7 +202,8 @@
         maxFiles: 20
       }
     },
-    props: ['reloadArticle'],
+    // postId：編集する投稿(投稿の詳細 Article.vue から渡す。store の article.post_id は上書きされることがあるため)
+    props: ['reloadArticle', 'postId'],
     computed: {
       postBtnColor: {
         get() {return this.posting? "white" : "";}
@@ -212,7 +213,7 @@
       load() {
         this.loading = true;
         // console.log('start load');
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId || this.$store.state.article.post_id;
         this.$http.get('/api/posts/' + post_id)
           .then((response)=>{
             let post = response.data.post;
@@ -275,7 +276,7 @@
         config.headers['X-HTTP-Method-Override'] = 'PUT'; // PUT で上書く
 
         // 送信
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId || this.$store.state.article.post_id;
         this.$http.post('/api/posts/' + post_id, formData, config)
           .then(response => {
             // console.log(response.data);

@@ -303,7 +303,7 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
       Object.defineProperty(window.Notification, 'permission', { configurable: true, get: () => 'granted' });
       const registration = {
         pushManager: { getSubscription: async () => ({ endpoint: 'https://push.example.test/this-device' }) },
-        getNotifications: async () => [],
+        getNotifications: async () => [], // 通知センターを閉じる処理(closeShownNotifications)が呼ぶ
       };
       navigator.serviceWorker.getRegistration = async () => registration;
     });
@@ -368,9 +368,6 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
     expect(opened).toContainEqual({ nid: 'nid0' });
   });
 
-  // iPhone では、表示している間に届いた通知もタップも画面に伝わらない(2026-09-26 実機)。
-  // 通知センターに増えた通知を画面から見つけて、帯で知らせる
-
   test('帯の✕で閉じると開かず、「開いた」にもしない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
@@ -402,6 +399,8 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
     ]);
     await expect(banner(page)).toBeVisible({ timeout: 15000 });
     await expect(banner(page)).toContainText('お知らせが2件届いています');
+    // 見出しは時刻だけ(本文と「お知らせ」が重ならないように)
+    await expect(banner(page).locator('.nb-label')).not.toContainText('お知らせ');
     await banner(page).click();
     await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
     expect(opened, '一覧を開いただけでは「開いた」にしない').toHaveLength(0);
@@ -418,19 +417,21 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
     await page.waitForTimeout(3000);
     expect(asked, '問い合わせないはず').toBe(false);
     expect(await pages(page)).toBe(before);
+    await expect(banner(page)).toHaveCount(0);
   });
-
 
   test('バックグラウンドに回る前に送られた通知は帯に出さない', async ({ page }) => {
     await gotoApp(page);
     await page.waitForTimeout(3500);
     const before = await pages(page);
+    // 調べてはいる(問い合わせた上で、古い通知なので出さない)
+    const asked = page.waitForRequest('**/api/push/recent');
     await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1', old: true }]);
+    await asked;
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(before);
     await expect(banner(page)).toHaveCount(0);
   });
-
 
   test('sw.js からの知らせで開いた直後は、同じ通知の帯を出さない', async ({ page }) => {
     await gotoApp(page);
@@ -443,10 +444,109 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
       { data: { type: 'open-url', url, tapId: 'nid0' } })), url);
     const article = page.locator('ons-navigator > ons-page').nth(1);
     await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    const asked = page.waitForRequest('**/api/push/recent');
     await backgroundAndReturn(page, [{ tag: 'post-' + post.id, url }]);
+    await asked;
     await page.waitForTimeout(3000);
     expect(await pages(page)).toBe(2);
     await expect(banner(page)).toHaveCount(0);
+  });
+
+  // ---- 帯から開くときの画面の重なり(2026-09-27 見直し) ----
+
+  async function twoPosts(page) {
+    const res = await fetchInPage(page, '/api/posts');
+    const [a, b] = JSON.parse(res.text).posts.data;
+    expect(a && b, '投稿が 2 件以上要る').toBeTruthy();
+    return [a, b];
+  }
+  async function openFromTimeline(page, post) {
+    await page.locator('#timeline_list ons-list-item').filter({ hasText: post.title.trim() }).first().click();
+    await expect(page.locator('ons-navigator > ons-page').last().locator('.entry_title'))
+      .toHaveText(post.title.trim(), { timeout: 15000 });
+    await page.waitForTimeout(800);
+  }
+
+  test('投稿 A の上に帯から投稿 B を開いて戻ると、A での操作は A に行く', async ({ page }) => {
+    // 投稿の画面が共有の「開いている投稿」を読んでいて、戻った後のいいね・削除などが B に行っていた
+    await gotoApp(page);
+    const [a, b] = await twoPosts(page);
+    await page.waitForTimeout(3500);
+    await openFromTimeline(page, a);
+    await backgroundAndReturn(page, [{ tag: 'post-' + b.id, url: '/home?launcher=true&post=' + b.id }]);
+    await banner(page).click();
+    const top = page.locator('ons-navigator > ons-page').last();
+    await expect(top.locator('.entry_title')).toHaveText(b.title.trim(), { timeout: 15000 });
+    await page.waitForTimeout(800);
+    await top.locator('.navbar .left ons-toolbar-button').click();
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(2, { timeout: 15000 });
+
+    // A でいいね(サーバには送らず、どの投稿に送ろうとしたかだけ見る)
+    const liked = [];
+    await page.route(/\/api\/post_responses\/\d+$/, (route) => {
+      liked.push(Number(route.request().url().split('/').pop()));
+      route.fulfill({ json: {} });
+    });
+    const articleA = page.locator('ons-navigator > ons-page').last();
+    await expect(articleA.locator('.entry_title')).toHaveText(a.title.trim());
+    await articleA.locator('ons-icon.heart').first().click();
+    await expect.poll(() => liked).toEqual([a.id]);
+  });
+
+  test('投稿を見ているときに、同じ投稿の帯から開くと、重ねずに開き直す', async ({ page }) => {
+    await gotoApp(page);
+    const [a] = await twoPosts(page);
+    await page.waitForTimeout(3500);
+    await openFromTimeline(page, a);
+    let reloaded = 0;
+    await page.route(new RegExp(`/api/posts/${a.id}$`), (route) => { reloaded++; route.continue(); });
+    await backgroundAndReturn(page, [{ tag: 'post-' + a.id, url: '/home?launcher=true&post=' + a.id }]);
+    await banner(page).click();
+    await expect.poll(() => reloaded, { message: '開き直す(新しいコメントを出す)' }).toBeGreaterThan(0);
+    await page.waitForTimeout(1000);
+    expect(await pages(page), '同じ投稿を重ねない').toBe(2);
+  });
+
+  test('投稿を見ているときに予定の帯から開くと、投稿を閉じてカレンダーで開く', async ({ page }) => {
+    // カレンダーのタブへの切り替えが、上に重なった投稿の下で起きて見えなかった
+    await gotoApp(page);
+    const [a] = await twoPosts(page);
+    await page.waitForTimeout(3500);
+    await openFromTimeline(page, a);
+    await backgroundAndReturn(page, [{ tag: 'schedule-1', url: '/home?launcher=true&date=' + todayJst() }]);
+    await banner(page).click();
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 15000 });
+    await expect(page.locator('ons-tab[label="カレンダー"]')).toHaveClass(/active/, { timeout: 15000 });
+  });
+
+  test('お知らせの一覧を見ているときは、戻っても帯を出さない(一覧が新しい通知を出す)', async ({ page }) => {
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: 2, items: [] } }));
+    await gotoApp(page);
+    await page.waitForTimeout(3500);
+    await page.locator('#timeline_page .notice-bell').click();
+    await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(800);
+    const asked = page.waitForRequest('**/api/push/recent');
+    await backgroundAndReturn(page, [
+      { tag: 'post-1', url: '/home?launcher=true&post=1' },
+      { tag: 'post-2', url: '/home?launcher=true&post=2' },
+    ]);
+    await asked;
+    await page.waitForTimeout(2000);
+    await expect(banner(page)).toHaveCount(0);
+    expect(await pages(page)).toBe(2);
+  });
+
+  test('帯を出したまま別の画面に移ると、帯は消える', async ({ page }) => {
+    await gotoApp(page);
+    const [a] = await twoPosts(page);
+    await page.waitForTimeout(3500);
+    await backgroundAndReturn(page, [{ tag: 'post-1', url: '/home?launcher=true&post=1' }]);
+    await expect(banner(page)).toBeVisible({ timeout: 15000 });
+    await page.locator('#timeline_list ons-list-item').filter({ hasText: a.title.trim() }).first().click();
+    await expect(banner(page)).toHaveCount(0, { timeout: 3000 });
   });
 });
 
@@ -477,10 +577,6 @@ test.describe('前面に戻ったときの帯(Android)', () => {
 });
 
 
-/**
- * アプリ内のお知らせ一覧(🔔。#125)と、ホーム画面のアイコンの数(#123)。
- * サーバの応答は差し替える(WebKit では Service Worker があると差し替えが効かないので sw.js の登録を止める)。
- */
 /**
  * タイムラインの一覧(GET /api/posts)で、その投稿を「未読」として返す。詳細(GET /api/posts/{id})が
  * 返った後はサーバの応答どおり(既読)に戻す。通知から開く前に読み込んだ一覧(や、開く前に出した問い合わせ)を真似る。
@@ -582,6 +678,10 @@ test.describe('通知から開いた投稿はタイムラインでも既読に�
   });
 });
 
+/**
+ * アプリ内のお知らせ一覧(🔔。#125)と、ホーム画面のアイコンの数(#123)。
+ * サーバの応答は差し替える(WebKit では Service Worker があると差し替えが効かないので sw.js の登録を止める)。
+ */
 test.describe('お知らせ(🔔)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/sw.js', (route) => route.abort());
@@ -686,6 +786,42 @@ test.describe('お知らせ(🔔)', () => {
     await expect(bell(page).locator('.notice-bell-count')).toHaveText('1', { timeout: 3000 });
   });
 
+  test('一覧から投稿を開いて戻ると、同じ投稿の他の通知も「開いた」で出る(一覧を読み込み直す)', async ({ page }) => {
+    // 投稿を開くとその投稿の通知はまとめて「開いた」になるが、一覧はタップした 1 件しか直していなかった
+    await gotoApp(page);
+    const res = await fetchInPage(page, '/api/posts');
+    const post = JSON.parse(res.text).posts.data[0];
+    expect(post, '投稿が 1 件も無い').toBeTruthy();
+    const server = { shown: false };
+    await page.route('**/api/push/config', (route) => route.fulfill({
+      json: { enabled: true, vapid_public_key: null, preferences: {} } }));
+    await page.route('**/api/notices/unopened', (route) => route.fulfill({ json: { unopened: server.shown ? 0 : 2 } }));
+    await page.route('**/api/notices/open', (route) => route.fulfill({ json: { unopened: server.shown ? 0 : 1 } }));
+    const url = '/home?launcher=true&post=' + post.id;
+    await page.route(/\/api\/notices$/, (route) => route.fulfill({ json: { unopened: server.shown ? 0 : 2, items: [
+      notice({ id: 2, nid: 'comment', body: 'コメントの通知', url, opened: server.shown }),
+      notice({ id: 1, nid: 'post', body: '投稿の通知', url, opened: server.shown }),
+    ] } }));
+    await page.route(new RegExp(`/api/posts/${post.id}$`), async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      server.shown = true; // サーバでは、この投稿の通知が 2 件とも「開いた」になった
+      await route.fulfill({ response, json: { ...json, unopened: 0 } });
+    });
+    await gotoApp(page);
+    await bell(page).click();
+    const list = page.locator('#notices_page');
+    await expect(list.locator('.notice-unopened')).toHaveCount(2, { timeout: 15000 });
+    await list.locator('.notice-item').first().click();
+    const article = page.locator('ons-navigator > ons-page').last();
+    await expect(article.locator('.entry_title')).toHaveText(post.title.trim(), { timeout: 15000 });
+    await page.waitForTimeout(800);
+    await article.locator('.navbar .left ons-toolbar-button').click();
+    await expect(list).toBeVisible({ timeout: 15000 });
+    await expect(list.locator('.notice-unopened')).toHaveCount(0, { timeout: 5000 });
+    await expect(list.locator('.notices-open-all')).toHaveCount(0);
+  });
+
   test('もう無い投稿の通知をタップすると、エラーではなく「削除されたか、見られなくなっています」と出す', async ({ page }) => {
     await stubNotices(page, { unopened: 1, items: [notice({ nid: 'gone', url: '/home?launcher=true&post=999999999' })] });
     await gotoApp(page);
@@ -749,7 +885,7 @@ test.describe('お知らせ(🔔)', () => {
     await expect(page.locator('#notices_page .notices-empty')).toBeVisible({ timeout: 15000 });
   });
 
-  test('すべて既読にすると、まだ開いていない通知が無くなる', async ({ page }) => {
+  test('すべて確認済みにすると、まだ開いていない通知が無くなる', async ({ page }) => {
     const calls = await stubNotices(page, { unopened: 2, items: [notice({ id: 2, nid: 'a' }), notice({ id: 1, nid: 'b' })] });
     await gotoApp(page);
     await bell(page).click();

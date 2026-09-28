@@ -260,6 +260,9 @@
     },
     data() {
       return {
+        // この画面が表示している投稿。store の article.post_id は次に開く投稿で上書きされるので、作ったときに控える
+        // (上に別の投稿を重ねて戻ったとき、いいね・コメント・削除などが別の投稿に行かないように)
+        postId: this.$options.postId || this.$store.state.article.post_id,
         post: {},
         post_responses: {},
         post_attachments: {},
@@ -312,7 +315,7 @@
       load() {
         // console.log('start load');
         this.loading = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.get('/api/posts/' + post_id)
           .then((response)=>{
             this.post = response.data.post;
@@ -367,7 +370,7 @@
           return;
         }
         this.posting_comment = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         // 送信フォームデータ準備
         let formData = new FormData();
@@ -414,7 +417,7 @@
       },
       deleteComment(comment_id) {
         // console.log("コメントID=" + comment_id);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         self.$http.delete('/api/post_comments/' + post_id + '/' + comment_id)
           .then((response)=>{
@@ -437,7 +440,7 @@
         this.$store.commit('navigator/push', {
           extends: EditPost,
           onsNavigatorOptions: {animation: 'lift'},
-          onsNavigatorProps: {reloadArticle: this.load} //編集画面で編集して戻る時にリロードするために渡す
+          onsNavigatorProps: {reloadArticle: this.load, postId: this.postId} //編集画面で編集して戻る時にリロードするために渡す
         });
       },
       toggleHeart() {
@@ -448,7 +451,7 @@
         }
         let form = new FormData();
         form.append('like_flg', this.isHeartOn);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.post('/api/post_responses/' + post_id, form)
           .catch(error => {
             this.errored = true;
@@ -462,7 +465,7 @@
         }
         let form = new FormData();
         form.append('star_flg', this.isStarOn);
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         this.$http.post('/api/post_responses/' + post_id, form)
           .catch(error => {
             this.errored = true;
@@ -564,12 +567,12 @@
         this.$ons.notification.confirm("この投稿を削除しますか？", {title: '', buttonLabels:['キャンセル', 'OK']})
           .then(function(ok) {
             if(!ok) {return;}
-            self.deletePost(self.$store.state.article.post_id);
+            self.deletePost();
           });
       },
       deletePost() {
         this.deleting = true;
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId;
         let self = this;
         self.$http.delete('/api/posts/' + post_id)
           .then((response)=>{

@@ -53,9 +53,9 @@
       openFromUrl(this.$store);
       // アプリが開いたまま通知をタップしたときは、前面に戻ったときに sw.js の書き置きを読んで開く
       installDeepLinkListeners(this.$store);
-      // 🔔とアイコンの数(お知らせ一覧を最後に開いた後に届いた通知の数。#125)を取り直し続ける
+      // 🔔とアイコンの数(まだ開いていない通知の数。#125)を取り直し続ける
       installNoticeCount();
-      // 前面に戻ったときの「この通知を開きますか」の帯(#125)。アプリ全体の最前面に 1 つだけ置く
+      // 前面に戻ったときの「届いたお知らせ」の帯(#125)。アプリ全体の最前面に 1 つだけ置く
       const banner = new (Vue.extend(NoticeBanner))({ store: this.$store }).$mount();
       document.body.appendChild(banner.$el);
     },

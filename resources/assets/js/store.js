@@ -31,6 +31,10 @@ export default {
         reset(state, page) {
           state.stack = [page || state.stack[0]];
         },
+        // 上から画面を閉じて、length 枚だけ残す(タブの画面は必ず残す)
+        popTo(state, length) {
+          state.stack.splice(Math.max(1, length));
+        },
         options(state, newOptions = {}) {
           state.options = newOptions;
         },
@@ -84,9 +88,10 @@ export default {
           morePosts.forEach((p) => { if (state.readIds.includes(p.id)) p.read_flg = true; });
           state.posts = state.posts.concat(morePosts);
         },
-        // 投稿の詳細を開いた(サーバでは既読になった)。一覧にあって未読なら既読にし、未読数を 1 減らす
-        markRead(state, postId) {
-          if (!state.readIds.includes(postId)) {
+        // 投稿の詳細を開いた。一覧にあって未読なら既読にし、未読数を 1 減らす。
+        // remember：サーバで既読になった(詳細を読み込めた)ので、後から届く古い一覧でも既読のまま見せる
+        markRead(state, {postId, remember}) {
+          if (remember && !state.readIds.includes(postId)) {
             state.readIds.push(postId);
           }
           const post = state.posts.find((p) => p.id === postId);
@@ -122,13 +127,14 @@ export default {
       },
       actions: {
         // 投稿の詳細を開いたとき(タイムライン・通知・お知らせの一覧のどこからでも)に、タイムラインの表示を既読に合わせる
-        markRead(context, {postId, http}) {
+        // confirmed：サーバで既読になった(詳細を読み込めた)。false はタイムラインで行をタップした直後
+        markRead(context, {postId, http, confirmed = true}) {
           if (context.state.readIds.includes(postId)) {
             return;
           }
           const inList = context.state.posts.some((p) => p.id === postId);
-          context.commit('markRead', postId);
-          if (inList && !context.state.loading) {
+          context.commit('markRead', {postId, remember: confirmed});
+          if (!confirmed || (inList && !context.state.loading)) {
             return;
           }
           // 一覧に無い(読み込み中・古い投稿)ときは、減らしてよいか分からないので未読数をサーバに聞き直す

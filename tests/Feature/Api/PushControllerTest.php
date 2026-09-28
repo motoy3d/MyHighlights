@@ -329,7 +329,7 @@ class PushControllerTest extends TestCase
         return new PushNotice('チーム', '本文', $tag, '/home?launcher=true&post=' . substr($tag, 5));
     }
 
-    public function test_この端末の購読があれば最近送った通知を古い順に返す(): void
+    public function test_この端末の購読があればまだ開いていない最近の通知を古い順に返す(): void
     {
         $this->user->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
         $first = $this->notice('post-1');
@@ -344,7 +344,7 @@ class PushControllerTest extends TestCase
         $this->assertIsInt($res->json('now'));
         $this->assertSame([$first->nid, $second->nid], array_column($res->json('notices'), 'nid'));
         $this->assertSame('/home?launcher=true&post=2', $res->json('notices.1.url'));
-        // 見つけた通知は帯で「開きますか」と出すので、題名と本文も返す(#125)
+        // 帯に出すので、題名と本文も返す(#125)
         $this->assertSame('チーム', $res->json('notices.1.title'));
         $this->assertSame('本文', $res->json('notices.1.body'));
         $this->assertSame($this->team->id, $res->json('notices.1.team_id'));
@@ -369,7 +369,7 @@ class PushControllerTest extends TestCase
 
     public function test_この端末の購読が無ければ何も返さない(): void
     {
-        // 通知が届かない端末(期限切れで消えた購読など)で、送った通知が全部「消えた」ように見えないように
+        // 通知が届かない端末(期限切れで消えた購読など)には帯を出さない
         NoticeLog::record($this->user, $this->notice('post-1'), 'new_post', $this->team->id);
         $other = User::factory()->create();
         $other->updatePushSubscription(self::ENDPOINT . '-other', 'key', 'token', 'aes128gcm');
@@ -416,7 +416,7 @@ class PushControllerTest extends TestCase
 
     public function test_同じtagの通知も別々に控える(): void
     {
-        // iPhone は同じ tag の通知を並べるので、どれがタップされたかは nid で見分ける
+        // iPhone は同じ tag の通知を並べるので、1 件ずつ nid で区別する(重複防止・開いたにする)
         $a = $this->notice('post-1');
         $b = $this->notice('post-1');
         NoticeLog::record($this->user, $a, 'new_post', $this->team->id);

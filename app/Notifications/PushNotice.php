@@ -28,8 +28,8 @@ class PushNotice extends Notification
     public const ICON = '/appicon.png';
 
     /**
-     * 通知ごとの目印。tag は同じ投稿で共通だが、iOS は同じ tag の通知を置き換えずに並べるため、
-     * どの通知がタップされた（通知センターから消えた）かを見分けるのに使う（NoticeLog）
+     * 通知ごとの目印。tag は同じ投稿で共通だが、iOS は同じ tag の通知を置き換えずに並べるので、
+     * 通知 1 件ごとの目印にする(タップの重複防止・お知らせを「開いた」にする・前面に戻ったときの帯。NoticeLog)
      */
     public readonly string $nid;
 
@@ -55,8 +55,8 @@ class PushNotice extends Notification
      *
      * mutable にして、iOS 18.4 以降でも push を Service Worker に渡させ、通知は sw.js が表示する。
      * 2026-09-22 の実機確認で、iOS に表示を任せても（navigate を指定しても）、アプリがバックグラウンドだと
-     * タップで目的の画面に移れなかった（WebKit の既知の不具合 bug 268797）。sw.js が表示した通知なら、
-     * 前面に戻ったときに消えた通知からタップされた通知を割り出せる（resources/assets/js/deep-link.js）。
+     * タップで目的の画面に移れなかった（WebKit の既知の不具合 bug 268797）。sw.js が表示すれば、
+     * 受信したときにアイコンの数(data.badge)を更新できる(110 §6.1)。
      * Service Worker が動かなかったときは、この形式のおかげで iOS が代わりに表示する。
      * 対応していないブラウザ（Android の Chrome など）には通常の push として届く。どちらも sw.js が data.url を使う。
      */
@@ -86,7 +86,7 @@ class PushNotice extends Notification
     /**
      * 通知の data。
      * - url：開く画面(相対)。nid を付け、閉じた状態から開いたときもどの通知かが分かるようにする(#125)
-     * - nid：通知ごとの目印(#110。どの通知がタップされたかを見分ける)
+     * - nid：通知ごとの目印(タップの重複防止と、お知らせを「開いた」にするのに使う)
      * - badge：アイコンに出す、まだ開いていない通知の数(🔔と同じ。#123/#125)。
      *   お知らせの記録(NoticeLog::record)は送る前に付けるので、この通知も含まれている
      *

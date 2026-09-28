@@ -216,8 +216,12 @@ export function clearAppBadge() {
   }
 }
 
+// 🔔の数を書き換えた回数。問い合わせ中に数が変わったら(通知を開いた等)、その問い合わせの応答は古いので使わない
+let unopenedVersion = 0;
+
 /** 🔔の数を入れ、アイコンの数もそろえる */
 export function setUnopened(count) {
+  unopenedVersion++;
   noticeState.unopened = Math.max(0, Number(count) || 0);
   if (noticeState.unopened > 0 && 'setAppBadge' in navigator) {
     navigator.setAppBadge(noticeState.unopened).catch(() => {});
@@ -228,8 +232,13 @@ export function setUnopened(count) {
 
 /** 🔔の数をサーバから取り直す。裏の問い合わせなので、失敗しても利用者には知らせない */
 export function refreshUnopened() {
+  const version = unopenedVersion;
   return axios.get('/api/notices/unopened', { silentErrors: true })
-    .then((response) => setUnopened(response.data && response.data.unopened))
+    .then((response) => {
+      if (version === unopenedVersion) {
+        setUnopened(response.data && response.data.unopened);
+      }
+    })
     .catch(() => {});
 }
 

@@ -158,10 +158,12 @@
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
       },
       openArticle(post) {
-        this.$store.dispatch('timeline/markRead', {postId: post.id, http: this.$http});
+        // 一覧の表示はすぐ既読にする。サーバで既読になったこと(読み込めたこと)は Article.vue が伝える
+        this.$store.dispatch('timeline/markRead', {postId: post.id, http: this.$http, confirmed: false});
         this.$store.commit('article/setPostId', post.id);
         this.$store.commit('navigator/push', {
           extends: Article,
+          postId: post.id,
           onsNavigatorOptions: {animation: 'slide'}
         });
       },
