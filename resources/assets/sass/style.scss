@@ -2,6 +2,16 @@ html {
   overscroll-behavior: none;
   transform: translate3d(0, 0, 0); //試しに
 }
+/* ------ 文字 ------ */
+/* iPhone ではヒラギノ角ゴを使う。見出しは字間を詰めて(palt)締まって見せる */
+body, .page, .toolbar, .list-item, .button, .tabbar {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", "Segoe UI", Meiryo, sans-serif;
+}
+.entry_title, .navbartitle, .toolbar .center {
+  font-feature-settings: "palt";
+  letter-spacing: 0.02em;
+}
 /* ------ 共通class(色系) ------ */
 .black {
 	color: black;
@@ -19,7 +29,7 @@ html {
   color: red;
 }
 .goodblue {
-  color: #2c74e8;
+  color: var(--brand-color);
 }
 .bg-black{
   background-color: black;
@@ -144,7 +154,7 @@ textarea {
 	text-align: center;
 }
 .navbar {
-  background-color:#2c74e8;
+  background-color: var(--brand-color);
 }
 .navbartitle {
   color: white;

@@ -9,14 +9,10 @@
         </v-ons-toolbar-button>
       </div>
       <div class="center navbartitle">
-        <v-ons-icon icon="fa-bell" size="20px"></v-ons-icon>
+        <v-ons-icon icon="fa-bell" size="20px" class="mr-5"></v-ons-icon>
         <span>お知らせ</span>
       </div>
-      <div class="right mr-5">
-        <v-ons-toolbar-button v-if="hasUnopened" @click="openAll()" class="notices-open-all">
-          <small class="white">すべて確認済みにする</small>
-        </v-ons-toolbar-button>
-      </div>
+      <div class="right mr-5"></div>
     </v-ons-toolbar>
 
     <!-- ons-page は中身を page__content に移すので、表示を切り替える部分は常にある 1 つの枠に入れる
@@ -31,7 +27,14 @@
     <div class="center mt-20 gray notices-empty" v-else-if="!items.length">
       お知らせはありません
     </div>
-    <v-ons-list v-else>
+    <template v-else>
+    <!-- ヘッダーの右に置くと文字が切れたので、一覧の上に置く -->
+    <div class="notices-actions" v-if="hasUnopened">
+      <v-ons-button modifier="quiet" @click="openAll()" class="notices-open-all">
+        <v-ons-icon icon="fa-check" class="mr-5"></v-ons-icon>すべて確認済みにする
+      </v-ons-button>
+    </div>
+    <v-ons-list>
       <v-ons-list-item v-for="item in items" :key="item.id" tappable modifier="chevron"
                        :class="['notice-item', { 'notice-unopened': !item.opened }]"
                        @click="open(item)">
@@ -49,6 +52,7 @@
         </div>
       </v-ons-list-item>
     </v-ons-list>
+    </template>
     </div>
   </v-ons-page>
 </template>
@@ -178,8 +182,15 @@
     line-height: 1.5;
   }
   .notice-meta {
-    color: grey;
+    color: var(--sub-text-color);
     font-size: 13px;
     margin-top: 4px;
+  }
+  .notices-actions {
+    text-align: right;
+    padding: 4px 8px;
+  }
+  .notices-open-all {
+    font-size: 14px;
   }
 </style>

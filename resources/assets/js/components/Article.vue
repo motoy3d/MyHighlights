@@ -623,14 +623,23 @@
     padding: 15px;
     background-color: white;
   }
-  .comment_textarea {
+  textarea.comment_textarea {
     width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 10px;
   }
+  /* .entry_title と .updated_at はタイムライン(Timeline.vue)と同じ定義にそろえる(どちらも全体に効くため) */
   .entry_title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: bold;
+    line-height: 1.4;
     text-align:left;
     margin: 0;
+  }
+  /* 投稿の詳細では題名を一回り大きくする */
+  .article-content .entry_title {
+    font-size: 20px;
   }
   .category_name {
     color: white;
@@ -639,8 +648,9 @@
   }
   .entry_content2 {
     font-size: 16px;
+    line-height: 1.75;
     text-align:left;
-    margin: 5px 5px 0 5px;
+    margin: 12px 5px 0 0;
     width: 98%;
   }
   .entry_text {
@@ -651,10 +661,10 @@
     -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
   .updated_at {
-    color: grey;
+    color: var(--sub-text-color);
     font-size: 13px;
     text-align: left;
-    margin: 0 0 0 5px;
+    margin: 2px 0 0 0;
   }
   .highlight_summary {
     font-size: 12px;
@@ -739,7 +749,7 @@
     -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
   .comment_card {
-    background-color: #81ff4f;
+    background-color: #e2f7d0;
     margin-bottom: 0;
   }
   .comment-count {
@@ -756,12 +766,15 @@
   .lastspace {
     margin-bottom: 80px;
   }
+  /* コメントの吹き出し。予定のコメント(Calendar.vue)と同じ定義にそろえる(どちらも全体に効くため)。
+     緑は残しつつ、蛍光色をやわらげる */
   .speech-bubble {
     position: relative;
-    background: #81ff4f;
-    border-radius: .3em;
-    padding: 15px;
+    background: #e2f7d0;
+    border-radius: 12px;
+    padding: 12px 14px;
     margin-top: 6px;
+    line-height: 1.6;
   }
 
   .speech-bubble:after {
@@ -772,7 +785,7 @@
     width: 0;
     height: 0;
     border: 6px solid transparent;
-    border-bottom-color: #81ff4f;
+    border-bottom-color: #e2f7d0;
     border-top: 0;
     margin-left: -6px;
     margin-top: -6px;
