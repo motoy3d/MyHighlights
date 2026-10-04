@@ -93,6 +93,18 @@ Vue.filter('truncate', function(value, len, omission) {
     return value.substring(0, length) + ommision;
   }
 });
+// プロフィール画像のアドレス。画像が無い人は、メンバー登録画面の 1 番目の画像(男の子)を出す
+const DEFAULT_PROF_IMG = 'preset_boy.png';
+Vue.filter('profImg', function(filename) {
+  return '/storage/prof/' + (filename || DEFAULT_PROF_IMG);
+});
+// 画像のファイルが無い(読み込めない)ときも同じ画像に差し替える。<img @error="profImgFallback">
+Vue.prototype.profImgFallback = function(event) {
+  const fallback = '/storage/prof/' + DEFAULT_PROF_IMG;
+  if (!event.target.src.endsWith(fallback)) {
+    event.target.src = fallback;
+  }
+};
 console.warn('>>>>>>>> アプリ起動');
 
 // #110 Web プッシュ通知: Service Worker の登録と、ホーム画面への追加の案内の準備。

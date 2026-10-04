@@ -19,7 +19,7 @@ html {
   color: red;
 }
 .goodblue {
-  color: #2c74e8;
+  color: var(--brand-color);
 }
 .bg-black{
   background-color: black;
@@ -144,7 +144,7 @@ textarea {
 	text-align: center;
 }
 .navbar {
-  background-color:#2c74e8;
+  background-color: var(--brand-color);
 }
 .navbartitle {
   color: white;
