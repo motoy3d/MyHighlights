@@ -79,7 +79,6 @@
           </div>
         </div>
         <div class="space">
-          <p class="red small">iOS 9以下では利用できません。PC(Chrome)をご使用ください。</p>
           <p class="small grey">ログインできない方は、<a href="mailto:motoy3d@gmail.com">motoy3d@gmail.com</a> までメールしてください。</p>
         </div>
         {{--<hr class="login_hr">--}}

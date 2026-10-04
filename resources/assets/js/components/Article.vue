@@ -151,7 +151,7 @@
               <!--<hr class="mt-15">-->
               <div class="mb-10">
                 <div class="fl-left">
-                  <img :src="'/storage/prof/' + comment.prof_img_filename" class="prof_img_xs">
+                  <img :src="comment.prof_img_filename | profImg" @error="profImgFallback" class="prof_img_xs">
                 </div>
                 <div>
                   <span class="bold">
@@ -214,11 +214,13 @@
             </div>
           </v-ons-col>
         </v-ons-row>
-        <v-ons-row v-if="post.created_id === user.id">
-          <v-ons-col class="space">
-            <v-ons-button class="mtb-20 red" modifier="large--quiet"
+        <!-- 削除は画面のいちばん下に小さく置く(短い投稿でも真ん中に浮かないように) -->
+        <v-ons-row v-if="post.created_id === user.id" class="delete-post-row">
+          <v-ons-col class="center">
+            <v-ons-button class="delete-post-btn" modifier="quiet"
                           @click="confirmDeletePost()" :disabled="deleting">
               <v-ons-icon icon="fa-spinner" spin v-if="deleting" class="gray"></v-ons-icon>
+              <v-ons-icon icon="fa-trash" v-else class="mr-5"></v-ons-icon>
               この投稿を削除
             </v-ons-button>
           </v-ons-col>
@@ -614,6 +616,25 @@
 </script>
 
 <style>
+  /* 削除のボタンを画面の下端に寄せるため、中身を縦に並べて画面の高さいっぱいに広げる */
+  .article-content {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .article-content > section {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .delete-post-row {
+    margin-top: auto;
+    padding: 24px 0 16px;
+  }
+  .delete-post-btn {
+    color: #d64545;
+    font-size: 14px;
+  }
   .post-not-found {
     padding: 40px 20px;
     text-align: center;
@@ -759,7 +780,7 @@
   .speech-bubble {
     position: relative;
     background: #81ff4f;
-    border-radius: .3em;
+    border-radius: 12px;
     padding: 15px;
     margin-top: 6px;
   }

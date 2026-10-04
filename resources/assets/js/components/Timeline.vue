@@ -106,14 +106,15 @@
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
                 <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
-                  <v-ons-icon icon="fa-comment" class="small gray mr-10"
-                    v-if="post.comment_count" style="font-weight:400">
+                  <!-- 数や文字はアイコンの外に置く(中に置くとアイコンの字体で表示され、数字が明朝体のように見えた) -->
+                  <span class="small gray mr-10" v-if="post.comment_count">
+                    <v-ons-icon icon="fa-comment" style="font-weight:400"></v-ons-icon>
                     <span class="ml-5">{{ post.comment_count }}</span>
-                  </v-ons-icon>
-                  <v-ons-icon icon="fa-list-alt" class="small gray"
-                    v-if="post.questionnaire_id">
+                  </span>
+                  <span class="small gray" v-if="post.questionnaire_id">
+                    <v-ons-icon icon="fa-list-alt"></v-ons-icon>
                     <span>アンケート</span>
-                  </v-ons-icon>
+                  </span>
                 </div>
               </div>
             </v-ons-list-item>

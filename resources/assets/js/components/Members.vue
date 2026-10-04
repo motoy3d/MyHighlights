@@ -39,7 +39,7 @@
           <v-ons-list-item v-for="member in viewMembers" :key="member.id"
                            tappable modifier="chevron" @click="openMember(member.id);">
             <div class="left">
-              <img :src="'/storage/prof/' + member.prof_img_filename" class="prof_img">
+              <img :src="member.prof_img_filename | profImg" @error="profImgFallback" class="prof_img">
             </div>
             <div class="w-100p">
               <p style="text-align: left">

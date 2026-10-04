@@ -150,7 +150,7 @@
                     <!--<hr class="mt-15">-->
                     <div class="mb-10">
                       <div class="fl-left">
-                        <img :src="'/storage/prof/' + comment.prof_img_filename" class="prof_img_xs">
+                        <img :src="comment.prof_img_filename | profImg" @error="profImgFallback" class="prof_img_xs">
                       </div>
                       <div>
                         <span class="bold">
@@ -661,7 +661,7 @@
   .speech-bubble {
     position: relative;
     background: #81ff4f;
-    border-radius: .3em;
+    border-radius: 12px;
     padding: 15px;
     margin-top: 6px;
   }
