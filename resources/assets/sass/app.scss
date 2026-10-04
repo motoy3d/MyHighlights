@@ -15,18 +15,6 @@
 // その一覧に頼らないため、ここでは使わない。
 :root {
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-
-  // アプリの色を 1 つの青にそろえる。ヘッダーの青(#2c74e8)に、OnsenUI の部品
-  // (ボタン・＋ボタン・タブ・切り替え・読み込み中の丸など。既定は #0076ff)を合わせる
-  --brand-color-rgb: 44, 116, 232;
-  --brand-color: rgb(var(--brand-color-rgb));
-  --highlight-color-rgb: var(--brand-color-rgb);
-  // ヘッダーの下の灰色の線は消す(青の帯だけにする)
-  --toolbar-separator-color: transparent;
-  // 文字の色：真っ黒を少しやわらげ、補足の文字は青みのある灰色にそろえる
-  --text-color: #1f2328;
-  --sub-text-color: #8a9099;
-  --border-color: #dfe3e8;
 }
 .tabbar:not(.tabbar--top) {
   padding-bottom: var(--safe-area-bottom);

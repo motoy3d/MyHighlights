@@ -40,8 +40,7 @@
                 <td v-bind:data-date="days[n-1].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[n-1].date) && n!=7? 'holiday ' : '')
-                    + (days[n-1].date === selectedDate? 'selectedDate' : '')
-                    + (days[n-1].date === todayDate? ' today' : '')"
+                    + (days[n-1].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)">
                   <span v-html="days[n-1].text"></span>
                 </td>
@@ -50,8 +49,7 @@
                 <td v-bind:data-date="days[(n-1)+7].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[(n-1)+7].date) && n!=7? 'holiday ' : '')
-                    + (days[(n-1)+7].date === selectedDate? 'selectedDate' : '')
-                    + (days[(n-1)+7].date === todayDate? ' today' : '')"
+                    + (days[(n-1)+7].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+7">
                   <span v-html="days[(n-1)+7].text"></span>
                 </td>
@@ -60,8 +58,7 @@
                 <td v-bind:data-date="days[(n-1)+14].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[(n-1)+14].date) && n!=7? 'holiday ' : '')
-                    + (days[(n-1)+14].date === selectedDate? 'selectedDate' : '')
-                    + (days[(n-1)+14].date === todayDate? ' today' : '')"
+                    + (days[(n-1)+14].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+14">
                   <span v-html="days[(n-1)+14].text"></span>
                 </td>
@@ -70,8 +67,7 @@
                 <td v-bind:data-date="days[(n-1)+21].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[(n-1)+21].date) && n!=7? 'holiday ' : '')
-                    + (days[(n-1)+21].date === selectedDate? 'selectedDate' : '')
-                    + (days[(n-1)+21].date === todayDate? ' today' : '')"
+                    + (days[(n-1)+21].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+21">
                   <span v-html="days[(n-1)+21].text"></span>
                 </td>
@@ -80,8 +76,7 @@
                 <td v-bind:data-date="days[(n-1)+28].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[(n-1)+28].date) && n!=7? 'holiday ' : '')
-                    + (days[(n-1)+28].date === selectedDate? 'selectedDate' : '')
-                    + (days[(n-1)+28].date === todayDate? ' today' : '')"
+                    + (days[(n-1)+28].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+28">
                   <span v-html="days[(n-1)+28].text"></span>
                 </td>
@@ -90,8 +85,7 @@
                 <td v-bind:data-date="days[(n-1)+35].date"
                     v-bind:class="'day' + (n-1) + ' '
                     + (getHolidayName(days[(n-1)+35].date)? 'holiday ' : '')
-                    + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')
-                    + (days[(n-1)+35].date === todayDate? ' today' : '')"
+                    + (days[(n-1)+35].date === selectedDate? 'selectedDate' : '')"
                     v-for="n in 7" :key="(n-1)+35">
                   <span v-html="days[(n-1)+35].text"></span>
                 </td>
@@ -224,8 +218,6 @@
         errored: false,
         deleting: false,
         selectedDate: null,
-        // 今日(カレンダーで印を付ける。日付は days の date と同じ形)
-        todayDate: today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2),
         selectedDateSchedules: [],
         currentYear: today.getFullYear(),
         currentMonth: today.getMonth(),
@@ -535,15 +527,13 @@
 </script>
 
 <style>
-  /* 罫線は薄い灰色、土日の色は淡くして、予定の文字を読みやすくする(土日の列が広いのはそのまま) */
   table.calendar-table {
-    margin:0 auto;
+    margin:1px auto 0 auto;
     padding:0;
     width:100%;
-    border-top:solid 1px #dfe3e8;
-    border-left:solid 1px #dfe3e8;
+    border-top:solid 1px #a3a3a3;
+    border-left:solid 1px #a3a3a3;
     border-collapse: collapse;
-    background-color: #fff;
   }
   table.calendar-table caption{
     text-align:left;
@@ -586,23 +576,18 @@
     left:30px;
   }
   table.calendar-table tr th{
-    padding:4px 0;
+    padding:0;
     text-align:center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #5b6470;
-    background-color:#f3f5f8;
-    border-right:solid 1px #dfe3e8;
-    border-bottom:solid 1px #dfe3e8;
+    background-color:#c7d8ef;
+    border-right:solid 1px #a3a3a3;
+    border-bottom:solid 1px #a3a3a3;
   }
   table.calendar-table tr th.day0{
-    color: #d64545;
-    background-color:#fdeeee;
+    background-color:#ef9595;
     width: 60px;
   }
   table.calendar-table tr th.day6{
-    color: #2c74e8;
-    background-color:#eaf2fd;
+    background-color:#a6c0e4;
     width: 60px;
   }
   table.calendar-table tr td{
@@ -610,8 +595,8 @@
     vertical-align: top;
     text-align: left;
     background-color:#ffffff;
-    border-right:solid 1px #dfe3e8;
-    border-bottom:solid 1px #dfe3e8;
+    border-right:solid 1px #a3a3a3;
+    border-bottom:solid 1px #a3a3a3;
     font-size:12px;
     height: 60px;
     width: 25px;
@@ -628,22 +613,18 @@
     background-color:#eeeeee;
   }
   table.calendar-table tr td.day0{
-    background-color:#fff5f5;
+    background-color:#ffcccc;
   }
   table.calendar-table tr td.day6{
     width:31px;
-    background-color:#f4f8fe;
+    background-color:#e9f2ff;
   }
   table.calendar-table tr td.holiday{
-    background-color:#fff5f5;
-  }
-  /* 今日は青い枠 */
-  table.calendar-table tr td.today{
-    box-shadow: inset 0 0 0 2px rgba(var(--brand-color-rgb), 0.55);
+    background-color:#ffcccc;
   }
   table.calendar-table tr td.selectedDate{
-    background-color:#fff6c7;
-    box-shadow: inset 0 0 0 2px #e0b400;
+    background-color:#fff090;
+    border: 2px #808080 solid;
   }
   table.calendar-table tr td span{
     font-size:9px;
@@ -662,11 +643,8 @@
   .lastspace {
     margin-bottom: 80px;
   }
-  textarea.comment_textarea {
+  .comment_textarea {
     width: 100%;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 8px 10px;
   }
   .lastspace {
     margin-bottom: 80px;
@@ -680,14 +658,12 @@
     -webkit-touch-callout: default;
     -webkit-tap-highlight-color: rgba(41, 147, 239, 1) !important;
   }
-  /* コメントの吹き出し。投稿のコメント(Article.vue)と同じ定義にそろえる(どちらも全体に効くため) */
   .speech-bubble {
     position: relative;
-    background: #e2f7d0;
-    border-radius: 12px;
-    padding: 12px 14px;
+    background: #81ff4f;
+    border-radius: .3em;
+    padding: 15px;
     margin-top: 6px;
-    line-height: 1.6;
   }
 
   .speech-bubble:after {
@@ -698,7 +674,7 @@
     width: 0;
     height: 0;
     border: 6px solid transparent;
-    border-bottom-color: #e2f7d0;
+    border-bottom-color: #81ff4f;
     border-top: 0;
     margin-left: -6px;
     margin-top: -6px;

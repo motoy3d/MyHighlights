@@ -105,16 +105,15 @@
               </div>
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
-                <!-- 数や文字はアイコンの外に置く(中に置くとアイコンの字体で表示され、数字が明朝体のように見えた) -->
-                <div class="post_meta" v-if="post.comment_count || post.questionnaire_id">
-                  <span class="post_meta_item" v-if="post.comment_count">
-                    <v-ons-icon icon="fa-comment" style="font-weight:400"></v-ons-icon>
-                    {{ post.comment_count }}
-                  </span>
-                  <span class="post_meta_item" v-if="post.questionnaire_id">
-                    <v-ons-icon icon="fa-list-alt"></v-ons-icon>
-                    アンケート
-                  </span>
+                <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
+                  <v-ons-icon icon="fa-comment" class="small gray mr-10"
+                    v-if="post.comment_count" style="font-weight:400">
+                    <span class="ml-5">{{ post.comment_count }}</span>
+                  </v-ons-icon>
+                  <v-ons-icon icon="fa-list-alt" class="small gray"
+                    v-if="post.questionnaire_id">
+                    <span>アンケート</span>
+                  </v-ons-icon>
                 </div>
               </div>
             </v-ons-list-item>
@@ -277,43 +276,24 @@
     width: 97%;
   }
   .entry_title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: bold;
-    line-height: 1.4;
     text-align:left;
     margin: 0;
   }
   .updated_at {
-    color: var(--sub-text-color);
+    color: grey;
     font-size: 13px;
     text-align: left;
-    margin: 2px 0 0 0;
+    margin: 0 0 0 5px;
   }
   .entry_content {
     width: 95%;
     text-align:left;
-    margin: 6px 0 0 0;
-  }
-  #timeline_list .list-item {
-    padding-top: 4px;
-    padding-bottom: 4px;
+    margin: 5px 0 0 5px;
   }
   .post_content {
     white-space: pre-wrap;
-    color: #444b53;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-  .post_meta {
-    margin-top: 8px;
-    color: var(--sub-text-color);
-    font-size: 13px;
-  }
-  .post_meta_item {
-    margin-right: 14px;
-  }
-  .post_meta_item .ons-icon {
-    margin-right: 3px;
   }
   .after_list {
     margin: 20px;
