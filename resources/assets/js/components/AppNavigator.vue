@@ -5,6 +5,7 @@
     :page-stack="pageStack"
     :pop-page="storePop"
     :options="options"
+    @postpush="allowSwipeBack"
   ></v-ons-navigator>
 </template>
 
@@ -74,6 +75,14 @@
     methods: {
       storePop() {
         this.$store.commit('navigator/pop');
+      },
+      // OnsenUI は、積んだときの動きが横からでない画面をスワイプで戻らせない。
+      // 動き無しで積んだ画面(同じ投稿の開き直しなど。deep-link.js)も、左端からのスワイプで戻れるようにする
+      allowSwipeBack(event) {
+        const page = event.enterPage;
+        if (page && page.pushedOptions && page.pushedOptions.animation === 'none') {
+          page.pushedOptions = { ...page.pushedOptions, animation: 'slide' };
+        }
       }
     }
   };

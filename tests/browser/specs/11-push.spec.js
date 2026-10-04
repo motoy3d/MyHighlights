@@ -40,6 +40,46 @@ function todayJst() {
   return `${jst.getFullYear()}-${pad(jst.getMonth() + 1)}-${pad(jst.getDate())}`;
 }
 
+// 左端から右へスワイプする(前の画面に戻る操作)
+async function swipeBack(page) {
+  const { width, height } = page.viewportSize();
+  const y = height / 2;
+  const xs = [];
+  for (let x = 5; x <= width * 0.8; x += 15) {
+    xs.push(x);
+  }
+  const hasTouch = await page.evaluate(() => 'ontouchstart' in window);
+  if (hasTouch) {
+    // スマートフォン(タッチ)はマウスの操作をスワイプとして扱わないので、タッチを送る
+    // (WebKit では Touch を作れないので、座標を持たせたイベントで代える)
+    await page.evaluate(async ({ xs, y }) => {
+      const target = document.elementFromPoint(xs[0], y);
+      const touch = (x) => ({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y, screenX: x, screenY: y });
+      const send = (type, x) => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        const list = type === 'touchend' ? [] : [touch(x)];
+        Object.defineProperty(event, 'touches', { value: list });
+        Object.defineProperty(event, 'targetTouches', { value: list });
+        Object.defineProperty(event, 'changedTouches', { value: [touch(x)] });
+        target.dispatchEvent(event);
+      };
+      send('touchstart', xs[0]);
+      for (const x of xs.slice(1)) {
+        await new Promise((r) => setTimeout(r, 16));
+        send('touchmove', x);
+      }
+      send('touchend', xs[xs.length - 1]);
+    }, { xs, y });
+  } else {
+    await page.mouse.move(xs[0], y);
+    await page.mouse.down();
+    for (const x of xs.slice(1)) {
+      await page.mouse.move(x, y);
+    }
+    await page.mouse.up();
+  }
+}
+
 test.describe('プッシュ通知の設定', () => {
   test('enabled が false なら、この端末で通知を受け取るの項目を出さない', async ({ page }) => {
     await mockPushConfig(page, false);
@@ -505,6 +545,10 @@ test.describe('前面に戻ったときの帯(iPhone)', () => {
     await expect.poll(() => reloaded, { message: '開き直す(新しいコメントを出す)' }).toBeGreaterThan(0);
     await page.waitForTimeout(1000);
     expect(await pages(page), '同じ投稿を重ねない').toBe(2);
+
+    // 開き直した投稿も、左端からのスワイプで戻れる(動き無しで差し替えると戻れなかった。2026-10-04 実機)
+    await swipeBack(page);
+    await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 5000 });
   });
 
   test('投稿を見ているときに予定の帯から開くと、投稿を閉じてカレンダーで開く', async ({ page }) => {
@@ -837,42 +881,7 @@ test.describe('お知らせ(🔔)', () => {
     await bell(page).click();
     await expect(page.locator('#notices_page')).toBeVisible({ timeout: 15000 });
     await page.waitForTimeout(800);
-    const { width, height } = page.viewportSize();
-    const y = height / 2;
-    const xs = [];
-    for (let x = 5; x <= width * 0.8; x += 15) {
-      xs.push(x);
-    }
-    const hasTouch = await page.evaluate(() => 'ontouchstart' in window);
-    if (hasTouch) {
-      // スマートフォン(タッチ)はマウスの操作をスワイプとして扱わないので、タッチを送る
-      // (WebKit では Touch を作れないので、座標を持たせたイベントで代える)
-      await page.evaluate(async ({ xs, y }) => {
-        const target = document.elementFromPoint(xs[0], y);
-        const touch = (x) => ({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y, screenX: x, screenY: y });
-        const send = (type, x) => {
-          const event = new Event(type, { bubbles: true, cancelable: true });
-          const list = type === 'touchend' ? [] : [touch(x)];
-          Object.defineProperty(event, 'touches', { value: list });
-          Object.defineProperty(event, 'targetTouches', { value: list });
-          Object.defineProperty(event, 'changedTouches', { value: [touch(x)] });
-          target.dispatchEvent(event);
-        };
-        send('touchstart', xs[0]);
-        for (const x of xs.slice(1)) {
-          await new Promise((r) => setTimeout(r, 16));
-          send('touchmove', x);
-        }
-        send('touchend', xs[xs.length - 1]);
-      }, { xs, y });
-    } else {
-      await page.mouse.move(xs[0], y);
-      await page.mouse.down();
-      for (const x of xs.slice(1)) {
-        await page.mouse.move(x, y);
-      }
-      await page.mouse.up();
-    }
+    await swipeBack(page);
     await expect(page.locator('ons-navigator > ons-page')).toHaveCount(1, { timeout: 5000 });
   });
 
