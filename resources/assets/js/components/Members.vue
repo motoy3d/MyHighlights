@@ -12,6 +12,9 @@
           <!--<v-ons-icon icon="fa-search" class="white" size="28px"></v-ons-icon>-->
         <!--</v-ons-toolbar-button>-->
       <!--</div>-->
+      <div class="right mr-5">
+        <notice-bell></notice-bell>
+      </div>
     </v-ons-toolbar>
     <v-ons-fab position="bottom right">
       <v-ons-icon icon="fa-plus" @click="openAddMember();"></v-ons-icon>
@@ -36,7 +39,7 @@
           <v-ons-list-item v-for="member in viewMembers" :key="member.id"
                            tappable modifier="chevron" @click="openMember(member.id);">
             <div class="left">
-              <img :src="'/storage/prof/' + member.prof_img_filename" class="prof_img">
+              <img :src="member.prof_img_filename | profImg" @error="profImgFallback" class="prof_img">
             </div>
             <div class="w-100p">
               <p style="text-align: left">
@@ -57,9 +60,11 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import AddMember from './AddMember.vue';
   import Member from './Member.vue';
   export default {
+    components: { NoticeBell },
     beforeCreate() {
       this.$store.dispatch('members/load', this.$http);
     },

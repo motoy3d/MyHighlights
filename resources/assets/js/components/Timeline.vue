@@ -21,6 +21,7 @@
         </template>
       </div>
       <div class="right mr-5">
+        <notice-bell></notice-bell>
         <v-ons-toolbar-button @click="showSearch($event);">
           <v-ons-icon icon="fa-search" size="20px" class="white"></v-ons-icon>
         </v-ons-toolbar-button>
@@ -80,6 +81,8 @@
               <v-ons-icon icon="fa-spinner" size="26px" spin></v-ons-icon>
             </span>
           </v-ons-pull-hook>
+          <!-- ホーム画面への追加の案内(#55)。iPhone の Safari / Android の Chrome のときだけ出る -->
+          <install-guide></install-guide>
           <v-ons-list id="timeline_list">
             <v-ons-list-item
               v-for="post in posts"
@@ -103,14 +106,15 @@
               <div class="entry_content">
                 <span class="post_content">{{ post.content | truncate}}</span>
                 <div class="mt-10" v-if="post.comment_count || post.questionnaire_id">
-                  <v-ons-icon icon="fa-comment" class="small gray mr-10"
-                    v-if="post.comment_count" style="font-weight:400">
+                  <!-- 数や文字はアイコンの外に置く(中に置くとアイコンの字体で表示され、数字が明朝体のように見えた) -->
+                  <span class="small gray mr-10" v-if="post.comment_count">
+                    <v-ons-icon icon="fa-comment" style="font-weight:400"></v-ons-icon>
                     <span class="ml-5">{{ post.comment_count }}</span>
-                  </v-ons-icon>
-                  <v-ons-icon icon="fa-list-alt" class="small gray"
-                    v-if="post.questionnaire_id">
+                  </span>
+                  <span class="small gray" v-if="post.questionnaire_id">
+                    <v-ons-icon icon="fa-list-alt"></v-ons-icon>
                     <span>アンケート</span>
-                  </v-ons-icon>
+                  </span>
                 </div>
               </div>
             </v-ons-list-item>
@@ -125,10 +129,13 @@
 </template>
 
 <script>
+  import NoticeBell from './NoticeBell.vue';
   import Article from './Article.vue';
   import Post from './Post.vue';
+  import InstallGuide from './InstallGuide.vue';
   import Cookies from 'js-cookie';
   export default {
+    components: { NoticeBell, InstallGuide },
     mounted() {
       try {
         this.load();
@@ -152,13 +159,12 @@
         this.$store.dispatch('timeline/loadMore', {'http': this.$http, 'done': done});
       },
       openArticle(post) {
-        if (!post.read_flg) {
-          post.read_flg = true;
-          this.$store.commit('timeline/setUnreadCount', this.$store.state.timeline.unreadCount - 1);
-        }
+        // 一覧の表示はすぐ既読にする。サーバで既読になったこと(読み込めたこと)は Article.vue が伝える
+        this.$store.dispatch('timeline/markRead', {postId: post.id, http: this.$http, confirmed: false});
         this.$store.commit('article/setPostId', post.id);
         this.$store.commit('navigator/push', {
           extends: Article,
+          postId: post.id,
           onsNavigatorOptions: {animation: 'slide'}
         });
       },
@@ -206,7 +212,7 @@
         }
         this.$http.get('/api/me').then((response)=>{
           this.$store.commit('navigator/setUser', response.data);// globalにユーザー情報セット
-        });
+        }).catch(() => {}); // 利用者への通知は http-errors.js で済んでいる
         // 検索条件リセット
         this.searchKeyword = null;
         this.searchCategoryId = null;

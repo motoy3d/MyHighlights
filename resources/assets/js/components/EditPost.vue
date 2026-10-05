@@ -174,6 +174,7 @@
 </template>
 
 <script>
+  import {emptyFileMessage, validationErrorMessage} from '../attachment.js';
   export default {
     mounted() {
       this.load();
@@ -201,7 +202,8 @@
         maxFiles: 20
       }
     },
-    props: ['reloadArticle'],
+    // postId：編集する投稿(投稿の詳細 Article.vue から渡す。store の article.post_id は上書きされることがあるため)
+    props: ['reloadArticle', 'postId'],
     computed: {
       postBtnColor: {
         get() {return this.posting? "white" : "";}
@@ -211,7 +213,7 @@
       load() {
         this.loading = true;
         // console.log('start load');
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId || this.$store.state.article.post_id;
         this.$http.get('/api/posts/' + post_id)
           .then((response)=>{
             let post = response.data.post;
@@ -248,6 +250,10 @@
         }
         if (!this.title) {this.$ons.notification.alert('タイトルを入れてください', {title: ''});return;}
         if (!this.contents) {this.$ons.notification.alert('本文を入れてください', {title: ''});return;}
+        // 0バイトのファイルは送らない(#45)。iPhoneで写真を選んだ後にアプリが
+        // バックグラウンドへ回ると中身が読めなくなり、壊れた添付になるため。
+        const emptyMsg = emptyFileMessage(this.files);
+        if (emptyMsg) {this.$ons.notification.alert(emptyMsg, {title: ''});return;}
         this.posting = true;
         this.selected_category_id = this.selected_category? this.selected_category : this.categories[0].id;
         let self = this;
@@ -270,7 +276,7 @@
         config.headers['X-HTTP-Method-Override'] = 'PUT'; // PUT で上書く
 
         // 送信
-        let post_id = this.$store.state.article.post_id;
+        let post_id = this.postId || this.$store.state.article.post_id;
         this.$http.post('/api/posts/' + post_id, formData, config)
           .then(response => {
             // console.log(response.data);
@@ -283,6 +289,11 @@
           .catch(error => {
             console.log(error.response);
             if (error.response.status === 401) {window.location.href = "/login";}
+            // バリデーションエラー(0バイトの添付など)はサーバのメッセージを表示する
+            const validationMsg = validationErrorMessage(error);
+            if (validationMsg) {
+              this.$ons.notification.alert(validationMsg, {title: ''});
+            }
             this.loading = false; this.posting = false;
           })
           // .finally(() => {this.loading = false; this.posting = false;})
