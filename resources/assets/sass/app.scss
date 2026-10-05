@@ -30,5 +30,37 @@
 .tabbar__content:not(.tabbar--top__content) {
   bottom: calc(var(--tabbar-height) + var(--safe-area-bottom));
 }
+
+// 画面上端(ステータスバー。アイランド・ノッチの周り)もヘッダーの青で塗る。
+// ホーム画面から起動したときは、ステータスバーを透過(black-translucent。各画面の
+// <meta name="apple-mobile-web-app-status-bar-style">)にして画面を上端まで広げ、
+// ヘッダーをその分だけ下に伸ばす。余白は OS が返す実際の値を使う
+// (アイランド付きの機種で 59px 前後、ホームボタン機種で 20px、Safari のタブでは 0)。
+// OnsenUI にも同じ仕組み(onsflag-iphonex-portrait)があるが、機種の一覧で判定するので使わない。
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+}
+// 画面のいちばん外側のヘッダー
+.toolbar {
+  box-sizing: content-box;
+  padding-top: var(--safe-area-top);
+}
+// ヘッダーのあるページの中身は、伸ばしたヘッダーの下から
+.toolbar:not(.toolbar--cover-content) + .page__background,
+.toolbar:not(.toolbar--cover-content) + .page__background + .page__content {
+  top: calc(var(--toolbar-height) + var(--safe-area-top));
+}
+// ダイアログの中や、ヘッダーのあるページの中に入れ子になったヘッダーは上端に無いので元に戻す
+.dialog .toolbar,
+.toolbar:not(.toolbar--cover-content) + .page__background + .page__content .toolbar {
+  box-sizing: border-box;
+  padding-top: 0;
+}
+.dialog .toolbar:not(.toolbar--cover-content) + .page__background,
+.dialog .toolbar:not(.toolbar--cover-content) + .page__background + .page__content,
+.toolbar:not(.toolbar--cover-content) + .page__background + .page__content .toolbar:not(.toolbar--cover-content) + .page__background,
+.toolbar:not(.toolbar--cover-content) + .page__background + .page__content .toolbar:not(.toolbar--cover-content) + .page__background + .page__content {
+  top: var(--toolbar-height);
+}
 //@import "calendar";
 @import "style";
